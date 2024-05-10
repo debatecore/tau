@@ -31,9 +31,12 @@ async fn main() {
         return format!("Tau cannon version {}\n", get_version_string());
     });
 
+    let cors = warp::cors()
+        .allow_any_origin();
+
     let routes = warp::get().and(
         root.or(live).or(v).or(version)
-    );
+    ).with(cors);
 
     println!("Tau: response cannon spinning up...");
     warp::serve(routes).run(([127, 0, 0, 1], 1998)).await;
