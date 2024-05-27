@@ -9,25 +9,23 @@ fn get_version_string() -> String {
 
 #[tokio::main]
 async fn main() {
-
-    let root = warp::path::end().map(|| {
-        println!("Tau: served /");
-        "Tau says: hello, world\n"
-    });
+    if std::env::var_os("RUST_LOG").is_none() {
+        std::env::set_var("RUST_LOG", "info");
+    } pretty_env_logger::init();
 
     // endpoint to check server responsiveness with minimal cost
     // should always return 200 OK with a content-length of 0
-    let live = warp::path("live").and(warp::path::end()).map(|| {
-        println!("Tau: served /live");
-        warp::reply() // doing this instead of an empty string eliminates the content-type header
+    let root = warp::path::end().map(|| {
+        log::info!("served /");
+        return warp::reply();
     });
 
     let v = warp::path("v").and(warp::path::end()).map(|| {
-        println!("Tau: served /v");
+        log::info!("served /v");
         return get_version_string();
     });
     let version = warp::path("version").and(warp::path::end()).map(|| {
-        println!("Tau: served /version");
+        log::info!("served /version");
         return format!("Tau cannon version {}\n", get_version_string());
     });
 
@@ -35,9 +33,9 @@ async fn main() {
         .allow_any_origin();
 
     let routes = warp::get().and(
-        root.or(live).or(v).or(version)
+        root.or(v).or(version)
     ).with(cors);
 
-    println!("Tau: response cannon spinning up...");
+    log::info!("Response cannon spinning up...");
     warp::serve(routes).run(([127, 0, 0, 1], 1998)).await;
 }
