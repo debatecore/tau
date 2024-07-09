@@ -6,7 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4.21"
-pretty_env_logger = "0.5.0"
-tokio = { version = "1.37.0", features = ["full"] }
-warp = "0.3.7"
+axum = "0.7.5"
+tokio = { version = "1.38.0", features = ["full"] }
