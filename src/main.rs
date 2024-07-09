@@ -1,3 +1,9 @@
+use axum::Router;
+use tokio::net::TcpListener;
+mod routes;
+mod setup;
+
+// TODO: move to route and eventually utilise as an endpoint
 fn get_version_string() -> String {
     return format!(
         "{}{}",
@@ -8,5 +14,20 @@ fn get_version_string() -> String {
 
 #[tokio::main]
 async fn main() {
-    println!("Tau cannon spinning up!");
+    let app = Router::new().merge(routes::routes());
+
+    let addr = setup::get_socket_addr();
+    let listener = match TcpListener::bind(&addr).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            panic!("error creating a listener ({e})");
+        }
+    };
+
+    match axum::serve(listener, app).await {
+        Ok(..) => (),
+        Err(e) => {
+            panic!("could not serve ({e})");
+        }
+    };
 }
