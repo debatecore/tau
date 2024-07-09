@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 fn get_env_port() -> u16 {
     let portstr = match std::env::var("PORT") {
         Ok(value) => value,
-        Err(_) => "2023".to_owned(),
+        Err(_) => return 2023,
     };
 
     return match portstr.parse() {
