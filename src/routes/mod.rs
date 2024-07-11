@@ -1,7 +1,8 @@
 use axum::Router;
 
-pub mod health;
+mod health;
+mod version;
 
 pub fn routes() -> Router {
-    Router::new().merge(health::route())
+    Router::new().merge(health::route()).merge(version::route())
 }
