@@ -17,6 +17,7 @@ pub fn route() -> Router {
 struct VersionDetails {
     version: &'static str,
     version_bits: VersionBits,
+    git_commit_hash: &'static str,
     current_endpoint_prefix: &'static str,
     repository: &'static str,
 }
@@ -42,6 +43,7 @@ async fn version_details() -> Response {
             minor: env!("CARGO_PKG_VERSION_MINOR"),
             patch: env!("CARGO_PKG_VERSION_PATCH"),
         },
+        git_commit_hash: env!("GIT_COMMIT_HASH"),
         current_endpoint_prefix: env!("CARGO_PKG_VERSION_MAJOR"),
         repository: env!("CARGO_PKG_REPOSITORY"),
     };
