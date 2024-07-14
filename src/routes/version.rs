@@ -1,6 +1,7 @@
 use axum::{routing::get, Json, Router};
 use serde::Serialize;
 use std::env;
+use utoipa::ToSchema;
 
 pub fn route() -> Router {
     Router::new()
@@ -8,8 +9,8 @@ pub fn route() -> Router {
         .route("/version-details", get(version_details))
 }
 
-#[derive(Serialize)]
-struct VersionDetails {
+#[derive(Serialize, ToSchema)]
+pub struct VersionDetails {
     version: &'static str,
     version_bits: VersionBits,
     git_commit_hash: &'static str,
@@ -17,17 +18,37 @@ struct VersionDetails {
     repository: &'static str,
 }
 
-#[derive(Serialize)]
-struct VersionBits {
+#[derive(Serialize, ToSchema)]
+pub struct VersionBits {
     major: &'static str,
     minor: &'static str,
     patch: &'static str,
 }
 
+/// Returns API version
+#[utoipa::path(
+    get,
+    path = "/version",
+    responses((
+        status = StatusCode::OK,
+        description = "Returns API semver version.",
+        body = str
+    ))
+)]
 async fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Returns API version & other diagnostic data
+#[utoipa::path(
+    get,
+    path = "/version-details",
+    responses((
+        status = StatusCode::OK,
+        description = "Returns diagnostic info about the API.",
+        body = VersionDetails
+    ))
+)]
 async fn version_details() -> Json<VersionDetails> {
     Json(VersionDetails {
         version: env!("CARGO_PKG_VERSION"),
