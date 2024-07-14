@@ -1,11 +1,6 @@
-use std::env;
-
-use axum::{
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
+use axum::{routing::get, Json, Router};
 use serde::Serialize;
+use std::env;
 
 pub fn route() -> Router {
     Router::new()
@@ -29,14 +24,12 @@ struct VersionBits {
     patch: &'static str,
 }
 
-async fn version() -> Response {
-    let v = env!("CARGO_PKG_VERSION");
-
-    return v.into_response();
+async fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
 }
 
-async fn version_details() -> Response {
-    let vd = VersionDetails {
+async fn version_details() -> Json<VersionDetails> {
+    Json(VersionDetails {
         version: env!("CARGO_PKG_VERSION"),
         version_bits: VersionBits {
             major: env!("CARGO_PKG_VERSION_MAJOR"),
@@ -46,7 +39,5 @@ async fn version_details() -> Response {
         git_commit_hash: env!("GIT_COMMIT_HASH"),
         current_endpoint_prefix: env!("CARGO_PKG_VERSION_MAJOR"),
         repository: env!("CARGO_PKG_REPOSITORY"),
-    };
-
-    return Json(vd).into_response();
+    })
 }
