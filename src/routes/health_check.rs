@@ -9,7 +9,7 @@ pub fn route() -> Router {
 }
 
 /// Used to determine whether the API is online
-#[utoipa::path(get, path = "/health", tag = HEALTH_CHECK_TAG,responses((status = StatusCode::OK, description = "OK")))]
+#[utoipa::path(get, path = "/health", tag = HEALTH_CHECK_TAG, responses((status = StatusCode::OK, description = "OK")))]
 pub fn health() -> StatusCode {
     empty()
 }
