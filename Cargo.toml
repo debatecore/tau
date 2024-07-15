@@ -12,3 +12,4 @@ serde = { version = "1.0.204", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["full"] }
 utoipa-swagger-ui = { version = "7.1.0", features = ["axum"] }
 utoipa = { version = "4.2.3", features = ["axum_extras"] }
+tower-http = { version = "0.5.2", features = ["cors"] }
