@@ -1,7 +1,8 @@
 use axum::Router;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
-use tracing::error;
+use tracing::{error, info};
+mod database;
 mod routes;
 mod setup;
 
@@ -22,6 +23,8 @@ async fn main() {
         }
     };
     setup::report_listener_socket_addr(&listener);
+
+    let connection_pool = database::get_connection_pool().await;
 
     match axum::serve(listener, app).await {
         Ok(..) => (),

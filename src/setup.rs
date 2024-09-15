@@ -9,7 +9,7 @@ pub fn initialise_logging() {
         .finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default tracing subscriber failed!");
-    info!("Response cannon spinning up...");
+    info!("Response cannon spinning up…");
 }
 
 pub fn report_listener_socket_addr(listener: &TcpListener) {
