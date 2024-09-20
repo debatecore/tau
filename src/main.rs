@@ -11,6 +11,7 @@ async fn main() {
     setup::initialise_logging();
 
     let app = Router::new()
+        .with_state(setup::create_app_state().await)
         .merge(routes::routes())
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
 
@@ -23,8 +24,6 @@ async fn main() {
         }
     };
     setup::report_listener_socket_addr(&listener);
-
-    let connection_pool = database::get_connection_pool().await;
 
     match axum::serve(listener, app).await {
         Ok(..) => (),

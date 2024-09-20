@@ -16,11 +16,11 @@ pub async fn get_connection_pool() -> Pool<Postgres> {
 }
 
 async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
-    let url = env::var("DATABASE_URL").expect("Database URL must be defined in .env");
+    let url = env::var("DATABASE_URL").expect("DATABASE_URL must be defined in .env");
     let username =
-        env::var("DATABASE_USERNAME").expect("Database username must be defined in .env");
+        env::var("DATABASE_USERNAME").expect("DATABASE_USERNAME must be defined in .env");
     let password =
-        env::var("DATABASE_PASSWORD").expect("Database password must be defined in .env");
+        env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD must be defined in .env");
     let port_number = get_port_number();
 
     let options = PgConnectOptions::new()
@@ -33,8 +33,8 @@ async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
 }
 
 fn get_port_number() -> u16 {
-    let port_number =
-        env::var("DATABASE_PORT_NUMBER").expect("Port number must be defined in .env");
+    let port_number = env::var("DATABASE_PORT_NUMBER")
+        .expect("DATABASE_PORT_NUMBER must be defined in .env");
     port_number
         .parse::<u16>()
         .expect("Port number must be a number")
