@@ -4,6 +4,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing::error;
 mod routes;
 mod setup;
+mod users;
 
 #[tokio::main]
 async fn main() {
