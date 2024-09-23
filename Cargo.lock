@@ -1236,6 +1236,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ulid",
+ "url",
  "utoipa",
  "utoipa-swagger-ui",
 ]
