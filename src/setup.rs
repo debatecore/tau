@@ -1,9 +1,6 @@
-use axum::extract::{Path, State};
 use sqlx::{Pool, Postgres};
 use std::env;
-use std::error::Error;
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::path::PathBuf;
 use tokio::net::TcpListener;
 use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
