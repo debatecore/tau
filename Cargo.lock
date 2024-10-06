@@ -1872,6 +1872,7 @@ name = "tau"
 version = "0.0.1"
 dependencies = [
  "axum",
+ "dotenvy",
  "serde",
  "sqlx",
  "tokio",

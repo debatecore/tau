@@ -1,5 +1,5 @@
 use sqlx::{postgres::PgConnectOptions, Pool, Postgres};
-use std::env;
+use std::{env, str::FromStr};
 use tracing::{error, info};
 
 pub async fn get_connection_pool() -> Pool<Postgres> {
@@ -16,26 +16,11 @@ pub async fn get_connection_pool() -> Pool<Postgres> {
 }
 
 async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
-    let url = env::var("DATABASE_URL").expect("DATABASE_URL must be defined in .env");
-    let username =
-        env::var("DATABASE_USERNAME").expect("DATABASE_USERNAME must be defined in .env");
-    let password =
-        env::var("DATABASE_PASSWORD").expect("DATABASE_PASSWORD must be defined in .env");
-    let port_number = get_port_number();
+    let connection_uri = env::var("POSTGRESQL_CONNECTION_URI")
+        .expect("POSTGRESQL_CONNECTION_URI must be defined in .env");
 
-    let options = PgConnectOptions::new()
-        .host(&url)
-        .port(port_number)
-        .username(&username)
-        .password(&password);
+    let options =
+        PgConnectOptions::from_str(&connection_uri).expect("Connection URI is invalid");
 
     Pool::connect_with(options).await
-}
-
-fn get_port_number() -> u16 {
-    let port_number = env::var("DATABASE_PORT_NUMBER")
-        .expect("DATABASE_PORT_NUMBER must be defined in .env");
-    port_number
-        .parse::<u16>()
-        .expect("Port number must be a number")
 }

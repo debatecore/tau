@@ -1,6 +1,9 @@
-use axum::extract::State;
-use sqlx::{Connection, Pool, Postgres};
+use axum::extract::{Path, State};
+use sqlx::{Pool, Postgres};
+use std::env;
+use std::error::Error;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::path::PathBuf;
 use tokio::net::TcpListener;
 use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -13,7 +16,7 @@ pub fn initialise_logging() {
         .finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default tracing subscriber failed!");
-    info!("Response cannon spinning up…");
+    info!("Response cannon spinning up...");
 }
 
 pub fn report_listener_socket_addr(listener: &TcpListener) {
@@ -54,5 +57,19 @@ pub struct AppState {
 pub async fn create_app_state() -> AppState {
     AppState {
         connection_pool: database::get_connection_pool().await,
+    }
+}
+
+pub fn read_environmental_variables() {
+    match dotenvy::dotenv() {
+        Ok(_path_buf) => {
+            for (key, value) in env::vars() {
+                println!("{key}: {value}");
+            }
+        }
+        Err(e) => {
+            error!("Error reading .env file: {e}");
+            panic!();
+        }
     }
 }
