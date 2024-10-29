@@ -8,5 +8,5 @@ pub enum Permission {
     ModifyUserRoles,
 
     SubmitOwnVerdictVote,
-    SubmitAllVerdictVotes,
+    SubmitVerdict,
 }

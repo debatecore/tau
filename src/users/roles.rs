@@ -22,8 +22,8 @@ impl Role {
                 DeleteUsers,
                 ModifyUserRoles,
             ],
-            Judge => vec![SubmitOwnVerdictVote, SubmitAllVerdictVotes],
-            Marshall => Vec::new(),
+            Judge => vec![SubmitOwnVerdictVote],
+            Marshall => vec![SubmitVerdict],
         }
     }
 }
