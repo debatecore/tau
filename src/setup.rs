@@ -53,17 +53,13 @@ pub struct AppState {
 
 pub async fn create_app_state() -> AppState {
     AppState {
-        connection_pool: database::get_connection_pool().await,
+        pub connection_pool: database::get_connection_pool().await,
     }
 }
 
 pub fn read_environmental_variables() {
     match dotenvy::dotenv() {
-        Ok(_path_buf) => {
-            for (key, value) in env::vars() {
-                println!("{key}: {value}");
-            }
-        }
+        Ok(_) => info!("loaded .env"),
         Err(e) => {
             error!("Error reading .env file: {e}");
             panic!();
