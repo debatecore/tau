@@ -28,7 +28,7 @@ impl PhotoUrl {
             if let Some((name, ext)) = filename.rsplit_once(".") {
                 if !name.is_empty() {
                     return match ext {
-                        "png" | "jpg" | "jpeg" => true,
+                        "png" | "jpg" | "jpeg" | "webp" => true,
                         _ => false,
                     };
                 }
