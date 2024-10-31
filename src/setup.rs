@@ -48,12 +48,12 @@ pub fn get_socket_addr() -> SocketAddrV4 {
 
 #[derive(Clone)]
 pub struct AppState {
-    connection_pool: Pool<Postgres>,
+    pub connection_pool: Pool<Postgres>,
 }
 
 pub async fn create_app_state() -> AppState {
     AppState {
-        pub connection_pool: database::get_connection_pool().await,
+        connection_pool: database::get_connection_pool().await,
     }
 }
 
