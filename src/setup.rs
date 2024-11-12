@@ -1,7 +1,11 @@
+use sqlx::{Pool, Postgres};
+use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
 use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
+
+use crate::database;
 
 pub fn initialise_logging() {
     let subscriber = FmtSubscriber::builder()
@@ -40,4 +44,25 @@ fn get_env_port() -> u16 {
 
 pub fn get_socket_addr() -> SocketAddrV4 {
     SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), get_env_port())
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    pub connection_pool: Pool<Postgres>,
+}
+
+pub async fn create_app_state() -> AppState {
+    AppState {
+        connection_pool: database::get_connection_pool().await,
+    }
+}
+
+pub fn read_environmental_variables() {
+    match dotenvy::dotenv() {
+        Ok(_) => info!("loaded .env"),
+        Err(e) => {
+            error!("Error reading .env file: {e}");
+            panic!();
+        }
+    }
 }

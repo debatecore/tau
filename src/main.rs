@@ -2,6 +2,7 @@ use axum::Router;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::error;
+mod database;
 mod routes;
 mod setup;
 mod users;
@@ -9,8 +10,10 @@ mod users;
 #[tokio::main]
 async fn main() {
     setup::initialise_logging();
+    setup::read_environmental_variables();
 
     let app = Router::new()
+        .with_state(setup::create_app_state().await)
         .merge(routes::routes())
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
 
