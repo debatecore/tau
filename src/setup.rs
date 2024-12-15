@@ -61,8 +61,12 @@ pub fn read_environmental_variables() {
     match dotenvy::dotenv() {
         Ok(_) => info!("loaded .env"),
         Err(e) => {
-            error!("Error reading .env file: {e}");
-            panic!();
+            if e.not_found() {
+                info!("no .env file found; skipping...");
+            } else {
+                error!("error loading .env file!: {e}");
+                panic!();
+            }
         }
     }
 }
