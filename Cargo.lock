@@ -45,6 +45,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
+name = "app-state"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ce2b91c1bcfa44484008739ec96131a8cb07113f7629dd62ed3bb65768b9937"
+dependencies = [
+ "app-state-macros",
+]
+
+[[package]]
+name = "app-state-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13c843babcafb0cc195494200e821aa605b9052b9aeeefe64813484178958509"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "rand",
+ "syn 2.0.70",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1871,6 +1892,7 @@ checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
 name = "tau"
 version = "0.0.1"
 dependencies = [
+ "app-state",
  "axum",
  "dotenvy",
  "serde",

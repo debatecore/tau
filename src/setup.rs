@@ -1,5 +1,5 @@
+use app_state::{AppState, AppStateTrait};
 use sqlx::{Pool, Postgres};
-use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
 use tracing::{error, info, Level};
@@ -46,20 +46,19 @@ pub fn get_socket_addr() -> SocketAddrV4 {
     SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), get_env_port())
 }
 
-#[derive(Clone)]
-pub struct AppState {
+pub struct TauState {
     pub connection_pool: Pool<Postgres>,
 }
 
-pub async fn create_app_state() -> AppState {
-    AppState {
+pub async fn create_app_state() {
+    AppState::init(TauState {
         connection_pool: database::get_connection_pool().await,
-    }
+    });
 }
 
 pub fn read_environmental_variables() {
     match dotenvy::dotenv() {
-        Ok(_) => info!("loaded .env"),
+        Ok(_) => info!("Loaded .env"),
         Err(e) => {
             error!("Error reading .env file: {e}");
             panic!();
