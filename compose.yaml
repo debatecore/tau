@@ -1,0 +1,45 @@
+services:
+  server-prod:
+    build:
+      context: .
+      target: final
+    ports:
+      - 2023:2023
+    networks:
+      - dbnetwork
+    environment:
+      - DATABASE_URL=postgres://tau:tau@db:5432/tau
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:17.2
+    restart: always
+    user: postgres
+    networks:
+      - dbnetwork
+    secrets:
+      - dbpassword
+      - dbrootpassword
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/dbrootpassword
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+
+networks:
+  dbnetwork:
+
+secrets:
+  dbpassword:
+    environment: DOCKER_DB_PASSWORD
+  dbrootpassword:
+    environment: DOCKER_DB_ROOT_PASSWORD
