@@ -7,6 +7,7 @@ use tracing::error;
 mod database;
 mod routes;
 mod setup;
+mod users;
 
 #[tokio::main]
 async fn main() {
