@@ -14,4 +14,5 @@ fn main() {
         },
         Err(_) => (),
     };
+    println!("cargo:rerun-if-changed=migrations");
 }

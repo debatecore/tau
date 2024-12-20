@@ -1,5 +1,4 @@
 use sqlx::{Pool, Postgres};
-use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
 use tracing::{error, info, Level};
@@ -59,7 +58,7 @@ pub async fn create_app_state() -> AppState {
 
 pub fn read_environmental_variables() {
     match dotenvy::dotenv() {
-        Ok(_) => info!("loaded .env"),
+        Ok(_) => info!("Loaded .env"),
         Err(e) => {
             if e.not_found() {
                 info!("no .env file found; skipping...");

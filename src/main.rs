@@ -12,8 +12,11 @@ async fn main() {
     setup::initialise_logging();
     setup::read_environmental_variables();
 
+    let state = setup::create_app_state().await;
+    database::perform_migrations(&state.connection_pool).await;
+
     let app = Router::new()
-        .with_state(setup::create_app_state().await)
+        .with_state(state)
         .merge(routes::routes())
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
 

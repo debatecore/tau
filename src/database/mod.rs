@@ -1,4 +1,4 @@
-use sqlx::{postgres::PgConnectOptions, Pool, Postgres};
+use sqlx::{migrate, postgres::PgConnectOptions, Pool, Postgres};
 use std::{env, str::FromStr};
 use tracing::{error, info};
 
@@ -23,4 +23,15 @@ async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
         PgConnectOptions::from_str(&connection_uri).expect("Connection URI is invalid");
 
     Pool::connect_with(options).await
+}
+
+pub async fn perform_migrations(pool: &Pool<Postgres>) {
+    let result = migrate!("./migrations").run(pool).await;
+    match result {
+        Ok(_) => info!("Database migrations successful."),
+        Err(e) => {
+            error!("Error performing database migrations: {e}");
+            panic!();
+        }
+    }
 }
