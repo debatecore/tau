@@ -25,8 +25,8 @@ async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
     Pool::connect_with(options).await
 }
 
-pub async fn perform_migrations(pool: Pool<Postgres>) {
-    let result = migrate!("./migrations").run(&pool).await;
+pub async fn perform_migrations(pool: &Pool<Postgres>) {
+    let result = migrate!("./migrations").run(pool).await;
     match result {
         Ok(_) => info!("Database migrations successful."),
         Err(e) => {

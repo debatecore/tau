@@ -20,4 +20,3 @@ strum = { version = "0.26.3", features = ["derive"]}
 url = "2.5.2"
 sqlx = { version = "0.8", features = [ "runtime-tokio", "postgres" ] }
 dotenvy = "0.15.7"
-app-state = "0.1.0"
