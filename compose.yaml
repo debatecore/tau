@@ -1,0 +1,70 @@
+services:
+  server-prod:
+    build:
+      context: .
+      target: final
+    ports:
+      - 2023:2023
+    networks:
+      - dbnetwork
+    profiles:
+      - prod
+    environment:
+      - DATABASE_URL=postgres://tau:${DOCKER_DB_PASSWORD}@db-prod:5432/tau
+    depends_on:
+      db-prod:
+        condition: service_healthy
+  db-prod:
+    image: postgres:17.2
+    restart: always
+    user: postgres
+    networks:
+      - dbnetwork
+    profiles:
+      - prod
+    secrets:
+      - dbpassword
+      - dbrootpassword
+    environment:
+      - DOCKER_DB_PASSWORD_FILE=/run/secrets/dbpassword
+      - POSTGRES_PASSWORD_FILE=/run/secrets/dbrootpassword
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./dbinit.sh:/docker-entrypoint-initdb.d/dbinit.sh
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  db-dev:
+    image: postgres:17.2
+    user: postgres
+    ports:
+      - "5432:5432"
+    profiles:
+      - dev
+    secrets:
+      - dbrootpassword
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/dbrootpassword
+    volumes:
+      - dbdevdata:/var/lib/postgresql/data
+      - ./dbinit-dev.sh:/docker-entrypoint-initdb.d/dbinit-dev.sh
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dbdata:
+  dbdevdata:
+
+networks:
+  dbnetwork:
+
+secrets:
+  dbpassword:
+    environment: DOCKER_DB_PASSWORD
+  dbrootpassword:
+    environment: DOCKER_DB_ROOT_PASSWORD
