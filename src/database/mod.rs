@@ -16,7 +16,7 @@ pub async fn get_connection_pool() -> Pool<Postgres> {
 }
 
 async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
-    let connection_uri = env::var("POSTGRESQL_CONNECTION_URI")
+    let connection_uri = env::var("DATABASE_URL")
         .expect("POSTGRESQL_CONNECTION_URI must be defined in .env");
 
     let options =

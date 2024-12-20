@@ -8,7 +8,7 @@ Tau is the debatecore debate tournament planner project's response cannon - also
 The easiest way to develop locally is via a combination of docker and cargo - using docker to handle the database and cargo to handle the rest.
 This setup requires a few environment variables:
 - `DOCKER_DB_ROOT_PASSWORD` will be used as the password for the database root user.
-- `POSTGRESQL_CONNECTION_URI` will be used to connect to the database. During development, this is `postgres://tau:tau@localhost:5432/tau` by default.
+- `DATABASE_URL` will be used to connect to the database. During development, this is `postgres://tau:tau@localhost:5432/tau` by default.
 You may create a `.env` file in the root of the project or just set the environment variables in your shell.
 
 Next comes the database, which you can turn on with `docker compose --profile dev up -d`. You can run the migrations with `sqlx migrate run` to set up the database.
