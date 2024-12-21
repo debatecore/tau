@@ -1,16 +1,15 @@
 use permissions::Permission;
 use photourl::PhotoUrl;
 use roles::Role;
-use ulid::Ulid;
+use uuid::Uuid;
 
 pub mod permissions;
 pub mod photourl;
 pub mod roles;
 
 pub struct User {
-    pub id: Ulid,
-    pub username: String,
-    pub displayname: String,
+    pub id: Uuid,
+    pub handle: String,
     pub profilepicture: Option<PhotoUrl>,
 }
 
@@ -21,13 +20,12 @@ pub struct TournamentUser {
 
 impl User {
     pub fn is_infrastructure_admin(&self) -> bool {
-        self.id.is_nil()
+        self.id.is_max()
     }
     pub fn new_infrastructure_admin() -> Self {
         User {
-            id: Ulid::nil(),
-            username: String::from("admin"),
-            displayname: String::from("admin"),
+            id: Uuid::max(),
+            handle: String::from("admin"),
             profilepicture: None,
         }
     }
@@ -45,10 +43,11 @@ impl TournamentUser {
 fn construct_tournament_user() {
     let org = TournamentUser {
         user: User {
-            id: Ulid::new(),
-            username: String::from("org"),
-            displayname: String::from("organizator"),
-            profilepicture: Some(PhotoUrl::new("https://i.imgur.com/hbrb2U0.png").unwrap()),
+            id: Uuid::now_v7(),
+            handle: String::from("some_org"),
+            profilepicture: Some(
+                PhotoUrl::new("https://i.imgur.com/hbrb2U0.png").unwrap(),
+            ),
         },
         roles: vec![Role::Organizer, Role::Judge, Role::Marshall],
     };
