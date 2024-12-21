@@ -20,7 +20,7 @@ pub struct TournamentUser {
 
 impl User {
     pub fn is_infrastructure_admin(&self) -> bool {
-        self.id.is_nil()
+        self.id.is_max()
     }
     pub fn new_infrastructure_admin() -> Self {
         User {
