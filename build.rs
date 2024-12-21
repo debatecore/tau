@@ -2,6 +2,9 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-changed=migrations");
+    println!("cargo:rerun-if-changed=.git/index");
+    println!("cargo:rerun-if-changed=.git/HEAD");
+
     println!("cargo::rustc-env=GIT_COMMIT_HASH=UNKNOWN!");
     match Command::new("git").args(&["rev-parse", "HEAD"]).output() {
         Ok(output) => match String::from_utf8(output.stdout) {
