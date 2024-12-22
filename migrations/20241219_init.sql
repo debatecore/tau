@@ -1,20 +1,20 @@
 CREATE TABLE IF NOT EXISTS users (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    handle          TEXT NOT NULL UNIQUE,
-    passwordHash    TEXT NOT NULL,
-    pictureLink     TEXT DEFAULT NULL
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    handle           TEXT NOT NULL UNIQUE,
+    password_hash    TEXT NOT NULL,
+    picture_link     TEXT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    fullName        TEXT NOT NULL UNIQUE,
-    shortenedName   TEXT NOT NULL
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    full_name        TEXT NOT NULL UNIQUE,
+    shortened_name   TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS roles (
     id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    userId          UUID NOT NULL REFERENCES users(id),
-    tournamentId    UUID NOT NULL REFERENCES tournaments(id),
+    user_id         UUID NOT NULL REFERENCES users(id),
+    tournament_id   UUID NOT NULL REFERENCES tournaments(id),
     roles           TEXT[] DEFAULT NULL
 );
 
@@ -25,33 +25,33 @@ CREATE TABLE IF NOT EXISTS motions (
 );
 
 CREATE TABLE IF NOT EXISTS teams (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    fullName        TEXT NOT NULL,
-    shortenedName   TEXT NOT NULL,
-    tournamentId    UUID NOT NULL REFERENCES tournaments(id)
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    full_name        TEXT NOT NULL,
+    shortened_name   TEXT NOT NULL,
+    tournament_id    UUID NOT NULL REFERENCES tournaments(id)
 );
 
 CREATE TABLE IF NOT EXISTS attendees (
     id                 UUID NOT NULL UNIQUE PRIMARY KEY,
     name               TEXT NOT NULL,
     position           INTEGER DEFAULT NULL,
-    teamId             UUID DEFAULT NULL REFERENCES teams(id),
-    individualPoints   INTEGER NOT NULL DEFAULT 0,
-    penaltyPoints      INTEGER NOT NULL DEFAULT 0
+    team_id            UUID DEFAULT NULL REFERENCES teams(id),
+    individual_points  INTEGER NOT NULL DEFAULT 0,
+    penalty_points     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS debates (
-    id               UUID NOT NULL UNIQUE,
-    team1Id          UUID NOT NULL REFERENCES teams(id),
-    team2Id          UUID NOT NULL REFERENCES teams(id),
-    motionId         UUID NOT NULL REFERENCES motions(id),
-    marshallUserId   UUID NOT NULL REFERENCES users(id),
-    propositionTeamAssignment INTEGER NOT NULL DEFAULT 0
+    id                UUID NOT NULL UNIQUE,
+    team1_id          UUID NOT NULL REFERENCES teams(id),
+    team2_id          UUID NOT NULL REFERENCES teams(id),
+    motion_id         UUID NOT NULL REFERENCES motions(id),
+    marshall_user_id  UUID NOT NULL REFERENCES users(id),
+    proposition_team_assignment INTEGER NOT NULL DEFAULT 0
     -- 0 ^^ if undecided, otherwise 1 or 2
 );
 
 CREATE TABLE IF NOT EXISTS debate_judge_assignment (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    judgeUserId     UUID NOT NULL REFERENCES users(id),
-    debateId        UUID NOT NULL REFERENCES debates(id)
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    judge_user_id     UUID NOT NULL REFERENCES users(id),
+    debate_id         UUID NOT NULL REFERENCES debates(id)
 );
