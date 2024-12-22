@@ -2,6 +2,7 @@ use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-changed=migrations");
+    println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=.git/index");
     println!("cargo:rerun-if-changed=.git/HEAD");
 
