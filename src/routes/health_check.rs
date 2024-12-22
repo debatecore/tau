@@ -1,8 +1,10 @@
 use axum::{http::StatusCode, routing::get, Router};
 
+use crate::setup::AppState;
+
 static HEALTH_CHECK_TAG: &str = "health check";
 
-pub fn route() -> Router {
+pub fn route() -> Router<AppState> {
     Router::new()
         .route("/live", get(live()))
         .route("/health", get(health()))

@@ -2,12 +2,16 @@ use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::routes::tournament;
+use crate::setup::AppState;
+
 use super::health_check;
 use super::teapot;
 use super::version;
 
-pub fn route() -> Router {
-    Router::new().merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", ApiDoc::openapi()))
+pub fn route() -> Router<AppState> {
+    Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", ApiDoc::openapi()))
 }
 
 #[derive(OpenApi)]
@@ -17,8 +21,13 @@ pub fn route() -> Router {
         health_check::health,
         teapot::route,
         version::version,
-        version::version_details
+        version::version_details,
+        tournament::create_tournament
     ),
-    components(schemas(version::VersionDetails, version::VersionBits))
+    components(schemas(
+        version::VersionDetails,
+        version::VersionBits,
+        tournament::Tournament
+    ))
 )]
 pub struct ApiDoc;

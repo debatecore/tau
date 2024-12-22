@@ -1,4 +1,5 @@
 use axum::Router;
+use setup::AppState;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::error;
@@ -16,8 +17,8 @@ async fn main() {
     database::perform_migrations(&state.connection_pool).await;
 
     let app = Router::new()
-        .with_state(state)
         .merge(routes::routes())
+        .with_state(state)
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
 
     let addr = setup::get_socket_addr();
