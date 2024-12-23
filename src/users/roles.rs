@@ -1,8 +1,9 @@
+use serde::Deserialize;
 use strum::VariantArray;
 
 use super::permissions::Permission;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Deserialize)]
 pub enum Role {
     Admin,
     Organizer,

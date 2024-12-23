@@ -3,6 +3,7 @@ use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::error;
 mod database;
+mod omni_error;
 mod routes;
 mod setup;
 mod users;
