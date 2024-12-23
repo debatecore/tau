@@ -22,12 +22,17 @@ pub fn route() -> Router<AppState> {
         teapot::route,
         version::version,
         version::version_details,
-        tournament::create_tournament
+        tournament::create_tournament,
+        tournament::get_tournament_by_id,
+        tournament::patch_tournament_by_id,
+        tournament::delete_tournament_by_id,
+        tournament::get_tournaments
     ),
     components(schemas(
         version::VersionDetails,
         version::VersionBits,
-        tournament::Tournament
+        tournament::Tournament,
+        tournament::TournamentPatch
     ))
 )]
 pub struct ApiDoc;
