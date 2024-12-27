@@ -23,3 +23,5 @@ uuid = { version = "1.11.0", features = ["serde", "v7"] }
 thiserror = "2.0.9"
 serde_json = "1.0.134"
 tower-cookies = "0.10.0"
+base64 = "0.22.1"
+argon2 = "0.5.3"
