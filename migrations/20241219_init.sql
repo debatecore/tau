@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS attendees (
 CREATE TABLE IF NOT EXISTS debates (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
     motion_id         UUID NOT NULL REFERENCES motions(id),
-    marshall_user_id  UUID NOT NULL REFERENCES users(id),
+    marshall_user_id  UUID NOT NULL REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS debate_teams_assignments (
