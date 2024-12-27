@@ -1,7 +1,7 @@
 use super::User;
 use crate::omni_error::OmniError;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::http::{header::AUTHORIZATION, HeaderMap};
+use axum::http::{header::AUTHORIZATION, HeaderMap, StatusCode};
 use base64::{
     prelude::{BASE64_STANDARD, BASE64_URL_SAFE_NO_PAD},
     Engine,
@@ -26,6 +26,19 @@ pub enum AuthError {
     BadHeaderAuthSchemeData,
     #[error("Unsupported header auth scheme - use Basic or Bearer.")]
     UnsupportedHeaderAuthScheme,
+}
+
+impl AuthError {
+    pub fn status_code(&self) -> StatusCode {
+        use AuthError::*;
+        match self {
+            InvalidCredentials | NoCredentials => StatusCode::UNAUTHORIZED,
+            NonAsciiHeaderCharacters
+            | NoBasicAuthColonSplit
+            | BadHeaderAuthSchemeData
+            | UnsupportedHeaderAuthScheme => StatusCode::BAD_REQUEST,
+        }
+    }
 }
 
 impl User {
