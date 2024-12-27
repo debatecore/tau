@@ -1,20 +1,41 @@
 CREATE TABLE IF NOT EXISTS users (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    handle          TEXT NOT NULL UNIQUE,
-    passwordHash    TEXT NOT NULL,
-    pictureLink     TEXT DEFAULT NULL
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    handle           TEXT NOT NULL UNIQUE,
+    picture_link     TEXT DEFAULT NULL,
+
+    password_hash    TEXT NOT NULL
+    -- attempts         INTEGER NOT NULL DEFAULT 0,
+    -- locked           BOOLEAN NOT NULL DEFAULT FALSE,
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    token            TEXT NOT NULL UNIQUE,
+    user_id          UUID NOT NULL REFERENCES users(id),
+    issued           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expiry           TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 week',
+    last_access      TIMESTAMPTZ DEFAULT NULL
+    -- revoked          BOOLEAN NOT NULL DEFAULT FALSE,
+    -- revoked_at       TIMESTAMPZ DEFAULT NULL,
+
+    -- ip_address       INET NOT NULL,
+    -- user_agent       TEXT NOT NULL,
+    -- devices          TEXT[] NOT NULL,
+    -- geolocation      TEXT NOT NULL,
+    -- countries        TEXT[] NOT NULL,
+    -- login_method     TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    fullName        TEXT NOT NULL UNIQUE,
-    shortenedName   TEXT NOT NULL
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    full_name        TEXT NOT NULL UNIQUE,
+    shortened_name   TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS roles (
     id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    userId          UUID NOT NULL REFERENCES users(id),
-    tournamentId    UUID NOT NULL REFERENCES tournaments(id),
+    user_id         UUID NOT NULL REFERENCES users(id),
+    tournament_id   UUID NOT NULL REFERENCES tournaments(id),
     roles           TEXT[] DEFAULT NULL
 );
 
@@ -25,33 +46,36 @@ CREATE TABLE IF NOT EXISTS motions (
 );
 
 CREATE TABLE IF NOT EXISTS teams (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    fullName        TEXT NOT NULL,
-    shortenedName   TEXT NOT NULL,
-    tournamentId    UUID NOT NULL REFERENCES tournaments(id)
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    full_name        TEXT NOT NULL,
+    shortened_name   TEXT NOT NULL,
+    tournament_id    UUID NOT NULL REFERENCES tournaments(id)
 );
 
 CREATE TABLE IF NOT EXISTS attendees (
     id                 UUID NOT NULL UNIQUE PRIMARY KEY,
     name               TEXT NOT NULL,
     position           INTEGER DEFAULT NULL,
-    teamId             UUID DEFAULT NULL REFERENCES teams(id),
-    individualPoints   INTEGER NOT NULL DEFAULT 0,
-    penaltyPoints      INTEGER NOT NULL DEFAULT 0
+    team_id            UUID DEFAULT NULL REFERENCES teams(id),
+    individual_points  INTEGER NOT NULL DEFAULT 0,
+    penalty_points     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS debates (
-    id               UUID NOT NULL UNIQUE,
-    team1Id          UUID NOT NULL REFERENCES teams(id),
-    team2Id          UUID NOT NULL REFERENCES teams(id),
-    motionId         UUID NOT NULL REFERENCES motions(id),
-    marshallUserId   UUID NOT NULL REFERENCES users(id),
-    propositionTeamAssignment INTEGER NOT NULL DEFAULT 0
-    -- 0 ^^ if undecided, otherwise 1 or 2
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    motion_id         UUID NOT NULL REFERENCES motions(id),
+    marshall_user_id  UUID NOT NULL REFERENCES users(id),
 );
 
-CREATE TABLE IF NOT EXISTS debate_judge_assignment (
-    id              UUID NOT NULL UNIQUE PRIMARY KEY,
-    judgeUserId     UUID NOT NULL REFERENCES users(id),
-    debateId        UUID NOT NULL REFERENCES debates(id)
+CREATE TABLE IF NOT EXISTS debate_teams_assignments (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    team_id           UUID NOT NULL REFERENCES teams(id),
+    debate_id         UUID NOT NULL REFERENCES debates(id),
+    is_proposition    BOOLEAN DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS debate_judge_assignments (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    judge_user_id     UUID NOT NULL REFERENCES users(id),
+    debate_id         UUID NOT NULL REFERENCES debates(id)
 );

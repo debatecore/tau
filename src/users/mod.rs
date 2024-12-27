@@ -6,8 +6,10 @@ use serde_json::Error as JsonError;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
+pub mod auth;
 pub mod permissions;
 pub mod photourl;
+mod queries;
 pub mod roles;
 
 pub struct User {
