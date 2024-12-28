@@ -1,8 +1,29 @@
 CREATE TABLE IF NOT EXISTS users (
     id               UUID NOT NULL UNIQUE PRIMARY KEY,
     handle           TEXT NOT NULL UNIQUE,
-    password_hash    TEXT NOT NULL,
-    picture_link     TEXT DEFAULT NULL
+    picture_link     TEXT DEFAULT NULL,
+
+    password_hash    TEXT NOT NULL
+    -- attempts         INTEGER NOT NULL DEFAULT 0,
+    -- locked           BOOLEAN NOT NULL DEFAULT FALSE,
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id               UUID NOT NULL UNIQUE PRIMARY KEY,
+    token            TEXT NOT NULL UNIQUE,
+    user_id          UUID NOT NULL REFERENCES users(id),
+    issued           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expiry           TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 week',
+    last_access      TIMESTAMPTZ DEFAULT NULL
+    -- revoked          BOOLEAN NOT NULL DEFAULT FALSE,
+    -- revoked_at       TIMESTAMPZ DEFAULT NULL,
+
+    -- ip_address       INET NOT NULL,
+    -- user_agent       TEXT NOT NULL,
+    -- devices          TEXT[] NOT NULL,
+    -- geolocation      TEXT NOT NULL,
+    -- countries        TEXT[] NOT NULL,
+    -- login_method     TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
@@ -41,16 +62,19 @@ CREATE TABLE IF NOT EXISTS attendees (
 );
 
 CREATE TABLE IF NOT EXISTS debates (
-    id                UUID NOT NULL UNIQUE,
-    team1_id          UUID NOT NULL REFERENCES teams(id),
-    team2_id          UUID NOT NULL REFERENCES teams(id),
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
     motion_id         UUID NOT NULL REFERENCES motions(id),
-    marshall_user_id  UUID NOT NULL REFERENCES users(id),
-    proposition_team_assignment INTEGER NOT NULL DEFAULT 0
-    -- 0 ^^ if undecided, otherwise 1 or 2
+    marshall_user_id  UUID NOT NULL REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS debate_judge_assignment (
+CREATE TABLE IF NOT EXISTS debate_teams_assignments (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    team_id           UUID NOT NULL REFERENCES teams(id),
+    debate_id         UUID NOT NULL REFERENCES debates(id),
+    is_proposition    BOOLEAN DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS debate_judge_assignments (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
     judge_user_id     UUID NOT NULL REFERENCES users(id),
     debate_id         UUID NOT NULL REFERENCES debates(id)

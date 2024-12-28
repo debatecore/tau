@@ -15,7 +15,7 @@ pub fn route() -> Router<AppState> {
 pub struct VersionDetails {
     version: &'static str,
     version_bits: VersionBits,
-    git_commit_hash: &'static str,
+    git_info: GitInfo,
     current_endpoint_prefix: &'static str,
     repository: &'static str,
 }
@@ -25,6 +25,14 @@ pub struct VersionBits {
     major: &'static str,
     minor: &'static str,
     patch: &'static str,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct GitInfo {
+    /// latest git commit hash, or 'UNKNOWN!'
+    git_commit_hash: &'static str,
+    /// this is either 'clean', 'changed' or 'UNKNOWN!'
+    git_status_porcelain: &'static str,
 }
 
 /// Returns API version
@@ -59,7 +67,10 @@ async fn version_details() -> Json<VersionDetails> {
             minor: env!("CARGO_PKG_VERSION_MINOR"),
             patch: env!("CARGO_PKG_VERSION_PATCH"),
         },
-        git_commit_hash: env!("GIT_COMMIT_HASH"),
+        git_info: GitInfo {
+            git_commit_hash: env!("GIT_COMMIT_HASH"),
+            git_status_porcelain: env!("GIT_STATUS_PORCELAIN"),
+        },
         current_endpoint_prefix: env!("CARGO_PKG_VERSION_MAJOR"),
         repository: env!("CARGO_PKG_REPOSITORY"),
     })
