@@ -3,6 +3,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::routes::motion;
+use crate::routes::team;
 use crate::routes::tournament;
 use crate::setup::AppState;
 
@@ -32,7 +33,12 @@ pub fn route() -> Router<AppState> {
         motion::create_motion,
         motion::get_motion_by_id,
         motion::patch_motion_by_id,
-        motion::delete_motion_by_id
+        motion::delete_motion_by_id,
+        team::get_teams,
+        team::create_team,
+        team::get_team_by_id,
+        team::patch_team_by_id,
+        team::delete_team_by_id
     ),
     components(schemas(
         version::VersionDetails,
@@ -41,6 +47,8 @@ pub fn route() -> Router<AppState> {
         tournament::TournamentPatch,
         motion::Motion,
         motion::MotionPatch,
+        team::Team,
+        team::TeamPatch,
     ))
 )]
 pub struct ApiDoc;

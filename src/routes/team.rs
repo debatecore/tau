@@ -25,7 +25,7 @@ pub struct Team {
     tournament_id: Uuid,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct TeamPatch {
     full_name: Option<String>,
     shortened_name: Option<String>,
@@ -126,6 +126,11 @@ pub fn route() -> Router<AppState> {
         )
 }
 
+/// Create a new team
+#[utoipa::path(post, request_body=Team, path = "/team", responses((
+    status=200, description = "Team created successfully",
+    body=Team)
+))]
 async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> Response {
     match Team::post(json, &state.connection_pool).await {
         Ok(team) => Json(team).into_response(),
@@ -136,6 +141,27 @@ async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> R
     }
 }
 
+#[utoipa::path(get, path = "/team", 
+    responses((
+    status=200, description = "Ok",
+    body=Vec<Motion>,
+    example=json!
+    ([
+        {
+            "id": "01940d16-666b-7ea2-99a2-fd528a95ae73",
+            "full_name": "Debate Team Buster",
+            "shortened_name": "DTB",
+            "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
+        },
+        {
+            "id": "be601f06-c463-43e6-8df0-1a0e32b95c61",
+            "full_name": "Delusional Debaters",
+            "shortened_name": "DeDe",
+            "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
+        }
+    ])
+)))]
+/// Get a list of all teams
 async fn get_teams(State(state): State<AppState>) -> Response {
     match query_as!(Team, "SELECT * FROM teams")
         .fetch_all(&state.connection_pool)
@@ -149,6 +175,19 @@ async fn get_teams(State(state): State<AppState>) -> Response {
     }
 }
 
+/// Get details of an existing team
+#[utoipa::path(get, path = "/team/{id}", 
+    responses((status=200, description = "Ok", body=Team,
+    example=json!
+    ({
+        "id": "01940d16-666b-7ea2-99a2-fd528a95ae73",
+        "full_name": "Debate Team Buster",
+        "shortened_name": "DTB",
+        "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
+    })
+    )),
+    params(("id", description = "Team id"))
+)]
 async fn get_team_by_id(Path(id): Path<Uuid>, State(state): State<AppState>) -> Response {
     match Team::get_by_id(id, &state.connection_pool).await {
         Ok(team) => Json(team).into_response(),
@@ -159,6 +198,24 @@ async fn get_team_by_id(Path(id): Path<Uuid>, State(state): State<AppState>) -> 
     }
 }
 
+/// Patch an existing team
+#[utoipa::path(patch, path = "/team/{id}", 
+    request_body=TeamPatch,
+    params(("id", description = "Team id")),
+    responses(
+        (
+            status=200, description = "Team patched successfully",
+            body=Team,
+            example=json!
+            ({
+                "id": "01940d16-666b-7ea2-99a2-fd528a95ae73",
+                "full_name": "Debate Team Buster",
+                "shortened_name": "DTB",
+                "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
+            })
+        )
+    )
+)]
 async fn patch_team_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
@@ -201,6 +258,12 @@ async fn patch_team_by_id(
     }
 }
 
+/// Delete an existing team
+#[utoipa::path(delete, path = "/team/{id}", 
+    responses
+    ((status=204, description = "Team deleted successfully")),
+    params(("id", description = "Team id"))
+)]
 async fn delete_team_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
