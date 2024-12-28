@@ -6,6 +6,7 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use serde_inline_default::serde_inline_default;
 use sqlx::{query, query_as, Error, Pool, Postgres};
 use tracing::error;
 use utoipa::ToSchema;
@@ -13,6 +14,7 @@ use uuid::Uuid;
 
 use crate::setup::AppState;
 
+#[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Attendee {
@@ -22,7 +24,9 @@ pub struct Attendee {
     name: String,
     position: Option<i32>,
     team_id: Option<Uuid>,
+    #[serde_inline_default(0)]
     individual_points: i32,
+    #[serde_inline_default(0)]
     penalty_points: i32,
 }
 
