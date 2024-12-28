@@ -1,45 +1,16 @@
-use super::User;
-use crate::omni_error::OmniError;
+use super::{
+    cookie::set_session_token_cookie, error::AuthError, session::Session,
+    AUTH_SESSION_COOKIE_NAME,
+};
+use crate::{omni_error::OmniError, users::User};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::http::{header::AUTHORIZATION, HeaderMap, StatusCode};
+use axum::http::{header::AUTHORIZATION, HeaderMap};
 use base64::{
     prelude::{BASE64_STANDARD, BASE64_URL_SAFE_NO_PAD},
     Engine,
 };
-use sqlx::{Pool, Postgres};
-use tower_cookies::{cookie::time::Duration, Cookies};
-
-pub const AUTH_SESSION_COOKIE_NAME: &str = "tausession";
-const AUTH_SESSION_LENGTH: Duration = Duration::weeks(1);
-
-#[derive(thiserror::Error, Debug)]
-pub enum AuthError {
-    #[error("Invalid credentials")]
-    InvalidCredentials,
-    #[error("No authentication credentials provided.")]
-    NoCredentials,
-    #[error("Non-ASCII characters found in AUTHORIZATION header.")]
-    NonAsciiHeaderCharacters,
-    #[error("B64 Basic Auth header is missing a colon inbetween login and passwd.")]
-    NoBasicAuthColonSplit,
-    #[error("Could not parse header auth scheme/data.")]
-    BadHeaderAuthSchemeData,
-    #[error("Unsupported header auth scheme - use Basic or Bearer.")]
-    UnsupportedHeaderAuthScheme,
-}
-
-impl AuthError {
-    pub fn status_code(&self) -> StatusCode {
-        use AuthError::*;
-        match self {
-            InvalidCredentials | NoCredentials => StatusCode::UNAUTHORIZED,
-            NonAsciiHeaderCharacters
-            | NoBasicAuthColonSplit
-            | BadHeaderAuthSchemeData
-            | UnsupportedHeaderAuthScheme => StatusCode::BAD_REQUEST,
-        }
-    }
-}
+use sqlx::{types::chrono::Utc, Pool, Postgres};
+use tower_cookies::Cookies;
 
 impl User {
     pub async fn authenticate(
@@ -71,11 +42,11 @@ impl User {
                 };
                 match scheme {
                     "Basic" => User::auth_via_b64_credentials(data, pool).await,
-                    "Bearer" => todo!(),
+                    "Bearer" => User::auth_via_session(data, cookies, pool).await,
                     _ => Err(AuthError::UnsupportedHeaderAuthScheme)?,
                 }
             }
-            (Some(cookie), None) => todo!(),
+            (Some(cookie), None) => User::auth_via_session(&cookie, cookies, pool).await,
         }
     }
     async fn auth_via_b64_credentials(
@@ -116,6 +87,37 @@ impl User {
         match argon.verify_password(password.as_bytes(), &hash).is_ok() {
             true => User::get_by_handle(login, pool).await,
             false => Err(AuthError::InvalidCredentials)?,
+        }
+    }
+    pub async fn auth_via_session(
+        token: &str,
+        cookies: Cookies,
+        pool: &Pool<Postgres>,
+    ) -> Result<User, OmniError> {
+        match sqlx::query!(
+            "SELECT id, user_id, expiry FROM sessions WHERE token = $1",
+            token
+        )
+        .fetch_one(pool)
+        .await
+        {
+            Ok(session) => {
+                if session.expiry < Utc::now() {
+                    Err(AuthError::SessionExpired)?
+                }
+
+                let user = User::get_by_id(session.user_id, pool).await?;
+                Session::get_by_id(session.id, pool)
+                    .await?
+                    .prolong_and_update_last_access(pool)
+                    .await?;
+                set_session_token_cookie(token, cookies);
+                Ok(user)
+            }
+            Err(e) => match e {
+                sqlx::Error::RowNotFound => Err(AuthError::InvalidCredentials)?,
+                _ => Err(OmniError::SqlxError(e))?,
+            },
         }
     }
 }
