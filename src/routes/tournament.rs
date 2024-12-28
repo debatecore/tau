@@ -7,8 +7,6 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Map, Value};
-use sqlx::types::JsonValue;
 use sqlx::{query, query_as, Error, Pool, Postgres};
 use tracing::error;
 use utoipa::ToSchema;
@@ -82,17 +80,17 @@ impl Tournament {
             shortened_name: patch.shortened_name.unwrap_or(self.shortened_name),
         };
         match query!(
-            "UPDATE tournaments SET full_name = $2, shortened_name = $3 WHERE id = $1",
-            tournament.id,
+            "UPDATE tournaments SET full_name = $1, shortened_name = $2 WHERE id = $3",
             tournament.full_name,
-            tournament.shortened_name
+            tournament.shortened_name,
+            tournament.id,
         )
         .execute(connection_pool)
         .await
         {
             Ok(_) => Ok(tournament),
             Err(e) => {
-                error!("Error updating a tournament with id {}: {e}", self.id);
+                error!("Error patching a tournament with id {}: {e}", self.id);
                 Err(e)
             }
         }
@@ -226,7 +224,7 @@ async fn patch_tournament_by_id(
             Ok(tournament) => Json(tournament).into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },
-        /// TO-DO: handle a case in which the tournament does not exist in the first place
+        // TO-DO: handle a case in which the tournament does not exist in the first place
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
@@ -246,7 +244,7 @@ async fn delete_tournament_by_id(
             Ok(_) => StatusCode::NO_CONTENT.into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },
-        /// TO-DO: handle a case in which the tournament does not exist in the first place
+        // TO-DO: handle a case in which the tournament does not exist in the first place
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

@@ -2,6 +2,7 @@ use axum::Router;
 
 use crate::setup::AppState;
 
+mod attendee;
 mod health_check;
 mod swagger;
 mod team;
@@ -17,4 +18,5 @@ pub fn routes() -> Router<AppState> {
         .merge(version::route())
         .merge(tournament::route())
         .merge(team::route())
+        .merge(attendee::route())
 }
