@@ -1,7 +1,10 @@
 use axum::Router;
 use tokio::net::TcpListener;
+use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::error;
+use users::infradmin::guarantee_infrastructure_admin_exists;
+
 mod database;
 mod omni_error;
 mod routes;
@@ -15,11 +18,13 @@ async fn main() {
 
     let state = setup::create_app_state().await;
     database::perform_migrations(&state.connection_pool).await;
+    guarantee_infrastructure_admin_exists(&state.connection_pool).await;
 
     let app = Router::new()
-        .with_state(state)
         .merge(routes::routes())
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any));
+        .with_state(state)
+        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any))
+        .layer(CookieManagerLayer::new());
 
     let addr = setup::get_socket_addr();
     let listener = match TcpListener::bind(&addr).await {

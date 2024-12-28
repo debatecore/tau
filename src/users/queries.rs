@@ -1,5 +1,9 @@
 use super::{photourl::PhotoUrl, roles::Role, TournamentUser, User};
 use crate::omni_error::OmniError;
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher,
+};
 use serde_json::Error as JsonError;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
@@ -39,6 +43,55 @@ impl User {
                 None => None,
             },
         })
+    }
+    pub async fn get_all(pool: &Pool<Postgres>) -> Result<Vec<User>, OmniError> {
+        let users = sqlx::query!("SELECT id, handle, picture_link FROM users")
+            .fetch_all(pool)
+            .await?
+            .iter()
+            .map(|u| {
+                Ok(User {
+                    id: u.id,
+                    handle: u.handle.clone(),
+                    profile_picture: match u.picture_link.clone() {
+                        Some(url) => Some(PhotoUrl::new(&url)?),
+                        None => None,
+                    },
+                })
+            })
+            .collect::<Result<Vec<User>, OmniError>>()?;
+        Ok(users)
+    }
+    pub async fn create(
+        user: User,
+        pass: String,
+        pool: &Pool<Postgres>,
+    ) -> Result<User, OmniError> {
+        let pic = match &user.profile_picture {
+            Some(url) => Some(url.as_url().to_string()),
+            None => None,
+        };
+        let hash = {
+            let argon = Argon2::default();
+            let salt = SaltString::generate(&mut OsRng);
+            match argon.hash_password(pass.as_bytes(), &salt) {
+                Ok(hash) => hash.to_string(),
+                Err(e) => return Err(e)?,
+            }
+        };
+        match sqlx::query!(
+            "INSERT INTO users VALUES ($1, $2, $3, $4)",
+            &user.id,
+            &user.handle,
+            pic,
+            hash
+        )
+        .execute(pool)
+        .await
+        {
+            Ok(_) => Ok(user),
+            Err(e) => Err(e)?,
+        }
     }
     // ---------- DATABASE HELPERS ----------
     pub async fn get_roles(
