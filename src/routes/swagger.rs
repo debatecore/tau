@@ -2,6 +2,7 @@ use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::routes::motion;
 use crate::routes::tournament;
 use crate::setup::AppState;
 
@@ -26,13 +27,20 @@ pub fn route() -> Router<AppState> {
         tournament::get_tournament_by_id,
         tournament::patch_tournament_by_id,
         tournament::delete_tournament_by_id,
-        tournament::get_tournaments
+        tournament::get_tournaments,
+        motion::get_motions,
+        motion::create_motion,
+        motion::get_motion_by_id,
+        motion::patch_motion_by_id,
+        motion::delete_motion_by_id
     ),
     components(schemas(
         version::VersionDetails,
         version::VersionBits,
         tournament::Tournament,
-        tournament::TournamentPatch
+        tournament::TournamentPatch,
+        motion::Motion,
+        motion::MotionPatch,
     ))
 )]
 pub struct ApiDoc;

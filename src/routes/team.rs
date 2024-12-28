@@ -6,8 +6,9 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sqlx::{query, query_as, Error, Pool, Postgres};
-use tracing::error;
+use tracing::{debug, error};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -32,6 +33,22 @@ pub struct TeamPatch {
 
 impl Team {
     async fn post(team: Team, connection_pool: &Pool<Postgres>) -> Result<Team, Error> {
+        match team_with_name_exists_in_tournament(
+            &team.full_name,
+            &team.tournament_id,
+            connection_pool,
+        )
+        .await
+        {
+            Ok(exists) => {
+                if exists {
+                    // TO-DO: change the error to actually represent what's going on
+                    // (team name already exists in this tournament)
+                    return Err(sqlx::Error::PoolClosed);
+                }
+            }
+            Err(e) => return Err(e),
+        }
         match query_as!(
             Team,
             r#"INSERT INTO teams(id, full_name, shortened_name, tournament_id)
@@ -147,14 +164,39 @@ async fn patch_team_by_id(
     State(state): State<AppState>,
     Json(new_team): Json<TeamPatch>,
 ) -> Response {
-    match Team::get_by_id(id, &state.connection_pool).await {
-        Ok(team) => match team.patch(new_team, &state.connection_pool).await {
-            Ok(team) => Json(team).into_response(),
-            Err(e) => {
-                error!("Error patching a team with id {id}: {e}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+    let pool = &state.connection_pool;
+    match Team::get_by_id(id, pool).await {
+        Ok(team) => {
+            if !new_team.full_name.is_none() {
+                match team_with_name_exists_in_tournament(
+                    &new_team.full_name.as_ref().expect(""), // Is there a better way to make it compile? There is a type mismatch, but the new team name is bound to exists in this scenario
+                    &team.tournament_id,
+                    pool,
+                )
+                .await
+                {
+                    Ok(exists) => {
+                        if exists {
+                            // TO-DO: change the error to actually represent what's going on
+                            // (team name already exists in this tournament)
+                            return (
+                                StatusCode::BAD_REQUEST,
+                                "A team with this name already exists",
+                            )
+                                .into_response();
+                        }
+                    }
+                    Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+                }
             }
-        },
+            match team.patch(new_team, &state.connection_pool).await {
+                Ok(team) => Json(team).into_response(),
+                Err(e) => {
+                    error!("Error patching a team with id {id}: {e}");
+                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                }
+            }
+        }
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
@@ -172,5 +214,23 @@ async fn delete_team_by_id(
             }
         },
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+async fn team_with_name_exists_in_tournament(
+    full_name: &String,
+    tournament_id: &Uuid,
+    connection_pool: &Pool<Postgres>,
+) -> Result<bool, Error> {
+    match query!(
+        "SELECT EXISTS(SELECT 1 FROM teams WHERE full_name = $1 AND tournament_id = $2)",
+        full_name,
+        tournament_id
+    )
+    .fetch_one(connection_pool)
+    .await
+    {
+        Ok(result) => Ok(result.exists.unwrap()),
+        Err(e) => Err(e),
     }
 }

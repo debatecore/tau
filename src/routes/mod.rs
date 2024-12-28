@@ -4,6 +4,7 @@ use crate::setup::AppState;
 
 mod attendee;
 mod health_check;
+mod motion;
 mod swagger;
 mod team;
 mod teapot;
@@ -19,4 +20,5 @@ pub fn routes() -> Router<AppState> {
         .merge(tournament::route())
         .merge(team::route())
         .merge(attendee::route())
+        .merge(motion::route())
 }
