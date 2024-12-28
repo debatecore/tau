@@ -5,6 +5,8 @@ use axum::{
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
+    #[error("{message}")]
+    ExplicitError { status: StatusCode, message: String },
     #[error("AuthError: {0}")]
     AuthError(#[from] crate::users::auth::error::AuthError),
 
@@ -25,28 +27,28 @@ pub enum OmniError {
 }
 
 impl OmniError {
-    pub fn respond(&self) -> Response {
+    pub fn respond(self) -> Response {
         use OmniError::*;
         const ISE: StatusCode = StatusCode::INTERNAL_SERVER_ERROR;
         match self {
+            ExplicitError {
+                status: s,
+                message: m,
+            } => (s, m).into_response(),
             AuthError(e) => (e.status_code(), e.to_string()).into_response(),
 
-            // this always returns 500 INTERNAL_SERVER_ERROR; this is due to how the
-            // respond method should be used; any error that reaches this point
-            // should be considered a server error and not the user's fault;
-            // i.e. if the error could be spawned by the user, it should be handled
-            // another way (explicitly! or just by another system)
             PhotoUrlError(_) | SqlxError(_) | SerdeJsonError(_)
             | Base64DecodeError(_) | FromUtf8Error(_) | PassHashError(_) => {
                 (ISE, self.clerr()).into_response()
             }
         }
     }
+
     // clerr shall henceforth stand for client facing error message
     fn clerr(&self) -> String {
         use OmniError::*;
         match self {
-            AuthError(_) => "Authentication failure.",
+            ExplicitError { .. } | AuthError(_) => unreachable!(),
             PhotoUrlError(_) => "PhotoUrl parsing failure.",
             SqlxError(_) => "SQL/SQLx failure.",
             SerdeJsonError(_) => "SerdeJSON failure.",
