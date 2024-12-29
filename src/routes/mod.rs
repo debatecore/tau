@@ -3,9 +3,9 @@ use axum::Router;
 use crate::setup::AppState;
 
 mod health_check;
+mod infradmin;
 mod swagger;
 mod teapot;
-mod users;
 mod version;
 
 pub fn routes() -> Router<AppState> {
@@ -14,5 +14,5 @@ pub fn routes() -> Router<AppState> {
         .merge(swagger::route())
         .merge(teapot::route())
         .merge(version::route())
-        .merge(users::route())
+        .merge(infradmin::route())
 }

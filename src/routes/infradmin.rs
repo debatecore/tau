@@ -10,7 +10,7 @@ use tower_cookies::Cookies;
 use crate::{setup::AppState, users::User};
 
 pub fn route() -> Router<AppState> {
-    Router::new().route("/users/all", get(allusers))
+    Router::new().route("/infradmin/all-users", get(allusers))
 }
 
 async fn allusers(
