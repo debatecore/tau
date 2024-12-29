@@ -56,7 +56,7 @@ impl User {
         let (usr, pwd) =
             match String::from_utf8(BASE64_STANDARD.decode(data)?)?.split_once(":") {
                 Some((usr, pwd)) => (usr.to_string(), pwd.to_string()),
-                None => return Err(AuthError::InvalidCredentials)?,
+                None => return Err(AuthError::NoBasicAuthColonSplit)?,
             };
         User::auth_via_credentials(usr.as_str(), pwd.as_str(), pool).await
     }
