@@ -213,7 +213,7 @@ async fn patch_team_by_id(
     if team_exists_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let team = team_exists_result.ok().expect("");
+    let team = team_exists_result.ok().unwrap();
 
     let team_with_this_name_exists =
         team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool)

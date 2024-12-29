@@ -13,6 +13,8 @@ use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+const DUPLICATE_MOTION_ERROR: &str = "Motion with such content already exists";
+
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Motion {
@@ -152,20 +154,36 @@ async fn get_motions(State(state): State<AppState>) -> Response {
     post,
     request_body=Motion,
     path = "/motion",
-    responses((
+    responses(
+        (
         status=200, description = "Motion created successfully",
         body=Motion, 
-        example=json!(get_motion_example())))
+        example=json!(get_motion_example())
+        ),
+        (status=409, description = DUPLICATE_MOTION_ERROR)
+    
+    )
 )]
 async fn create_motion(
     State(state): State<AppState>,
     Json(json): Json<Motion>,
 ) -> Response {
-    // TO-DO: Ensure that the new motion name is unique within a tournament
+    let pool = &state.connection_pool;
+    let motion_content_is_duplicate_result = motion_content_is_duplicate(&json.motion, pool).await;
+    if motion_content_is_duplicate_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let motion_is_duplicate = motion_content_is_duplicate_result.unwrap();
+    if motion_is_duplicate {
+        return (
+            StatusCode::CONFLICT,
+            DUPLICATE_MOTION_ERROR
+        ).into_response()
+    }
+
     match Motion::post(json, &state.connection_pool).await {
         Ok(motion) => Json(motion).into_response(),
-        Err(e) => {
-            error!("Error creating a new motion: {e}");
+        Err(_) => {
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
@@ -205,16 +223,28 @@ async fn patch_motion_by_id(
     State(state): State<AppState>,
     Json(new_motion): Json<MotionPatch>,
 ) -> Response {
-    // TO-DO: Ensure that the new motion name is unique within a tournament
-    match Motion::get_by_id(id, &state.connection_pool).await {
-        Ok(existing_motion) => match existing_motion
-            .patch(new_motion, &state.connection_pool)
-            .await
-        {
-            Ok(patched_motion) => Json(patched_motion).into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        },
-        // TO-DO: handle a case in which the motion does not exist in the first place
+    let pool = &state.connection_pool;
+    let get_motion_by_id_result = Motion::get_by_id(id, pool).await;
+    if get_motion_by_id_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let existing_motion = get_motion_by_id_result.ok().unwrap();
+    
+    let motion_content_is_duplicate_result = motion_content_is_duplicate(&existing_motion.motion, pool).await;
+    if motion_content_is_duplicate_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let motion_is_duplicate = motion_content_is_duplicate_result.unwrap();
+
+    if motion_is_duplicate {
+        return (
+            StatusCode::CONFLICT,
+            DUPLICATE_MOTION_ERROR
+        ).into_response()
+    }
+
+    match existing_motion.patch(new_motion, &state.connection_pool).await {
+        Ok(patched_motion) => Json(patched_motion).into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
@@ -236,6 +266,25 @@ async fn delete_motion_by_id(
         },
         // TO-DO: handle a case in which the motion does not exist in the first place
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+async fn motion_content_is_duplicate(
+    motion: &String,
+    connection_pool: &Pool<Postgres>
+)-> Result<bool, Error> {
+        match query!(
+        "SELECT EXISTS(SELECT 1 FROM motions WHERE motion = $1)",
+        motion,
+    )
+    .fetch_one(connection_pool)
+    .await
+    {
+        Ok(result) => Ok(result.exists.unwrap()),
+        Err(e) => {
+            error!("Error checking motion uniqueness: {e}");
+            Err(e)
+        }
     }
 }
 

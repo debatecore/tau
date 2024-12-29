@@ -26,8 +26,8 @@ pub struct Debate {
 #[serde_inline_default]
 #[derive(Deserialize, ToSchema)]
 pub struct DebatePatch {
-    motion_id: Uuid,
-    marshall_user_id: Uuid,
+    motion_id: Option<Uuid>,
+    marshall_user_id: Option<Uuid>,
 }
 
 impl Debate {
@@ -77,8 +77,8 @@ impl Debate {
     ) -> Result<Debate, Error> {
         let debate = Debate {
             id: self.id,
-            motion_id: patch.motion_id,
-            marshall_user_id: patch.marshall_user_id,
+            motion_id: patch.motion_id.unwrap_or(self.motion_id),
+            marshall_user_id: patch.marshall_user_id.unwrap_or(self.marshall_user_id),
         };
         match query!(
             "UPDATE debates SET motion_id = $1, marshall_user_id = $2 WHERE id = $3",

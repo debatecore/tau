@@ -158,15 +158,15 @@ async fn get_tournaments(State(state): State<AppState>) -> Response {
 )]
 async fn create_tournament(
     State(state): State<AppState>,
-    Json(tournament): Json<Tournament>,
+    Json(json): Json<Tournament>,
 ) -> Response {
     let pool = &state.connection_pool;
     let name_is_duplicate_result
-     = tournament_name_is_duplicate(&tournament.full_name, pool).await;
+     = tournament_name_is_duplicate(&json.full_name, pool).await;
     if name_is_duplicate_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let name_is_duplicate = name_is_duplicate_result.ok().expect("");
+    let name_is_duplicate = name_is_duplicate_result.ok().unwrap();
     if name_is_duplicate {
         return (
             StatusCode::CONFLICT,
@@ -174,7 +174,7 @@ async fn create_tournament(
         ).into_response()
     }
 
-    match Tournament::post(tournament, pool).await {
+    match Tournament::post(json, pool).await {
         Ok(tournament) => Json(tournament).into_response(),
         Err(e) => {
             error!("Error creating a new tournament: {e}");
@@ -223,14 +223,14 @@ async fn patch_tournament_by_id(
     if tournament_exists_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let tournament = tournament_exists_result.expect("");
+    let tournament = tournament_exists_result.unwrap();
 
     let name_is_duplicate_result
      = tournament_name_is_duplicate(&tournament.full_name, pool).await;
     if name_is_duplicate_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let name_is_duplicate = name_is_duplicate_result.ok().expect("");
+    let name_is_duplicate = name_is_duplicate_result.ok().unwrap();
     if name_is_duplicate {
         return (
             StatusCode::CONFLICT,

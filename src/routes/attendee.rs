@@ -168,7 +168,7 @@ async fn create_attendee(
     Json(attendee): Json<Attendee>,
 ) -> Response {
     if !attendee.position.is_none() {
-        if !attendee_position_is_valid(attendee.position.expect("")) {
+        if !attendee_position_is_valid(attendee.position.unwrap()) {
             return (StatusCode::BAD_REQUEST, POSITION_OUT_OF_RANGE_MESSAGE)
                 .into_response();
         }
@@ -235,7 +235,7 @@ async fn patch_attendee_by_id(
     Json(new_attendee): Json<AttendeePatch>,
 ) -> Response {
     if !new_attendee.position.is_none() {
-        if !attendee_position_is_valid(new_attendee.position.expect("")) {
+        if !attendee_position_is_valid(new_attendee.position.unwrap()) {
             return (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 POSITION_OUT_OF_RANGE_MESSAGE,
@@ -248,14 +248,14 @@ async fn patch_attendee_by_id(
     if attendee_exists_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let attendee = attendee_exists_result.ok().expect("");
+    let attendee = attendee_exists_result.ok().unwrap();
 
     let position_is_unique_result =
         attendee_with_this_position_exists(&attendee, pool).await;
     if position_is_unique_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let position_is_unique = position_is_unique_result.ok().expect("");
+    let position_is_unique = position_is_unique_result.ok().unwrap();
     if !position_is_unique {
         return (StatusCode::CONFLICT, POSITION_CONFLICT_MESSAGE).into_response();
     }
@@ -282,7 +282,7 @@ async fn delete_attendee_by_id(
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    let attendee = attendee_exists_result.ok().expect("");
+    let attendee = attendee_exists_result.ok().unwrap();
     match attendee.delete(pool).await {
         Ok(_) => StatusCode::NO_CONTENT.into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
