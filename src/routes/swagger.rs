@@ -2,6 +2,8 @@ use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::routes::attendee;
+use crate::routes::debate;
 use crate::routes::motion;
 use crate::routes::team;
 use crate::routes::tournament;
@@ -38,17 +40,32 @@ pub fn route() -> Router<AppState> {
         team::create_team,
         team::get_team_by_id,
         team::patch_team_by_id,
-        team::delete_team_by_id
+        team::delete_team_by_id,
+        debate::get_debates,
+        debate::create_debate,
+        debate::get_debate_by_id,
+        debate::patch_debate_by_id,
+        debate::delete_debate_by_id,
+        attendee::get_attendees,
+        attendee::create_attendee,
+        attendee::get_attendee_by_id,
+        attendee::patch_attendee_by_id,
+        attendee::delete_attendee_by_id
     ),
     components(schemas(
         version::VersionDetails,
         version::VersionBits,
+        version::GitInfo,
         tournament::Tournament,
         tournament::TournamentPatch,
         motion::Motion,
         motion::MotionPatch,
         team::Team,
         team::TeamPatch,
+        debate::Debate,
+        debate::DebatePatch,
+        attendee::Attendee,
     ))
 )]
+
 pub struct ApiDoc;

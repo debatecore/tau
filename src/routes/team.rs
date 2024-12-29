@@ -6,13 +6,16 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqlx::{query, query_as, Error, Pool, Postgres};
-use tracing::{debug, error};
+use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::setup::AppState;
+
+const DUPLICATE_NAME_ERROR: &str = r#"
+    Team with this name already exists within the
+    scope of the tournament, to which the team is assigned."#;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -20,6 +23,8 @@ pub struct Team {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     id: Uuid,
+    /// Full name of the team (e.g. "Debate Team Buster").
+    /// Must be unique within a scope of a tournament it's assigned to.
     full_name: String,
     shortened_name: String,
     tournament_id: Uuid,
@@ -127,10 +132,13 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new team
-#[utoipa::path(post, request_body=Team, path = "/team", responses((
-    status=200, description = "Team created successfully",
-    body=Team)
-))]
+#[utoipa::path(post, request_body=Team, path = "/team",
+    responses((
+        status=200, description = "Team created successfully",
+        body=Team,
+        example=json!(get_team_example())
+    ))
+)]
 async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> Response {
     match Team::post(json, &state.connection_pool).await {
         Ok(team) => Json(team).into_response(),
@@ -145,21 +153,7 @@ async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> R
     responses((
     status=200, description = "Ok",
     body=Vec<Motion>,
-    example=json!
-    ([
-        {
-            "id": "01940d16-666b-7ea2-99a2-fd528a95ae73",
-            "full_name": "Debate Team Buster",
-            "shortened_name": "DTB",
-            "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
-        },
-        {
-            "id": "be601f06-c463-43e6-8df0-1a0e32b95c61",
-            "full_name": "Delusional Debaters",
-            "shortened_name": "DeDe",
-            "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
-        }
-    ])
+    example=json!(get_teams_list_example())
 )))]
 /// Get a list of all teams
 async fn get_teams(State(state): State<AppState>) -> Response {
@@ -178,13 +172,7 @@ async fn get_teams(State(state): State<AppState>) -> Response {
 /// Get details of an existing team
 #[utoipa::path(get, path = "/team/{id}", 
     responses((status=200, description = "Ok", body=Team,
-    example=json!
-    ({
-        "id": "01940d16-666b-7ea2-99a2-fd528a95ae73",
-        "full_name": "Debate Team Buster",
-        "shortened_name": "DTB",
-        "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
-    })
+    example=json!(get_team_example())
     )),
     params(("id", description = "Team id"))
 )]
@@ -200,19 +188,17 @@ async fn get_team_by_id(Path(id): Path<Uuid>, State(state): State<AppState>) -> 
 
 /// Patch an existing team
 #[utoipa::path(patch, path = "/team/{id}", 
-    request_body=TeamPatch,
+    request_body=Team,
     params(("id", description = "Team id")),
     responses(
         (
             status=200, description = "Team patched successfully",
             body=Team,
-            example=json!
-            ({
-                "id": "01940d16-666b-7ea2-99a2-fd528a95ae73",
-                "full_name": "Debate Team Buster",
-                "shortened_name": "DTB",
-                "tournament_id": "01940ddf-07c6-77d2-a6b9-d067fe9a62fb"
-            })
+            example=json!(get_team_example())
+        ),
+        (
+            status=409,
+            description = DUPLICATE_NAME_ERROR,
         )
     )
 )]
@@ -222,43 +208,34 @@ async fn patch_team_by_id(
     Json(new_team): Json<TeamPatch>,
 ) -> Response {
     let pool = &state.connection_pool;
-    match Team::get_by_id(id, pool).await {
-        Ok(team) => {
-            if !new_team.full_name.is_none() {
-                match team_with_name_exists_in_tournament(
-                    &new_team.full_name.as_ref().expect(""), // Is there a better way to make it compile? There is a type mismatch, but the new team name is bound to exists in this scenario
-                    &team.tournament_id,
-                    pool,
-                )
-                .await
-                {
-                    Ok(exists) => {
-                        if exists {
-                            // TO-DO: change the error to actually represent what's going on
-                            // (team name already exists in this tournament)
-                            return (
-                                StatusCode::BAD_REQUEST,
-                                "A team with this name already exists",
-                            )
-                                .into_response();
-                        }
-                    }
-                    Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-                }
-            }
-            match team.patch(new_team, &state.connection_pool).await {
-                Ok(team) => Json(team).into_response(),
-                Err(e) => {
-                    error!("Error patching a team with id {id}: {e}");
-                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
-                }
-            }
-        }
+
+    let team_exists_result = Team::get_by_id(id, pool).await;
+    if team_exists_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let team = team_exists_result.ok().expect("");
+
+    let team_with_this_name_exists =
+        team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool)
+            .await;
+    if team_with_this_name_exists.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    } else if team_with_this_name_exists
+        .is_ok_and(|name_is_duplicate| name_is_duplicate == true)
+    {
+        return (StatusCode::CONFLICT, DUPLICATE_NAME_ERROR).into_response();
+    }
+
+    match team.patch(new_team, pool).await {
+        Ok(team) => Json(team).into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
 /// Delete an existing team
+///
+/// Question: do we delete related attendees too?
+/// We don't have on delete cascade in place, I'm afraid.
 #[utoipa::path(delete, path = "/team/{id}", 
     responses
     ((status=204, description = "Team deleted successfully")),
@@ -276,6 +253,7 @@ async fn delete_team_by_id(
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         },
+        // TO-DO: Handle a scenario in which the team does not exist
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
@@ -296,4 +274,34 @@ async fn team_with_name_exists_in_tournament(
         Ok(result) => Ok(result.exists.unwrap()),
         Err(e) => Err(e),
     }
+}
+
+fn get_team_example() -> String {
+    r#"{
+        "id": "01941267-2685-7a62-8382-c90fae07a87b",
+        "full_name": "Debate Team Buster",
+        "shortened_name": "DTB",
+        "tournament_id": "01941267-0109-7405-b30e-7883d309c603"
+    }"#
+    .to_owned()
+}
+
+fn get_teams_list_example() -> String {
+    r#"
+    [
+        {
+            "id": "01941267-2685-7a62-8382-c90fae07a87b",
+            "full_name": "Debate Team Buster",
+            "shortened_name": "DTB",
+            "tournament_id": "01941267-0109-7405-b30e-7883d309c603"
+        },
+        {
+            "id": "01941266-dccb-75b0-82fb-2e885f9e3500",
+            "full_name": "Delusional Debaters",
+            "shortened_name": "DeDe",
+            "tournament_id": "01941267-0109-7405-b30e-7883d309c603"
+        }
+    ]
+    "#
+    .to_owned()
 }

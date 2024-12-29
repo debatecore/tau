@@ -19,7 +19,10 @@ pub struct Motion {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     id: Uuid,
+    /// The main motion content, e.g. "This House would abolish the UN Security Council."
     motion: String,
+    /// Infoslide i.e. additional information. It may be required
+    /// to understand a complex motion.
     adinfo: Option<String>,
 }
 
@@ -128,19 +131,9 @@ pub fn route() -> Router<AppState> {
     responses((
     status=200, description = "Ok",
     body=Vec<Motion>,
-    example=json!
-    ([
-        {
-        "id": "c8594993-5be7-4273-a3ee-10d396e5dab0",
-        "motion": "This House Would abolish the UN Security Council.",
-        },
-        {
-        "id": "83d5b28f-7024-4388-8bd2-c9f967a36f51",
-        "motion": "As a society of a newly established state, we would opt for a representative democracy system.",
-        "adinfo": r#"In the middle of the Baltic Sea, an island with a population has appeared. The new state of \"Balticstan\" is seeking the best political system to govern itself. The country has guaranteed independence and is sovereign over regional powers at the time of the debate. Balticstan represents the maximum average of all countries bordering the Baltic Sea (nine countries in total) regarding population, economy, problems and opportunities."#
-        }
-    ])
+    example=json!(get_motions_list_example())
 )))]
+/// Get a list of all motions
 async fn get_motions(State(state): State<AppState>) -> Response {
     match query_as!(Motion, "SELECT * FROM motions")
         .fetch_all(&state.connection_pool)
@@ -155,10 +148,15 @@ async fn get_motions(State(state): State<AppState>) -> Response {
 }
 
 /// Create a new motion
-#[utoipa::path(post, request_body=Motion, path = "/motion", responses((
-    status=200, description = "Motion created successfully",
-    body=Motion)
-))]
+#[utoipa::path(
+    post,
+    request_body=Motion,
+    path = "/motion",
+    responses((
+        status=200, description = "Motion created successfully",
+        body=Motion, 
+        example=json!(get_motion_example())))
+)]
 async fn create_motion(
     State(state): State<AppState>,
     Json(json): Json<Motion>,
@@ -176,12 +174,7 @@ async fn create_motion(
 /// Get details of an existing motion
 #[utoipa::path(get, path = "/motion/{id}", 
     responses((status=200, description = "Ok", body=Motion,
-    example=json!
-    ({
-        "id": "83d5b28f-7024-4388-8bd2-c9f967a36f51",
-        "motion": "As a society of a newly established state, we would opt for a representative democracy system.",
-        "adinfo": r#"In the middle of the Baltic Sea, an island with a population has appeared. The new state of \"Balticstan\" is seeking the best political system to govern itself. The country has guaranteed independence and is sovereign over regional powers at the time of the debate. Balticstan represents the maximum average of all countries bordering the Baltic Sea (nine countries in total) regarding population, economy, problems and opportunities."#
-    })
+    example=json!(get_motion_example())
     )),
     params(("id", description = "Motion id"))
 )]
@@ -203,12 +196,7 @@ async fn get_motion_by_id(
         (
             status=200, description = "Motion patched successfully",
             body=Motion,
-            example=json!
-            ({
-                "id": "83d5b28f-7024-4388-8bd2-c9f967a36f51",
-                "motion": "As a society of a newly established state, we would opt for a representative democracy system.",
-                "adinfo": r#"In the middle of the Baltic Sea, an island with a population has appeared. The new state of \"Balticstan\" is seeking the best political system to govern itself. The country has guaranteed independence and is sovereign over regional powers at the time of the debate. Balticstan represents the maximum average of all countries bordering the Baltic Sea (nine countries in total) regarding population, economy, problems and opportunities."#
-            })
+            example=json!(get_motion_example())
         )
     )
 )]
@@ -249,4 +237,30 @@ async fn delete_motion_by_id(
         // TO-DO: handle a case in which the motion does not exist in the first place
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
+}
+
+fn get_motion_example() -> String {
+    r#"
+    {
+    "id": "01941266-8dda-7e88-82ab-38180d9d8e27",
+    "motion": "This House Would abolish the UN Security Council."
+    }
+    "#
+    .to_owned()
+}
+
+fn get_motions_list_example() -> String {
+    r#"
+    [
+        {
+        "id": "01941266-8dda-7e88-82ab-38180d9d8e27",
+        "motion": "This House Would abolish the UN Security Council."
+        },
+        {
+        "id": "01941266-725b-7d8d-be4e-4f71bb0d0e1c",
+        "motion": "As a society of a newly established state, we would opt for a representative democracy system.",
+        "adinfo": "In the middle of the Baltic Sea, an island with a population has appeared. The new state of 'Balticstan' is seeking the best political system to govern itself. The country has guaranteed independence and is sovereign over regional powers at the time of the debate. Balticstan represents the maximum average of all countries bordering the Baltic Sea (nine countries in total) regarding population, economy, problems and opportunities."
+        }
+    ]
+    "#.to_owned()
 }

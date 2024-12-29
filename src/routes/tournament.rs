@@ -12,12 +12,15 @@ use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+const NAME_CONFLICT_ERROR: &str = "Tournament with this name already exists";
+
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Tournament {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     id: Uuid,
+    // Full name of the tournament. Must be unique.
     full_name: String,
     shortened_name: String,
 }
@@ -121,25 +124,12 @@ pub fn route() -> Router<AppState> {
         )
 }
 
+/// Get a list of all tournaments
 #[utoipa::path(get, path = "/tournament", 
     responses((
     status=200, description = "Ok",
     body=Vec<Tournament>,
-    example=json!
-    (
-        [
-        {
-        "id": "c8594993-5be7-4273-a3ee-10d396e5dab0",
-        "full_name": "Kórnik Debate League",
-        "shortened_name": "KDL"
-        },
-        {
-        "id": "83d5b28f-7024-4388-8bd2-c9f967a36f51",
-        "full_name": "Poznań Debate Night",
-        "shortened_name": "PDN"
-        }
-        ]
-    )
+    example=json!(get_tournaments_list_example())
 )))]
 async fn get_tournaments(State(state): State<AppState>) -> Response {
     match query_as!(Tournament, "SELECT * FROM tournaments")
@@ -155,15 +145,36 @@ async fn get_tournaments(State(state): State<AppState>) -> Response {
 }
 
 /// Create a new tournament
-#[utoipa::path(post, request_body=Tournament, path = "/tournament", responses((
-    status=200, description = "Tournament created successfully",
-    body=Tournament)
-))]
+#[utoipa::path(
+    post,
+    request_body=Tournament,
+    path = "/tournament",
+    responses((
+        status=200, 
+        description = "Tournament created successfully",
+        body=Tournament,
+        example=json!(get_tournament_example_with_id())
+    ))
+)]
 async fn create_tournament(
     State(state): State<AppState>,
-    Json(json): Json<Tournament>,
+    Json(tournament): Json<Tournament>,
 ) -> Response {
-    match Tournament::post(json, &state.connection_pool).await {
+    let pool = &state.connection_pool;
+    let name_is_duplicate_result
+     = tournament_name_is_duplicate(&tournament.full_name, pool).await;
+    if name_is_duplicate_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let name_is_duplicate = name_is_duplicate_result.ok().expect("");
+    if name_is_duplicate {
+        return (
+            StatusCode::CONFLICT,
+            NAME_CONFLICT_ERROR
+        ).into_response()
+    }
+
+    match Tournament::post(tournament, pool).await {
         Ok(tournament) => Json(tournament).into_response(),
         Err(e) => {
             error!("Error creating a new tournament: {e}");
@@ -176,11 +187,7 @@ async fn create_tournament(
 #[utoipa::path(get, path = "/tournament/{id}", 
     responses((status=200, description = "Ok", body=Tournament,
     example=json!
-    ({
-        "id": "c8594993-5be7-4273-a3ee-10d396e5dab0",
-        "full_name": "Kórnik Debate League",
-        "shortened_name": "KDL"
-    })
+    (get_tournament_example_with_id())
     )),
     params(("id", description = "Tournament id"))
 )]
@@ -202,37 +209,45 @@ async fn get_tournament_by_id(
         (
             status=200, description = "Tournament patched successfully",
             body=Tournament,
-            example=json!
-            ({
-                "id": "c8594993-5be7-4273-a3ee-10d396e5dab0",
-                "full_name": "Kórnik Debate League",
-                "shortened_name": "KDL"
-            })
+            example=json!(get_tournament_example_with_id())
         )
     )
 )]
 async fn patch_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-    Json(tournament): Json<TournamentPatch>,
+    Json(new_tournament): Json<TournamentPatch>,
 ) -> Response {
-    match Tournament::get_by_id(id, &state.connection_pool).await {
-        Ok(existing_tournament) => match existing_tournament
-            .patch(tournament, &state.connection_pool)
-            .await
-        {
-            Ok(tournament) => Json(tournament).into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        },
-        // TO-DO: handle a case in which the tournament does not exist in the first place
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    let pool = &state.connection_pool;
+    let tournament_exists_result = Tournament::get_by_id(id, pool).await;
+    if tournament_exists_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let tournament = tournament_exists_result.expect("");
+
+    let name_is_duplicate_result
+     = tournament_name_is_duplicate(&tournament.full_name, pool).await;
+    if name_is_duplicate_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let name_is_duplicate = name_is_duplicate_result.ok().expect("");
+    if name_is_duplicate {
+        return (
+            StatusCode::CONFLICT,
+            NAME_CONFLICT_ERROR
+        ).into_response()
+    }
+
+    match tournament.patch(new_tournament, pool).await {
+    Ok(tournament) => Json(tournament).into_response(),
+    Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
+
 /// Delete an existing tournament
 #[utoipa::path(delete, path = "/tournament/{id}", 
-    responses
-    ((status=204, description = "Tournament deleted successfully")),
+    responses((status=204, description = "Tournament deleted successfully")),
     params(("id", description = "Tournament id"))
 )]
 async fn delete_tournament_by_id(
@@ -247,4 +262,51 @@ async fn delete_tournament_by_id(
         // TO-DO: handle a case in which the tournament does not exist in the first place
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
+}
+
+async fn tournament_name_is_duplicate(
+    name: &String,
+    connection_pool: &Pool<Postgres>
+)-> Result<bool, Error> {
+        match query!(
+        "SELECT EXISTS(SELECT 1 FROM tournaments WHERE full_name = $1)",
+        name,
+    )
+    .fetch_one(connection_pool)
+    .await
+    {
+        Ok(result) => Ok(result.exists.unwrap()),
+        Err(e) => {
+            error!("Error checking tournament name uniqueness: {e}");
+            Err(e)
+        }
+    }
+}
+
+fn get_tournament_example_with_id() -> String {
+    r#"
+    {
+        "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
+        "full_name": "Kórnik Debate League",
+        "shortened_name": "KDL"
+    }
+    "#
+    .to_owned()
+}
+
+fn get_tournaments_list_example() -> String {
+    r#"
+        [
+        {
+        "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
+        "full_name": "Kórnik Debate League",
+        "shortened_name": "KDL"
+        },
+        {
+        "id": "01941265-507e-7987-b1ed-5c0f63ff6c6d",
+        "full_name": "Poznań Debate Night",
+        "shortened_name": "PDN"
+        }
+        ]
+    "#.to_owned()
 }

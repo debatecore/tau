@@ -3,6 +3,7 @@ use axum::Router;
 use crate::setup::AppState;
 
 mod attendee;
+mod debate;
 mod health_check;
 mod motion;
 mod swagger;
@@ -21,4 +22,5 @@ pub fn routes() -> Router<AppState> {
         .merge(team::route())
         .merge(attendee::route())
         .merge(motion::route())
+        .merge(debate::route())
 }
