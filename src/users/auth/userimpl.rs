@@ -5,10 +5,7 @@ use super::{
 use crate::{omni_error::OmniError, users::User};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::http::{header::AUTHORIZATION, HeaderMap};
-use base64::{
-    prelude::{BASE64_STANDARD, BASE64_URL_SAFE_NO_PAD},
-    Engine,
-};
+use base64::{prelude::BASE64_STANDARD, Engine};
 use sqlx::{types::chrono::Utc, Pool, Postgres};
 use tower_cookies::Cookies;
 
@@ -107,7 +104,7 @@ impl User {
                 }
 
                 let user = User::get_by_id(session.user_id, pool).await?;
-                Session::get_by_id(session.id, pool)
+                Session::get_by_id(&session.id, pool)
                     .await?
                     .prolong_and_update_last_access(pool)
                     .await?;

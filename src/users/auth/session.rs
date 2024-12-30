@@ -1,5 +1,5 @@
-use super::AUTH_SESSION_LENGTH;
-use crate::omni_error::OmniError;
+use super::{error::AuthError, AUTH_SESSION_LENGTH};
+use crate::{omni_error::OmniError, users::auth::crypto::generate_token};
 use sqlx::{
     types::chrono::{DateTime, Utc},
     Pool, Postgres,
@@ -16,7 +16,7 @@ pub struct Session {
 
 impl Session {
     pub async fn get_by_id(
-        id: Uuid,
+        id: &Uuid,
         pool: &Pool<Postgres>,
     ) -> Result<Session, OmniError> {
         match sqlx::query_as!(
@@ -24,10 +24,61 @@ impl Session {
             "SELECT id, user_id, issued, expiry, last_access FROM sessions WHERE id = $1",
             id
         )
+        .fetch_optional(pool)
+        .await
+        {
+            Ok(session) => match session {
+                Some(s) => Ok(s),
+                None => Err(AuthError::SessionExpired)?,
+            },
+            Err(e) => Err(e)?,
+        }
+    }
+    pub async fn get_by_token(
+        token: &str,
+        pool: &Pool<Postgres>,
+    ) -> Result<Session, OmniError> {
+        match sqlx::query_as!(
+            Session,
+            "SELECT id, user_id, issued, expiry, last_access FROM sessions WHERE token = $1",
+            token
+        ).fetch_optional(pool).await {
+            Ok(session) => match session {
+                Some(s) => Ok(s),
+                None => Err(AuthError::SessionExpired)?,
+            },
+            Err(e) => Err(e)?
+        }
+    }
+    pub async fn create(
+        user_id: &Uuid,
+        pool: &Pool<Postgres>,
+    ) -> Result<(Session, String), OmniError> {
+        let id = Uuid::now_v7();
+        let token = generate_token();
+        match sqlx::query_as!(
+            Session,
+            r#"
+            INSERT INTO sessions(id, token, user_id) VALUES ($1, $2, $3)
+            RETURNING id, user_id, issued, expiry, last_access
+        "#,
+            &id,
+            &token,
+            user_id
+        )
         .fetch_one(pool)
         .await
         {
-            Ok(session) => Ok(session),
+            Ok(session) => Ok((session, token)),
+            Err(e) => Err(e)?,
+        }
+    }
+    pub async fn destroy(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
+        match sqlx::query!("DELETE FROM sessions WHERE id = $1", self.id)
+            .execute(pool)
+            .await
+        {
+            Ok(_) => Ok(()),
             Err(e) => Err(e)?,
         }
     }

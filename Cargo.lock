@@ -2183,6 +2183,7 @@ dependencies = [
  "base64",
  "chrono",
  "dotenvy",
+ "rand",
  "serde",
  "serde_json",
  "sqlx",

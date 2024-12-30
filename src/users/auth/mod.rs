@@ -2,6 +2,7 @@ use chrono::Duration;
 use tower_cookies::cookie::time::Duration as CookieDuration;
 
 pub mod cookie;
+pub mod crypto;
 pub mod error;
 pub mod session;
 pub mod userimpl;
