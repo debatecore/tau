@@ -15,6 +15,7 @@ mod users;
 async fn main() {
     setup::initialise_logging();
     setup::read_environmental_variables();
+    setup::check_secret_env_var();
 
     let state = setup::create_app_state().await;
     database::perform_migrations(&state.connection_pool).await;

@@ -3,18 +3,24 @@ use chrono::Utc;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 pub fn generate_token() -> String {
-    let secret = std::env::var("SECRET").unwrap();
+    let secret = match std::env::var("SECRET") {
+        Ok(s) => Some(s),
+        Err(_) => None,
+    };
     let seed = {
         let mut seed = [0u8; 32];
 
         let mut entropy = [0u8; 32];
         StdRng::from_entropy().fill(&mut entropy);
         let timestamp = Utc::now().timestamp().to_ne_bytes();
-        let secret = secret.as_bytes();
 
-        for (i, &byte) in secret.iter().enumerate() {
-            seed[i % seed.len()] ^= byte;
+        if let Some(s) = secret {
+            let secret = s.as_bytes();
+            for (i, &byte) in secret.iter().enumerate() {
+                seed[i % seed.len()] ^= byte;
+            }
         }
+
         for (i, &byte) in entropy.iter().enumerate() {
             seed[i % seed.len()] ^= byte;
         }

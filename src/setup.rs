@@ -1,14 +1,18 @@
 use sqlx::{Pool, Postgres};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
-use tracing::{error, info, Level};
+use tracing::{error, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
 use crate::database;
 
+const CRYPTO_SECRET_CORRECT: &str = "Cryptographic SECRET is set.";
+const CRYPTO_SECRET_NOT_SET: &str = "Cryptographic SECRET is not set. This may lead to increased predictability in token generation.";
+const CRYPTO_SECRET_ERROR: &str = "Could not read SECRET. Is it valid UTF-8?";
+
 pub fn initialise_logging() {
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
+        .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default tracing subscriber failed!");
@@ -61,11 +65,26 @@ pub fn read_environmental_variables() {
         Ok(_) => info!("Loaded .env"),
         Err(e) => {
             if e.not_found() {
-                info!("no .env file found; skipping...");
+                warn!("No .env file found; skipping...");
             } else {
-                error!("error loading .env file!: {e}");
+                error!("Error loading .env file!: {e}");
                 panic!();
             }
         }
+    }
+}
+
+pub fn check_secret_env_var() {
+    match std::env::var("SECRET") {
+        Ok(_) => info!("{}", CRYPTO_SECRET_CORRECT),
+        Err(e) => match e {
+            std::env::VarError::NotPresent => {
+                warn!("{}", CRYPTO_SECRET_NOT_SET);
+            }
+            _ => {
+                error!("{}", CRYPTO_SECRET_ERROR);
+                panic!();
+            }
+        },
     }
 }
