@@ -3,8 +3,12 @@ use crate::{
     setup::AppState,
     users::{
         auth::{
-            cookie::set_session_token_cookie, error::AuthError::NonAsciiHeaderCharacters,
-            session::Session, AUTH_SESSION_COOKIE_NAME,
+            cookie::{clear_session_token_cookie, set_session_token_cookie},
+            error::AuthError::{
+                BadHeaderAuthSchemeData, ClearSessionBearerOnly, NonAsciiHeaderCharacters,
+            },
+            session::Session,
+            AUTH_SESSION_COOKIE_NAME,
         },
         User,
     },
@@ -89,17 +93,35 @@ async fn auth_clear(
     };
 
     match (header, cookie) {
-        (Some(h), Some(c)) => (StatusCode::BAD_REQUEST, TOO_MANY_TOKENS).into_response(),
-        (None, Some(c)) => auth_clear_to_response(&c, &state.connection_pool).await,
-        (Some(h), None) => auth_clear_to_response(&h, &state.connection_pool).await,
+        (Some(_), Some(_)) => (StatusCode::BAD_REQUEST, TOO_MANY_TOKENS).into_response(),
+        (None, Some(c)) => {
+            auth_clear_to_response(&c, cookies, &state.connection_pool).await
+        }
+        (Some(h), None) => {
+            let (scheme, data) = match h.split_once(' ') {
+                Some((a, b)) => (a, b),
+                None => return OmniError::from(BadHeaderAuthSchemeData).respond(),
+            };
+            match scheme {
+                "Bearer" => {
+                    auth_clear_to_response(&data, cookies, &state.connection_pool).await
+                }
+                _ => OmniError::from(ClearSessionBearerOnly).respond(),
+            }
+        }
         (None, None) => (StatusCode::BAD_REQUEST, NO_TOKENS).into_response(),
     }
 }
 
-async fn auth_clear_to_response(token: &str, pool: &Pool<Postgres>) -> Response {
+async fn auth_clear_to_response(
+    token: &str,
+    cookies: Cookies,
+    pool: &Pool<Postgres>,
+) -> Response {
+    clear_session_token_cookie(cookies);
     match Session::get_by_token(token, pool).await {
         Ok(session) => match session.destroy(pool).await {
-            Ok(_) => (StatusCode::OK, "Session destroyed.").into_response(),
+            Ok(_) => (StatusCode::OK, SESSION_DESTROYED).into_response(),
             Err(e) => e.respond(),
         },
         Err(e) => e.respond(),

@@ -17,6 +17,8 @@ pub enum AuthError {
     BadHeaderAuthSchemeData,
     #[error("Unsupported header auth scheme - use Basic or Bearer.")]
     UnsupportedHeaderAuthScheme,
+    #[error("Can only clear session given in Bearer scheme.")]
+    ClearSessionBearerOnly,
 }
 
 impl AuthError {
@@ -29,7 +31,8 @@ impl AuthError {
             NonAsciiHeaderCharacters
             | NoBasicAuthColonSplit
             | BadHeaderAuthSchemeData
-            | UnsupportedHeaderAuthScheme => StatusCode::BAD_REQUEST,
+            | UnsupportedHeaderAuthScheme
+            | ClearSessionBearerOnly => StatusCode::BAD_REQUEST,
         }
     }
 }

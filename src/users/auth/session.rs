@@ -1,11 +1,13 @@
 use super::{error::AuthError, AUTH_SESSION_LENGTH};
 use crate::{omni_error::OmniError, users::auth::crypto::generate_token};
+use serde::Serialize;
 use sqlx::{
     types::chrono::{DateTime, Utc},
     Pool, Postgres,
 };
 use uuid::Uuid;
 
+#[derive(Serialize)]
 pub struct Session {
     id: Uuid,
     user_id: Uuid,
@@ -48,6 +50,18 @@ impl Session {
                 None => Err(AuthError::SessionExpired)?,
             },
             Err(e) => Err(e)?
+        }
+    }
+    pub async fn get_all(pool: &Pool<Postgres>) -> Result<Vec<Session>, OmniError> {
+        match sqlx::query_as!(
+            Session,
+            "SELECT id, user_id, issued, expiry, last_access FROM sessions"
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(sessions) => Ok(sessions),
+            Err(e) => Err(e)?,
         }
     }
     pub async fn create(
