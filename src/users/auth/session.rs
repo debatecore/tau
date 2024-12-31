@@ -120,40 +120,4 @@ impl Session {
             Err(e) => Err(e)?,
         }
     }
-    /// Writes current timestamp to session's last_access field in db
-    pub async fn update_last_access(
-        self,
-        pool: &Pool<Postgres>,
-    ) -> Result<Session, OmniError> {
-        let now = Some(Utc::now());
-        match sqlx::query!(
-            "UPDATE sessions SET last_access = $2 WHERE id = $1",
-            self.id,
-            now
-        )
-        .execute(pool)
-        .await
-        {
-            Ok(_) => Ok(Session {
-                last_access: now,
-                ..self
-            }),
-            Err(e) => Err(e)?,
-        }
-    }
-    /// Prolongs expiry datetime of the session by a week
-    pub async fn prolong(self, pool: &Pool<Postgres>) -> Result<Session, OmniError> {
-        let expiry = Utc::now() + AUTH_SESSION_LENGTH;
-        match sqlx::query!(
-            "UPDATE sessions SET expiry = $2 WHERE id = $1",
-            self.id,
-            expiry
-        )
-        .execute(pool)
-        .await
-        {
-            Ok(_) => Ok(Session { expiry, ..self }),
-            Err(e) => Err(e)?,
-        }
-    }
 }
