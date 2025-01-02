@@ -4,13 +4,15 @@ services:
       context: .
       target: final
     ports:
-      - 2023:2023
+      - ${PORT:-2023}:${PORT:-2023}
     networks:
       - dbnetwork
     profiles:
       - prod
     environment:
       - DATABASE_URL=postgres://tau:${DOCKER_DB_PASSWORD}@db-prod:5432/tau
+      - PORT=${PORT}
+      - SECRET=${SECRET}
     depends_on:
       db-prod:
         condition: service_healthy

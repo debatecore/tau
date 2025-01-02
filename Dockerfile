@@ -6,7 +6,7 @@ FROM rust:${RUST_VERSION}-alpine AS build
 ARG APP_NAME
 WORKDIR /app
 
-RUN apk add --no-cache clang lld musl-dev git
+RUN apk add --no-cache clang lld musl-dev git curl
 
 # Build the application.
 # Leverage a cache mount to /usr/local/cargo/registry/
@@ -21,6 +21,8 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
     --mount=type=bind,source=build.rs,target=build.rs \
     --mount=type=bind,source=.git,target=.git \
+    --mount=type=bind,source=.sqlx,target=.sqlx \
+    --mount=type=bind,source=migrations,target=migrations \
     --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \

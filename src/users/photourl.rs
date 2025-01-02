@@ -1,8 +1,8 @@
+use serde::Serialize;
 use std::error::Error;
-
 use url::Url;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct PhotoUrl {
     url: Url,
 }

@@ -3,7 +3,9 @@ use serde::Serialize;
 use std::env;
 use utoipa::ToSchema;
 
-pub fn route() -> Router {
+use crate::setup::AppState;
+
+pub fn route() -> Router<AppState> {
     Router::new()
         .route("/version", get(version))
         .route("/version-details", get(version_details))

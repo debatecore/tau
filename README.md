@@ -4,25 +4,38 @@ Tau is the debatecore debate tournament planner project's response cannon - also
 
 ## Deployment and local development
 
+The suggested way to develop and deploy requires you to use docker and cargo.
+You may also venture on your own, adapting the following instructions to your needs:
+
 ### Local development
-The easiest way to develop locally is via a combination of docker and cargo - using docker to handle the database and cargo to handle the rest.
-This setup requires a few environment variables:
+Set the following environment variables, via `.env` or your shell:
 - `DOCKER_DB_ROOT_PASSWORD` will be used as the password for the database root user.
-- `DATABASE_URL` will be used to connect to the database. During development, this is `postgres://tau:tau@localhost:5432/tau` by default.
-You may create a `.env` file in the root of the project or just set the environment variables in your shell.
+- `DATABASE_URL` is used for db connection. During development, this is `postgres://tau:tau@localhost:5432/tau`.
+- `SECRET` will be used as high entropy data used for generating tokens.
 
-Next comes the database, which you can turn on with `docker compose --profile dev up -d`. You can run the migrations with `sqlx migrate run` to set up the database.
-When you're done, you can turn it off with `docker compose --profile dev down`. To reset the database state, you can delete the `tau_dbdevdata` docker volume when it's off.
+Start the database with `docker compose --profile dev (up -d/down)`.
+Run the migrations via sqlx-cli with `sqlx run migrate` or by other means.
 
-Finally, you can run the backend with `cargo run`. The backend will be available at `localhost:2023`. Yo can override it by setting the `PORT` environment variable.
+Compile and run the project with `cargo`.
 
 ### Deployment
-For deploying, you will need the aforementioned environment variables, as well as a new one:
-- `DOCKER_DB_PASSWORD` will be used as the password for the tau database user.
-You can again set them in a `.env` file or in your shell.
+For deploying via docker, set the following environment variables:
+- `DOCKER_DB_PASSWORD` which will be used as the password for the backend's database access user.
+- `DOCKER_DB_ROOT_PASSWORD` will be used as the password for the database root user.
+- `SECRET` will be used as high entropy data used for generating tokens.
+Then, run `docker compose --profile prod`.
 
-To take the project online, you can use the other available compose profile by running `docker compose --profile prod up -d`.
-This will build and run both the backend and the database in a production-ready way.
+### Optional configuration
+- `PORT` will be used as the port the server listens on. The default is 2023.
+
+The following example `.env` file is geared for both scenarios:
+```env
+DATABASE_URL=postgres://tau:tau@localhost:5432/tau
+SECRET=CENTRUMRWLYSONOSTARPOZNANCDNSBCD4L52SPM
+DOCKER_DB_ROOT_PASSWORD=superdoopersecretpasswordthatcannotbeleaked
+DOCKER_DB_PASSWORD=wedoingsecurityinhere
+PORT=2019
+```
 
 ## Documentation
 Once the project is built, you can access the API documentation at [localhost:2023/swagger-ui](http://localhost:2023/swagger-ui).
