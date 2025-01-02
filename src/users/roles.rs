@@ -13,18 +13,17 @@ pub enum Role {
 
 impl Role {
     pub fn get_role_permissions(&self) -> Vec<Permission> {
-        use Permission::*;
-        use Role::*;
+        use Permission as P;
         match self {
-            Admin => Permission::VARIANTS.to_vec(), // all permissions
-            Organizer => vec![
-                CreateUsersManually,
-                CreateUsersWithLink,
-                DeleteUsers,
-                ModifyUserRoles,
+            Role::Admin => Permission::VARIANTS.to_vec(), // all permissions
+            Role::Organizer => vec![
+                P::CreateUsersManually,
+                P::CreateUsersWithLink,
+                P::DeleteUsers,
+                P::ModifyUserRoles,
             ],
-            Judge => vec![SubmitOwnVerdictVote],
-            Marshall => vec![SubmitVerdict],
+            Role::Judge => vec![P::SubmitOwnVerdictVote],
+            Role::Marshall => vec![P::SubmitVerdict],
         }
     }
 }

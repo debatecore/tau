@@ -23,16 +23,16 @@ pub enum AuthError {
 
 impl AuthError {
     pub fn status_code(&self) -> StatusCode {
-        use AuthError::*;
+        use AuthError as E;
         match self {
-            InvalidCredentials | NoCredentials | SessionExpired => {
+            E::InvalidCredentials | E::NoCredentials | E::SessionExpired => {
                 StatusCode::UNAUTHORIZED
             }
-            NonAsciiHeaderCharacters
-            | NoBasicAuthColonSplit
-            | BadHeaderAuthSchemeData
-            | UnsupportedHeaderAuthScheme
-            | ClearSessionBearerOnly => StatusCode::BAD_REQUEST,
+            E::NonAsciiHeaderCharacters
+            | E::NoBasicAuthColonSplit
+            | E::BadHeaderAuthSchemeData
+            | E::UnsupportedHeaderAuthScheme
+            | E::ClearSessionBearerOnly => StatusCode::BAD_REQUEST,
         }
     }
 }

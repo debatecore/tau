@@ -28,33 +28,35 @@ pub enum OmniError {
 
 impl OmniError {
     pub fn respond(self) -> Response {
-        use OmniError::*;
+        use OmniError as E;
         const ISE: StatusCode = StatusCode::INTERNAL_SERVER_ERROR;
         match self {
-            ExplicitError {
+            E::ExplicitError {
                 status: s,
                 message: m,
             } => (s, m).into_response(),
-            AuthError(e) => (e.status_code(), e.to_string()).into_response(),
+            E::AuthError(e) => (e.status_code(), e.to_string()).into_response(),
 
-            PhotoUrlError(_) | SqlxError(_) | SerdeJsonError(_)
-            | Base64DecodeError(_) | FromUtf8Error(_) | PassHashError(_) => {
-                (ISE, self.clerr()).into_response()
-            }
+            E::PhotoUrlError(_)
+            | E::SqlxError(_)
+            | E::SerdeJsonError(_)
+            | E::Base64DecodeError(_)
+            | E::FromUtf8Error(_)
+            | E::PassHashError(_) => (ISE, self.clerr()).into_response(),
         }
     }
 
     // clerr shall henceforth stand for client facing error message
     fn clerr(&self) -> String {
-        use OmniError::*;
+        use OmniError as E;
         match self {
-            ExplicitError { .. } | AuthError(_) => unreachable!(),
-            PhotoUrlError(_) => "PhotoUrl parsing failure.",
-            SqlxError(_) => "SQL/SQLx failure.",
-            SerdeJsonError(_) => "SerdeJSON failure.",
-            Base64DecodeError(_) => "Base64 decoding failure.",
-            FromUtf8Error(_) => "UTF8 decoding failure.",
-            PassHashError(_) => "Password hash failure.",
+            E::ExplicitError { .. } | E::AuthError(_) => unreachable!(),
+            E::PhotoUrlError(_) => "PhotoUrl parsing failure.",
+            E::SqlxError(_) => "SQL/SQLx failure.",
+            E::SerdeJsonError(_) => "SerdeJSON failure.",
+            E::Base64DecodeError(_) => "Base64 decoding failure.",
+            E::FromUtf8Error(_) => "UTF8 decoding failure.",
+            E::PassHashError(_) => "Password hash failure.",
         }
         .to_string()
     }
