@@ -1,6 +1,6 @@
 use super::{
-    cookie::set_session_token_cookie, error::AuthError, session::Session,
-    AUTH_SESSION_COOKIE_NAME,
+    cookie::set_session_token_cookie, crypto::hash_token, error::AuthError,
+    session::Session, AUTH_SESSION_COOKIE_NAME,
 };
 use crate::{omni_error::OmniError, users::User};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
@@ -91,9 +91,10 @@ impl User {
         cookies: Cookies,
         pool: &Pool<Postgres>,
     ) -> Result<User, OmniError> {
+        let hashed_token = hash_token(token);
         match sqlx::query!(
             "SELECT id, user_id, expiry FROM sessions WHERE token = $1",
-            token
+            &hashed_token
         )
         .fetch_one(pool)
         .await

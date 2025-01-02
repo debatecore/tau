@@ -1,10 +1,11 @@
-use super::{error::AuthError, AUTH_SESSION_LENGTH};
+use super::{crypto::hash_token, error::AuthError, AUTH_SESSION_LENGTH};
 use crate::{omni_error::OmniError, users::auth::crypto::generate_token};
 use serde::Serialize;
 use sqlx::{
     types::chrono::{DateTime, Utc},
     Pool, Postgres,
 };
+use tracing::info;
 use uuid::Uuid;
 
 #[derive(Serialize)]
@@ -40,10 +41,11 @@ impl Session {
         token: &str,
         pool: &Pool<Postgres>,
     ) -> Result<Session, OmniError> {
+        let hashed_token = hash_token(token);
         match sqlx::query_as!(
             Session,
             "SELECT id, user_id, issued, expiry, last_access FROM sessions WHERE token = $1",
-            token
+            hashed_token
         ).fetch_optional(pool).await {
             Ok(session) => match session {
                 Some(s) => Ok(s),
@@ -70,6 +72,7 @@ impl Session {
     ) -> Result<(Session, String), OmniError> {
         let id = Uuid::now_v7();
         let token = generate_token();
+        let hashed_token = hash_token(&token);
         match sqlx::query_as!(
             Session,
             r#"
@@ -77,7 +80,7 @@ impl Session {
             RETURNING id, user_id, issued, expiry, last_access
         "#,
             &id,
-            &token,
+            &hashed_token,
             user_id
         )
         .fetch_one(pool)

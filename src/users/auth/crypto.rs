@@ -1,6 +1,12 @@
 use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use chrono::Utc;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use sha2::{Digest, Sha512};
+
+pub fn hash_token(token: &str) -> String {
+    let hashed_token = Sha512::digest(token.as_bytes());
+    BASE64_URL_SAFE_NO_PAD.encode(hashed_token)
+}
 
 pub fn generate_token() -> String {
     let secret = match std::env::var("SECRET") {
