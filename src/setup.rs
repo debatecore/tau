@@ -32,7 +32,10 @@ pub fn report_listener_socket_addr(listener: &TcpListener) {
 
 fn get_env_port() -> u16 {
     let portstr = match std::env::var("PORT") {
-        Ok(value) => value,
+        Ok(value) => match value.is_empty() {
+            true => return 2023,
+            false => value,
+        },
         Err(_) => return 2023,
     };
 
@@ -76,7 +79,10 @@ pub fn read_environmental_variables() {
 
 pub fn check_secret_env_var() {
     match std::env::var("SECRET") {
-        Ok(_) => info!("{}", CRYPTO_SECRET_CORRECT),
+        Ok(v) => match v.is_empty() {
+            true => warn!("{}", CRYPTO_SECRET_NOT_SET),
+            false => info!("{}", CRYPTO_SECRET_CORRECT),
+        },
         Err(e) => match e {
             std::env::VarError::NotPresent => {
                 warn!("{}", CRYPTO_SECRET_NOT_SET);
