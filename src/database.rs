@@ -3,7 +3,7 @@ use std::{env, str::FromStr};
 use tracing::{error, info};
 
 pub async fn get_connection_pool() -> Pool<Postgres> {
-    info!("Attempting to connect to a database…");
+    info!("Attempting to connect to a database...");
     let connection_pool = match connect_to_database().await {
         Ok(connection_pool) => connection_pool,
         Err(e) => {
@@ -16,8 +16,8 @@ pub async fn get_connection_pool() -> Pool<Postgres> {
 }
 
 async fn connect_to_database() -> Result<Pool<Postgres>, sqlx::Error> {
-    let connection_uri = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be defined in .env");
+    let connection_uri =
+        env::var("DATABASE_URL").expect("DATABASE_URL must be defined in .env");
 
     let options =
         PgConnectOptions::from_str(&connection_uri).expect("Connection URI is invalid");
