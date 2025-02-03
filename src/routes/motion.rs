@@ -250,6 +250,8 @@ async fn patch_motion_by_id(
 }
 
 /// Delete an existing motion
+/// This operation is only allowed when there are no entities (i.e. debates)
+/// referencing this tournament.
 #[utoipa::path(delete, path = "/motion/{id}", 
     responses
     ((status=204, description = "Motion deleted successfully")),

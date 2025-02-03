@@ -13,9 +13,13 @@ use uuid::Uuid;
 
 use crate::setup::AppState;
 
+use super::tournament::tournament_exists;
+
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
     scope of the tournament, to which the team is assigned."#;
+const TOURNAMENT_NOT_FOUND_ERROR: &str =
+    "Cannot assign a team to a nonexistent tournament";
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -52,7 +56,12 @@ impl Team {
                     return Err(sqlx::Error::PoolClosed);
                 }
             }
-            Err(e) => return Err(e),
+            Err(e) => {
+                return {
+                    error!("Error creating a team: {e}");
+                    Err(e)
+                }
+            }
         }
         match query_as!(
             Team,
@@ -140,12 +149,19 @@ pub fn route() -> Router<AppState> {
     ))
 )]
 async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> Response {
-    match Team::post(json, &state.connection_pool).await {
+    let pool = &state.connection_pool;
+    let tournament_exists_result = tournament_exists(json.tournament_id, pool).await;
+    if tournament_exists_result.is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    let tournament_exists = tournament_exists_result.unwrap();
+    if !tournament_exists {
+        return (StatusCode::NOT_FOUND, TOURNAMENT_NOT_FOUND_ERROR).into_response();
+    }
+
+    match Team::post(json, pool).await {
         Ok(team) => Json(team).into_response(),
-        Err(e) => {
-            error!("Error creating a tournament: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
@@ -213,7 +229,7 @@ async fn patch_team_by_id(
     if team_exists_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    let team = team_exists_result.ok().unwrap();
+    let team = team_exists_result.unwrap();
 
     let team_with_this_name_exists =
         team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool)
@@ -234,8 +250,8 @@ async fn patch_team_by_id(
 
 /// Delete an existing team
 ///
-/// Question: do we delete related attendees too?
-/// We don't have on delete cascade in place, I'm afraid.
+/// This operation is only allowed when there are no entities (i.e. attendees)
+/// referencing this tournament.
 #[utoipa::path(delete, path = "/team/{id}", 
     responses
     ((status=204, description = "Team deleted successfully")),
@@ -245,6 +261,9 @@ async fn delete_team_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
 ) -> Response {
+    // TO-DO: disallow deletion of teams that are referenced by other entities
+    // (most notably users)
+
     match Team::get_by_id(id, &state.connection_pool).await {
         Ok(team) => match team.delete(&state.connection_pool).await {
             Ok(_) => StatusCode::NO_CONTENT.into_response(),

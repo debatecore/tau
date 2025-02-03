@@ -245,7 +245,10 @@ async fn patch_tournament_by_id(
 }
 
 
-/// Delete an existing tournament
+/// Delete an existing tournament.
+/// 
+/// This operation is only allowed when there are no entities (i.e. teams)
+/// referencing this tournament.
 #[utoipa::path(delete, path = "/tournament/{id}", 
     responses((status=204, description = "Tournament deleted successfully")),
     params(("id", description = "Tournament id"))
@@ -254,6 +257,10 @@ async fn delete_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
 ) -> Response {
+
+    // TO-DO: disallow deletion of tournaments that are referenced by other entities
+    // Most notably teams
+
     match Tournament::get_by_id(id, &state.connection_pool).await {
         Ok(tournament) => match tournament.delete(&state.connection_pool).await {
             Ok(_) => StatusCode::NO_CONTENT.into_response(),
@@ -261,6 +268,22 @@ async fn delete_tournament_by_id(
         },
         // TO-DO: handle a case in which the tournament does not exist in the first place
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+pub async fn tournament_exists(id: Uuid, connection_pool: &Pool<Postgres>) -> Result<bool, Error> {
+    match query!(
+        "SELECT EXISTS(SELECT 1 FROM tournaments WHERE id = $1)",
+        id,
+    )
+    .fetch_one(connection_pool)
+    .await
+    {
+        Ok(result) => Ok(result.exists.unwrap()),
+        Err(e) => {
+            error!("Error checking tournament existence: {e}");
+            Err(e)
+        }
     }
 }
 
