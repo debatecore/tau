@@ -2,6 +2,8 @@ use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::setup::AppState;
+
 use crate::routes::attendee;
 use crate::routes::debate;
 use crate::routes::motion;
