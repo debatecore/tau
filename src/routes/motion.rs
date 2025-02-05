@@ -1,4 +1,4 @@
-use crate::setup::AppState;
+use crate::{omni_error::OmniError, setup::AppState};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -40,7 +40,7 @@ impl Motion {
     pub async fn post(
         motion: Motion,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Motion, Error> {
+    ) -> Result<Motion, OmniError> {
         match query_as!(
             Motion,
             r#"INSERT INTO motions(id, motion, adinfo)
@@ -53,26 +53,25 @@ impl Motion {
         .await
         {
             Ok(_) => Ok(motion),
-            Err(e) => {
-                error!("Error creating a motion: {e}");
-                Err(e)
-                // TO-DO: Handle duplicate motions
-            }
+            Err(e) => Err(e)?
         }
     }
 
     pub async fn get_by_id(
         id: Uuid,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Motion, Error> {
+    ) -> Result<Motion, OmniError> {
         match query_as!(Motion, "SELECT * FROM motions WHERE id = $1", id)
             .fetch_one(connection_pool)
             .await
         {
             Ok(motion) => Ok(motion),
-            Err(e) => {
-                error!("Error getting a motion with id {id}: {e}");
-                Err(e)
+            Err(e) => match e {
+                Error::RowNotFound => Err(OmniError::ResourceNotFoundError),
+                _ => {
+                    error!("Failed to get a motion with id {id}: {e}");
+                    Err(e)?
+                },
             }
         }
     }
@@ -81,7 +80,7 @@ impl Motion {
         self,
         patch: MotionPatch,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Motion, Error> {
+    ) -> Result<Motion, OmniError> {
         let motion = Motion {
             id: self.id,
             motion: patch.motion.unwrap_or(self.motion),
@@ -98,8 +97,7 @@ impl Motion {
         {
             Ok(_) => Ok(motion),
             Err(e) => {
-                error!("Error patching a motion with id {}: {e}", self.id);
-                Err(e)
+                Err(e)?
             }
         }
     }
@@ -168,23 +166,14 @@ async fn create_motion(
     State(state): State<AppState>,
     Json(json): Json<Motion>,
 ) -> Response {
-    let pool = &state.connection_pool;
-    let motion_content_is_duplicate_result = motion_content_is_duplicate(&json.motion, pool).await;
-    if motion_content_is_duplicate_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let motion_is_duplicate = motion_content_is_duplicate_result.unwrap();
-    if motion_is_duplicate {
-        return (
-            StatusCode::CONFLICT,
-            DUPLICATE_MOTION_ERROR
-        ).into_response()
-    }
-
     match Motion::post(json, &state.connection_pool).await {
-        Ok(motion) => Json(motion).into_response(),
-        Err(_) => {
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        Ok(motion) => {
+            // TO-DO: Log successful motion creation
+            Json(motion).into_response()
+        },
+        Err(e) => match e {
+            OmniError::ResourceAlreadyExistsError => return e.into_response(),
+            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 }
@@ -202,7 +191,10 @@ async fn get_motion_by_id(
 ) -> Response {
     match Motion::get_by_id(id, &state.connection_pool).await {
         Ok(motion) => Json(motion).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => e.into_response(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        },
     }
 }
 
@@ -215,7 +207,8 @@ async fn get_motion_by_id(
             status=200, description = "Motion patched successfully",
             body=Motion,
             example=json!(get_motion_example())
-        )
+        ),
+        (status=400, description = "Motion not found")
     )
 )]
 async fn patch_motion_by_id(
@@ -225,27 +218,21 @@ async fn patch_motion_by_id(
 ) -> Response {
     let pool = &state.connection_pool;
     let get_motion_by_id_result = Motion::get_by_id(id, pool).await;
-    if get_motion_by_id_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    match get_motion_by_id_result {
+        Ok(_) => (),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => return e.into_response(),
+            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
     let existing_motion = get_motion_by_id_result.ok().unwrap();
-    
-    let motion_content_is_duplicate_result = motion_content_is_duplicate(&existing_motion.motion, pool).await;
-    if motion_content_is_duplicate_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let motion_is_duplicate = motion_content_is_duplicate_result.unwrap();
-
-    if motion_is_duplicate {
-        return (
-            StatusCode::CONFLICT,
-            DUPLICATE_MOTION_ERROR
-        ).into_response()
-    }
 
     match existing_motion.patch(new_motion, &state.connection_pool).await {
         Ok(patched_motion) => Json(patched_motion).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(e) => match e {
+            OmniError::ResourceAlreadyExistsError => e.into_response(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
@@ -254,7 +241,11 @@ async fn patch_motion_by_id(
 /// referencing this tournament.
 #[utoipa::path(delete, path = "/motion/{id}", 
     responses
-    ((status=204, description = "Motion deleted successfully")),
+    (
+        (status=204, description = "Motion deleted successfully"),
+        (status=400, description = "Motion not found")
+    ),
+    
     params(("id", description = "Motion id"))
 )]
 async fn delete_motion_by_id(
@@ -266,26 +257,12 @@ async fn delete_motion_by_id(
             Ok(_) => StatusCode::NO_CONTENT.into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },
-        // TO-DO: handle a case in which the motion does not exist in the first place
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    }
-}
-
-async fn motion_content_is_duplicate(
-    motion: &String,
-    connection_pool: &Pool<Postgres>
-)-> Result<bool, Error> {
-        match query!(
-        "SELECT EXISTS(SELECT 1 FROM motions WHERE motion = $1)",
-        motion,
-    )
-    .fetch_one(connection_pool)
-    .await
-    {
-        Ok(result) => Ok(result.exists.unwrap()),
-        Err(e) => {
-            error!("Error checking motion uniqueness: {e}");
-            Err(e)
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => e.into_response(),
+            _ => {
+                error!("Error deleting a motion with id {id}: {e}");
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
         }
     }
 }

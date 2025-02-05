@@ -1,4 +1,4 @@
-use crate::setup::AppState;
+use crate::{omni_error::OmniError, setup::AppState};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -47,26 +47,20 @@ impl Debate {
         .await
         {
             Ok(_) => Ok(debate),
-            Err(e) => {
-                error!("Error creating a debate: {e}");
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 
     pub async fn get_by_id(
         id: Uuid,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Debate, Error> {
+    ) -> Result<Debate, OmniError> {
         match query_as!(Debate, "SELECT * FROM debates WHERE id = $1", id)
             .fetch_one(connection_pool)
             .await
         {
             Ok(debate) => Ok(debate),
-            Err(e) => {
-                error!("Error getting a debate with id {id}: {e}");
-                Err(e)
-            }
+            Err(e) => Err(e)?,
         }
     }
 
@@ -74,7 +68,7 @@ impl Debate {
         self,
         patch: DebatePatch,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Debate, Error> {
+    ) -> Result<Debate, OmniError> {
         let debate = Debate {
             id: self.id,
             motion_id: patch.motion_id.unwrap_or(self.motion_id),
@@ -90,23 +84,17 @@ impl Debate {
         .await
         {
             Ok(_) => Ok(debate),
-            Err(e) => {
-                error!("Error patching a debate with id {}: {e}", self.id);
-                Err(e)
-            }
+            Err(e) => Err(e)?,
         }
     }
 
-    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), Error> {
+    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
         match query!("DELETE FROM debates WHERE id = $1", self.id)
             .execute(connection_pool)
             .await
         {
             Ok(_) => Ok(()),
-            Err(e) => {
-                error!("Error deleting a debate with id {}: {e}", self.id);
-                Err(e)
-            }
+            Err(e) => Err(e)?,
         }
     }
 }
@@ -154,7 +142,6 @@ async fn create_debate(
     State(state): State<AppState>,
     Json(json): Json<Debate>,
 ) -> Response {
-    // TO-DO: Ensure that the new debate name is unique within a tournament
     match Debate::post(json, &state.connection_pool).await {
         Ok(debate) => Json(debate).into_response(),
         Err(e) => {
@@ -166,11 +153,14 @@ async fn create_debate(
 
 /// Get details of an existing debate
 #[utoipa::path(get, path = "/debate/{id}", 
-    responses((
-        status=200,
-        description = "Ok",
-        body=Debate,
-    )),
+    responses(
+        (
+            status=200,
+            description = "Ok",
+            body=Debate,
+        ),
+        (status=400, description = "Debate not found")
+    ),
     params(("id", description = "Debate id"))
 )]
 async fn get_debate_by_id(
@@ -179,7 +169,13 @@ async fn get_debate_by_id(
 ) -> Response {
     match Debate::get_by_id(id, &state.connection_pool).await {
         Ok(debate) => Json(debate).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => e.into_response(),
+            _ => {
+                error!("Error getting a debate with id {id}: {e}");
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        },
     }
 }
 
@@ -191,7 +187,8 @@ async fn get_debate_by_id(
         (
             status=200, description = "Debate patched successfully",
             body=Debate,
-        )
+        ),
+        (status=400, description = "Debate not found")
     )
 )]
 async fn patch_debate_by_id(
@@ -199,24 +196,35 @@ async fn patch_debate_by_id(
     State(state): State<AppState>,
     Json(new_debate): Json<DebatePatch>,
 ) -> Response {
-    // TO-DO: Ensure that the new debate name is unique within a tournament
-    match Debate::get_by_id(id, &state.connection_pool).await {
-        Ok(existing_debate) => match existing_debate
-            .patch(new_debate, &state.connection_pool)
-            .await
-        {
-            Ok(patched_debate) => Json(patched_debate).into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    let existing_debate_result = Debate::get_by_id(id, &state.connection_pool).await;
+    match existing_debate_result {
+        Ok(_) => (),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => return e.into_response(),
+            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },
-        // TO-DO: handle a case in which the debate does not exist in the first place
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+
+    let existing_debate = existing_debate_result.unwrap();
+    match existing_debate
+        .patch(new_debate, &state.connection_pool)
+        .await
+    {
+        Ok(debate) => Json(debate).into_response(),
+        Err(e) => {
+            error!("Error patching a debate with id {id}: {e}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
 /// Delete an existing debate
 #[utoipa::path(delete, path = "/debate/{id}", 
     responses
-    ((status=204, description = "Debate deleted successfully")),
+    (
+        (status=204, description = "Debate deleted successfully"),
+        (status=400, description = "Debate not found")
+    ),
     params(
         ("id", description = "Debate id"),
     )
@@ -225,12 +233,21 @@ async fn delete_debate_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
 ) -> Response {
-    match Debate::get_by_id(id, &state.connection_pool).await {
-        Ok(debate) => match debate.delete(&state.connection_pool).await {
-            Ok(_) => StatusCode::NO_CONTENT.into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    let existing_debate_result = Debate::get_by_id(id, &state.connection_pool).await;
+    match existing_debate_result {
+        Ok(_) => (),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => return e.into_response(),
+            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         },
-        // TO-DO: handle a case in which the debate does not exist in the first place
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+
+    let existing_debate = existing_debate_result.unwrap();
+    match existing_debate.delete(&state.connection_pool).await {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(e) => {
+            error!("Error deleting a debate with id {id}: {e}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }

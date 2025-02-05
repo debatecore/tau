@@ -2,10 +2,8 @@ use axum::Router;
 
 use crate::setup::AppState;
 
-mod auth;
-use crate::setup::AppState;
-
 mod attendee;
+mod auth;
 mod debate;
 mod health_check;
 mod infradmin;

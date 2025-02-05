@@ -9,7 +9,6 @@ use crate::routes::debate;
 use crate::routes::motion;
 use crate::routes::team;
 use crate::routes::tournament;
-use crate::setup::AppState;
 
 use super::health_check;
 use super::teapot;

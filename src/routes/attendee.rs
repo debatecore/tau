@@ -13,7 +13,7 @@ use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::setup::AppState;
+use crate::{omni_error::OmniError, setup::AppState};
 
 const POSITION_OUT_OF_RANGE_MESSAGE: &str = "Attendee position must be in range of 1-4.";
 const POSITION_CONFLICT_MESSAGE: &str =
@@ -53,7 +53,7 @@ impl Attendee {
     async fn post(
         attendee: Attendee,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Attendee, Error> {
+    ) -> Result<Attendee, OmniError> {
         match query_as!(
             Attendee,
             r#"INSERT INTO attendees
@@ -71,26 +71,20 @@ impl Attendee {
         .await
         {
             Ok(attendee) => Ok(attendee),
-            Err(e) => {
-                error!("Error creating an attendee: {e}");
-                Err(e)
-            }
+            Err(e) => Err(e)?,
         }
     }
 
     async fn get_by_id(
         id: Uuid,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Attendee, Error> {
+    ) -> Result<Attendee, OmniError> {
         match query_as!(Attendee, "SELECT * FROM attendees WHERE id = $1", id)
             .fetch_one(connection_pool)
             .await
         {
             Ok(attendee) => Ok(attendee),
-            Err(e) => {
-                error!("Error getting an attendee by id {id}: e");
-                Err(e)
-            }
+            Err(e) => Err(e)?,
         }
     }
 
@@ -121,10 +115,7 @@ impl Attendee {
         .await
         {
             Ok(_) => Ok(new_attendee),
-            Err(e) => {
-                error!("Error patching an attendee with id {}: e", self.id);
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 
@@ -134,10 +125,7 @@ impl Attendee {
             .await
         {
             Ok(_) => Ok(()),
-            Err(e) => {
-                error!("Error deleting an attendee with id {}: {e}", self.id);
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 }
@@ -158,10 +146,19 @@ pub fn route() -> Router<AppState> {
     post,
     request_body=Attendee,
     path = "/attendee",
-    responses((
-        status=200, description = "Attendee created successfully",
-        body=Attendee,
-        example=json!(get_attendee_example())))
+    responses(
+        (
+            status=200, description = "Attendee created successfully",
+            body=Attendee,
+            example=json!(get_attendee_example())
+        ),
+        (
+            status=400, description = "Attendee position is invalid",
+        ),
+        (
+            status=409, description = "Attendee position is duplicated",
+        ),
+    )
 )]
 async fn create_attendee(
     State(state): State<AppState>,
@@ -172,7 +169,16 @@ async fn create_attendee(
             return (StatusCode::BAD_REQUEST, POSITION_OUT_OF_RANGE_MESSAGE)
                 .into_response();
         }
+        match attendee_position_is_duplicated(&attendee, &state.connection_pool).await {
+            Ok(position_duplicated) => {
+                if position_duplicated {
+                    return OmniError::ResourceAlreadyExistsError.into_response();
+                }
+            }
+            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        }
     }
+
     match Attendee::post(attendee, &state.connection_pool).await {
         Ok(attendee) => Json(attendee).into_response(),
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -201,9 +207,15 @@ async fn get_attendees(State(state): State<AppState>) -> Response {
 
 /// Get details of an existing attendee
 #[utoipa::path(get, path = "/attendee/{id}", 
-    responses((status=200, description = "Ok", body=Attendee,
-    example=json!(get_attendee_example())
-    )),
+    responses(
+        (
+            status=200, description = "Ok", body=Attendee,
+            example=json!(get_attendee_example())
+        ),
+        (
+            status=400, description = "Attendee not found",
+        ),
+    ),
     params(("id", description = "Attendee id"))
 )]
 async fn get_attendee_by_id(
@@ -212,7 +224,10 @@ async fn get_attendee_by_id(
 ) -> Response {
     match Attendee::get_by_id(id, &state.connection_pool).await {
         Ok(attendee) => Json(attendee).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => e.into_response(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        },
     }
 }
 
@@ -251,7 +266,7 @@ async fn patch_attendee_by_id(
     let attendee = attendee_exists_result.ok().unwrap();
 
     let position_is_unique_result =
-        attendee_with_this_position_exists(&attendee, pool).await;
+        attendee_position_is_duplicated(&attendee, pool).await;
     if position_is_unique_result.is_err() {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
@@ -269,7 +284,11 @@ async fn patch_attendee_by_id(
 /// Delete an existing attendee
 #[utoipa::path(delete, path = "/attendee/{id}", 
     responses
-    ((status=204, description = "Attendee deleted successfully")),
+    (
+        (status=204, description = "Attendee deleted successfully"),
+
+        (status=400, description = "Attendee not found"),
+    ),
     params(("id", description = "Attendee id"))
 )]
 async fn delete_attendee_by_id(
@@ -278,8 +297,12 @@ async fn delete_attendee_by_id(
 ) -> Response {
     let pool = &state.connection_pool;
     let attendee_exists_result = Attendee::get_by_id(id, pool).await;
-    if attendee_exists_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    match attendee_exists_result {
+        Ok(_) => (),
+        Err(e) => match e {
+            OmniError::ResourceNotFoundError => return e.into_response(),
+            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        },
     }
 
     let attendee = attendee_exists_result.ok().unwrap();
@@ -293,12 +316,12 @@ fn attendee_position_is_valid(position: i32) -> bool {
     return position >= 1 && position <= 4;
 }
 
-async fn attendee_with_this_position_exists(
+async fn attendee_position_is_duplicated(
     attendee: &Attendee,
     connection_pool: &Pool<Postgres>,
 ) -> Result<bool, Error> {
     match query!(
-        "SELECT EXISTS(SELECT 1 FROM attendees WHERE id = $1 AND position = $2)",
+        "SELECT EXISTS(SELECT 1 FROM attendees WHERE team_id = $1 AND position = $2)",
         attendee.team_id,
         attendee.position
     )
