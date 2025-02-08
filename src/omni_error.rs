@@ -5,6 +5,7 @@ use axum::{
 
 const RESOURCE_ALREADY_EXISTS_MESSAGE: &str = "Resource already exists";
 const RESOURCE_NOT_FOUND_MESSAGE: &str = "Resource not found";
+const DEPENDENT_RESOURCES_MESSAGE: &str = "Dependent resources must be deleted first";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -31,6 +32,8 @@ pub enum OmniError {
     ResourceAlreadyExistsError,
     #[error("{RESOURCE_NOT_FOUND_MESSAGE}")]
     ResourceNotFoundError,
+    #[error("{DEPENDENT_RESOURCES_MESSAGE}")]
+    DependentResourcesError,
 }
 
 impl IntoResponse for OmniError {
@@ -45,6 +48,21 @@ impl OmniError {
             OmniError::SqlxError(e) => match e {
                 sqlx::Error::Database(e) => {
                     if e.is_unique_violation() {
+                        return true;
+                    }
+                }
+                _ => (),
+            },
+            _ => (),
+        };
+        return false;
+    }
+
+    pub fn is_sqlx_foreign_key_violation(&self) -> bool {
+        match self {
+            OmniError::SqlxError(e) => match e {
+                sqlx::Error::Database(e) => {
+                    if e.is_foreign_key_violation() {
                         return true;
                     }
                 }
@@ -97,6 +115,9 @@ impl OmniError {
             E::ResourceNotFoundError => {
                 (StatusCode::BAD_REQUEST, self.clerr()).into_response()
             }
+            E::DependentResourcesError => {
+                (StatusCode::CONFLICT, self.clerr()).into_response()
+            }
         }
     }
 
@@ -113,6 +134,7 @@ impl OmniError {
             E::PassHashError(_) => "Password hash failure.",
             E::ResourceAlreadyExistsError => RESOURCE_ALREADY_EXISTS_MESSAGE,
             E::ResourceNotFoundError => RESOURCE_NOT_FOUND_MESSAGE,
+            E::DependentResourcesError => DEPENDENT_RESOURCES_MESSAGE,
         }
         .to_string()
     }

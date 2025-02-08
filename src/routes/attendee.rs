@@ -1,3 +1,4 @@
+use super::utils::handle_failed_to_get_resource_by_id;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -7,7 +8,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use serde_json::json;
 use sqlx::{query, query_as, Error, Pool, Postgres};
 use tracing::error;
 use utoipa::ToSchema;
@@ -299,10 +299,7 @@ async fn delete_attendee_by_id(
     let attendee_exists_result = Attendee::get_by_id(id, pool).await;
     match attendee_exists_result {
         Ok(_) => (),
-        Err(e) => match e {
-            OmniError::ResourceNotFoundError => return e.into_response(),
-            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        },
+        Err(e) => handle_failed_to_get_resource_by_id(e),
     }
 
     let attendee = attendee_exists_result.ok().unwrap();

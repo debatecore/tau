@@ -13,13 +13,11 @@ use uuid::Uuid;
 
 use crate::setup::AppState;
 
-use super::tournament::tournament_exists;
+use super::utils::handle_failed_to_get_resource_by_id;
 
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
     scope of the tournament, to which the team is assigned."#;
-const TOURNAMENT_NOT_FOUND_ERROR: &str =
-    "Cannot assign a team to a nonexistent tournament";
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -150,14 +148,10 @@ pub fn route() -> Router<AppState> {
 )]
 async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> Response {
     let pool = &state.connection_pool;
-    let tournament_exists_result = tournament_exists(json.tournament_id, pool).await;
-    if tournament_exists_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let tournament_exists = tournament_exists_result.unwrap();
-    if !tournament_exists {
-        return (StatusCode::NOT_FOUND, TOURNAMENT_NOT_FOUND_ERROR).into_response();
-    }
+    match Tournament::get_by_id(json.tournament_id, &state.connection_pool).await {
+        Ok(_) => (),
+        Err(e) => return handle_failed_to_get_resource_by_id(e),
+    };
 
     match Team::post(json, pool).await {
         Ok(team) => Json(team).into_response(),
@@ -251,7 +245,7 @@ async fn patch_team_by_id(
 /// Delete an existing team
 ///
 /// This operation is only allowed when there are no entities (i.e. attendees)
-/// referencing this tournament.
+/// referencing this team.
 #[utoipa::path(delete, path = "/team/{id}", 
     responses
     ((status=204, description = "Team deleted successfully")),

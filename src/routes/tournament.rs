@@ -1,4 +1,4 @@
-use crate::setup::AppState;
+use crate::{omni_error::OmniError, setup::AppState};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -7,12 +7,12 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, Error, Pool, Postgres};
-use tracing::error;
+use sqlx::{query, query_as, Pool, Postgres};
+use tracing::{error};
 use utoipa::ToSchema;
 use uuid::Uuid;
+use super::utils::{handle_failed_to_get_resource_by_id};
 
-const NAME_CONFLICT_ERROR: &str = "Tournament with this name already exists";
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -35,7 +35,7 @@ impl Tournament {
     pub async fn post(
         tournament: Tournament,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Tournament, Error> {
+    ) -> Result<Tournament, OmniError> {
         match query_as!(
             Tournament,
             r#"INSERT INTO tournaments(id, full_name, shortened_name)
@@ -49,9 +49,7 @@ impl Tournament {
         {
             Ok(_) => Ok(tournament),
             Err(e) => {
-                error!("Error creating a tournament: {e}");
-                Err(e)
-                // TO-DO: Handle duplicate full names
+                Err(e)?
             }
         }
     }
@@ -59,7 +57,7 @@ impl Tournament {
     pub async fn get_by_id(
         id: Uuid,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Tournament, Error> {
+    ) -> Result<Tournament, OmniError> {
         match query_as!(Tournament, "SELECT * FROM tournaments WHERE id = $1", id)
             .fetch_one(connection_pool)
             .await
@@ -67,7 +65,7 @@ impl Tournament {
             Ok(tournament) => Ok(tournament),
             Err(e) => {
                 error!("Error getting a tournament with id {id}: {e}");
-                Err(e)
+                Err(e)?
             }
         }
     }
@@ -76,7 +74,7 @@ impl Tournament {
         self,
         patch: TournamentPatch,
         connection_pool: &Pool<Postgres>,
-    ) -> Result<Tournament, Error> {
+    ) -> Result<Tournament, OmniError> {
         let tournament = Tournament {
             id: self.id,
             full_name: patch.full_name.unwrap_or(self.full_name),
@@ -93,21 +91,19 @@ impl Tournament {
         {
             Ok(_) => Ok(tournament),
             Err(e) => {
-                error!("Error patching a tournament with id {}: {e}", self.id);
-                Err(e)
+                Err(e)?
             }
         }
     }
 
-    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), Error> {
+    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
         match query!("DELETE FROM tournaments WHERE id = $1", self.id)
             .execute(connection_pool)
             .await
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                error!("Error deleting a tournament with id {}: {e}", self.id);
-                Err(e)
+                Err(e)?
             }
         }
     }
@@ -161,18 +157,6 @@ async fn create_tournament(
     Json(json): Json<Tournament>,
 ) -> Response {
     let pool = &state.connection_pool;
-    let name_is_duplicate_result
-     = tournament_name_is_duplicate(&json.full_name, pool).await;
-    if name_is_duplicate_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let name_is_duplicate = name_is_duplicate_result.ok().unwrap();
-    if name_is_duplicate {
-        return (
-            StatusCode::CONFLICT,
-            NAME_CONFLICT_ERROR
-        ).into_response()
-    }
 
     match Tournament::post(json, pool).await {
         Ok(tournament) => Json(tournament).into_response(),
@@ -219,90 +203,53 @@ async fn patch_tournament_by_id(
     Json(new_tournament): Json<TournamentPatch>,
 ) -> Response {
     let pool = &state.connection_pool;
-    let tournament_exists_result = Tournament::get_by_id(id, pool).await;
-    if tournament_exists_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let tournament = tournament_exists_result.unwrap();
-
-    let name_is_duplicate_result
-     = tournament_name_is_duplicate(&tournament.full_name, pool).await;
-    if name_is_duplicate_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let name_is_duplicate = name_is_duplicate_result.ok().unwrap();
-    if name_is_duplicate {
-        return (
-            StatusCode::CONFLICT,
-            NAME_CONFLICT_ERROR
-        ).into_response()
-    }
-
-    match tournament.patch(new_tournament, pool).await {
-    Ok(tournament) => Json(tournament).into_response(),
-    Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    match Tournament::get_by_id(id, pool).await {
+    Ok(tournament) => match tournament.patch(new_tournament, pool).await {
+        Ok(patched_tournament) => Json(patched_tournament).into_response(),
+        Err(e) => {
+            error!("Error patching a tournament with id {}: {e}", id);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        },
+    },
+    Err(e) => handle_failed_to_get_resource_by_id(e),
     }
 }
 
 
 /// Delete an existing tournament.
 /// 
-/// This operation is only allowed when there are no entities (i.e. teams)
+/// This operation is only allowed when there are no resources (i.e. teams, roles, and debates)
 /// referencing this tournament.
 #[utoipa::path(delete, path = "/tournament/{id}", 
-    responses((status=204, description = "Tournament deleted successfully")),
+    responses(
+        (status=204, description = "Tournament deleted successfully"),
+        (status=404, description = "Tournament not found"),
+        (status=409, description = r#"
+            There are teams, roles, or debates that
+            reference this tournament. They must be deleted first
+        "#)
+    ),
     params(("id", description = "Tournament id"))
 )]
 async fn delete_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
 ) -> Response {
-
-    // TO-DO: disallow deletion of tournaments that are referenced by other entities
-    // Most notably teams
-
     match Tournament::get_by_id(id, &state.connection_pool).await {
         Ok(tournament) => match tournament.delete(&state.connection_pool).await {
             Ok(_) => StatusCode::NO_CONTENT.into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Err(e) =>
+            {
+                if e.is_sqlx_foreign_key_violation() {
+                    return OmniError::DependentResourcesError.into_response()
+                }
+                else {
+                    error!("Error deleting a tournament with id {id}: {e}");
+                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                }
+            },
         },
-        // TO-DO: handle a case in which the tournament does not exist in the first place
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    }
-}
-
-pub async fn tournament_exists(id: Uuid, connection_pool: &Pool<Postgres>) -> Result<bool, Error> {
-    match query!(
-        "SELECT EXISTS(SELECT 1 FROM tournaments WHERE id = $1)",
-        id,
-    )
-    .fetch_one(connection_pool)
-    .await
-    {
-        Ok(result) => Ok(result.exists.unwrap()),
-        Err(e) => {
-            error!("Error checking tournament existence: {e}");
-            Err(e)
-        }
-    }
-}
-
-async fn tournament_name_is_duplicate(
-    name: &String,
-    connection_pool: &Pool<Postgres>
-)-> Result<bool, Error> {
-        match query!(
-        "SELECT EXISTS(SELECT 1 FROM tournaments WHERE full_name = $1)",
-        name,
-    )
-    .fetch_one(connection_pool)
-    .await
-    {
-        Ok(result) => Ok(result.exists.unwrap()),
-        Err(e) => {
-            error!("Error checking tournament name uniqueness: {e}");
-            Err(e)
-        }
+        Err(e) => return handle_failed_to_get_resource_by_id(e),
     }
 }
 
@@ -328,7 +275,7 @@ fn get_tournaments_list_example() -> String {
         {
         "id": "01941265-507e-7987-b1ed-5c0f63ff6c6d",
         "full_name": "Poznań Debate Night",
-        "shortened_name": "PDN"
+        "shortened_name": "PND"
         }
         ]
     "#.to_owned()
