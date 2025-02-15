@@ -154,14 +154,21 @@ pub fn route() -> Router<AppState> {
 )]
 async fn create_team(
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(json): Json<Team>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    match Tournament::get_by_id(json.tournament_id, &state.connection_pool).await {
-        Ok(_) => (),
-        Err(e) => return Err(e),
-    };
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
+    match tournament_user.has_permission(Permission::WriteTeams) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
     match Team::post(json, pool).await {
         Ok(team) => Ok(Json(team).into_response()),
         Err(e) => Err(e),
@@ -185,8 +192,23 @@ async fn create_team(
     )
 )]
 /// Get a list of all teams
-async fn get_teams(State(state): State<AppState>) -> Result<Response, OmniError> {
-    match query_as!(Team, "SELECT * FROM teams")
+async fn get_teams(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadTeams) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
+    match query_as!(Team, "SELECT * FROM teams WHERE tournament_id = $1", tournament_id)
         .fetch_all(&state.connection_pool)
         .await
     {
@@ -262,9 +284,19 @@ async fn get_team_by_id(
 async fn patch_team_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(new_team): Json<TeamPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteTeams) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
 
     let team = Team::get_by_id(id, pool).await?;
     if team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool).await? {
@@ -295,20 +327,26 @@ async fn patch_team_by_id(
 async fn delete_team_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
-    // TO-DO: disallow deletion of teams that are referenced by other entities
-    // (most notably users)
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match Team::get_by_id(id, &state.connection_pool).await {
-        Ok(team) => match team.delete(&state.connection_pool).await {
-            Ok(_) => StatusCode::NO_CONTENT.into_response(),
-            Err(e) => {
-                error!("Error deleting a team with id {id}: {e}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        },
-        // TO-DO: Handle a scenario in which the team does not exist
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    match tournament_user.has_permission(Permission::WriteTeams) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let team = Team::get_by_id(id, pool).await?;
+    match team.delete(&state.connection_pool).await {
+        Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Err(e) => {
+            error!("Error deleting a team with id {id}: {e}");
+            Err(e)?
+        }
     }
 }
 
