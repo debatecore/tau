@@ -1,17 +1,17 @@
-use crate::{omni_error::OmniError, setup::AppState};
+use crate::{omni_error::OmniError, setup::AppState, users::{permissions::Permission, TournamentUser, User}};
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
-use tracing::{error};
+use tower_cookies::Cookies;
+use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use super::utils::{handle_failed_to_get_resource_by_id};
 
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -51,6 +51,15 @@ impl Tournament {
             Err(e) => {
                 Err(e)?
             }
+        }
+    }
+
+    pub async fn get_all(connection_pool: &Pool<Postgres>) -> Result<Vec<Tournament>, OmniError> {
+        match query_as!(Tournament, "SELECT * FROM tournaments")
+        .fetch_all(connection_pool)
+        .await {
+            Ok(tournaments) => Ok(tournaments),
+            Err(e) => Err(e)?,
         }
     }
 
@@ -122,20 +131,38 @@ pub fn route() -> Router<AppState> {
 
 /// Get a list of all tournaments
 #[utoipa::path(get, path = "/tournament", 
-    responses((
-    status=200, description = "Ok",
-    body=Vec<Tournament>,
-    example=json!(get_tournaments_list_example())
-)))]
-async fn get_tournaments(State(state): State<AppState>) -> Response {
-    match query_as!(Tournament, "SELECT * FROM tournaments")
-        .fetch_all(&state.connection_pool)
-        .await
+    responses(
+        (
+        status=200, description = "Ok",
+        body=Vec<Tournament>,
+        example=json!(get_tournaments_list_example())
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to read tournaments"
+        ),
+        (status=500, description = "Internal server error")
+))]
+async fn get_tournaments(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteDebates) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+    match Tournament::get_all(&state.connection_pool).await
     {
-        Ok(tournaments) => Json(tournaments).into_response(),
+        Ok(tournaments) => Ok(Json(tournaments).into_response()),
         Err(e) => {
             error!("Error getting a list of tournaments: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
@@ -145,111 +172,155 @@ async fn get_tournaments(State(state): State<AppState>) -> Response {
     post,
     request_body=Tournament,
     path = "/tournament",
-    responses((
-        status=200, 
-        description = "Tournament created successfully",
-        body=Tournament,
-        example=json!(get_tournament_example_with_id())
-    ))
+    responses
+    (
+        (
+            status=200, 
+            description = "Tournament created successfully",
+            body=Tournament,
+            example=json!(get_tournament_example_with_id())
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to modify tournaments"
+        ),
+        (status=404, description = "Tournament not found"),
+        (status=500, description = "Internal server error")
+    )
 )]
 async fn create_tournament(
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
     Json(json): Json<Tournament>,
-) -> Response {
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-
-    match Tournament::post(json, pool).await {
-        Ok(tournament) => Json(tournament).into_response(),
-        Err(e) => {
-            error!("Error creating a new tournament: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
+    let user = User::authenticate(&headers, cookies, &pool).await?;
+    if !user.is_infrastructure_admin() {
+        return Err(OmniError::UnauthorizedError);
     }
+
+    let tournament = Tournament::post(json, pool).await?;
+    return Ok(Json(tournament).into_response());
+
+    // TO-DO: make the user performing the operation admin within this tournament
 }
 
 /// Get details of an existing tournament
 #[utoipa::path(get, path = "/tournament/{id}", 
-    responses((status=200, description = "Ok", body=Tournament,
-    example=json!
-    (get_tournament_example_with_id())
-    )),
-    params(("id", description = "Tournament id"))
+    responses
+    (
+        (
+            status=200, description = "Ok", body=Tournament,
+            example=json!
+            (get_tournament_example_with_id())
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to read tournaments"
+        ),
+        (status=404, description = "Tournament not found"),
+        (status=500, description = "Internal server error")
+    ),
 )]
 async fn get_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
-    match Tournament::get_by_id(id, &state.connection_pool).await {
-        Ok(tournament) => Json(tournament).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadTournaments) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+    match Tournament::get_by_id(id, pool).await {
+        Ok(tournament) => Ok(Json(tournament).into_response()),
+        Err(e) => Err(e),
     }
 }
 
 /// Patch an existing tournament
 #[utoipa::path(patch, path = "/tournament/{id}", 
     request_body=TournamentPatch,
-    params(("id", description = "Tournament id")),
     responses(
         (
             status=200, description = "Tournament patched successfully",
             body=Tournament,
             example=json!(get_tournament_example_with_id())
-        )
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to modify tournaments"
+        ),
+        (status=404, description = "Tournament not found"),
+        (status=409, description = "A tournament with this name already exists"),
+        (status=500, description = "Internal server error")
     )
 )]
 async fn patch_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(new_tournament): Json<TournamentPatch>,
-) -> Response {
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    match Tournament::get_by_id(id, pool).await {
-    Ok(tournament) => match tournament.patch(new_tournament, pool).await {
-        Ok(patched_tournament) => Json(patched_tournament).into_response(),
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteTournaments) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let tournament = Tournament::get_by_id(id, pool).await?;
+    match tournament.patch(new_tournament, pool).await {
+        Ok(patched_tournament) => Ok(Json(patched_tournament).into_response()),
         Err(e) => {
             error!("Error patching a tournament with id {}: {e}", id);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        },
-    },
-    Err(e) => handle_failed_to_get_resource_by_id(e),
+            Err(e)
+        }
     }
 }
 
 
 /// Delete an existing tournament.
 /// 
-/// This operation is only allowed when there are no resources (i.e. teams, roles, and debates)
+/// This operation is only allowed when there are no resources
 /// referencing this tournament.
 #[utoipa::path(delete, path = "/tournament/{id}", 
     responses(
         (status=204, description = "Tournament deleted successfully"),
+        (status=403, description = "The user is not permitted to modify tournaments"),
         (status=404, description = "Tournament not found"),
-        (status=409, description = r#"
-            There are teams, roles, or debates that
-            reference this tournament. They must be deleted first
-        "#)
+        (status=409, description = "Other resources reference this tournament. They must be deleted first")
     ),
-    params(("id", description = "Tournament id"))
 )]
 async fn delete_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
+) -> Result<Response, OmniError> {
     match Tournament::get_by_id(id, &state.connection_pool).await {
         Ok(tournament) => match tournament.delete(&state.connection_pool).await {
-            Ok(_) => StatusCode::NO_CONTENT.into_response(),
+            Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
             Err(e) =>
             {
                 if e.is_sqlx_foreign_key_violation() {
-                    return OmniError::DependentResourcesError.into_response()
+                    return Err(OmniError::DependentResourcesError)
                 }
                 else {
                     error!("Error deleting a tournament with id {id}: {e}");
-                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                    return Err(e)?;
                 }
             },
         },
-        Err(e) => return handle_failed_to_get_resource_by_id(e),
+        Err(e) => return Err(e),
     }
 }
 

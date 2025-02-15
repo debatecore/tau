@@ -1,7 +1,6 @@
-use super::utils::handle_failed_to_get_resource_by_id;
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
@@ -9,15 +8,18 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{query, query_as, Error, Pool, Postgres};
+use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    users::{permissions::Permission, TournamentUser},
+};
 
 const POSITION_OUT_OF_RANGE_MESSAGE: &str = "Attendee position must be in range of 1-4.";
-const POSITION_CONFLICT_MESSAGE: &str =
-    "Attendee with this position is already assigned to the team";
 
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -41,7 +43,7 @@ pub struct Attendee {
 }
 
 #[derive(Deserialize, ToSchema)]
-struct AttendeePatch {
+pub struct AttendeePatch {
     name: Option<String>,
     position: Option<i32>,
     team_id: Option<Uuid>,
@@ -132,9 +134,12 @@ impl Attendee {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/attendee", post(create_attendee).get(get_attendees))
         .route(
-            "/attendee/:id",
+            "/tournament/:tournament_id/attendee",
+            post(create_attendee).get(get_attendees),
+        )
+        .route(
+            "/:tournament_id/attendee/:id",
             get(get_attendee_by_id)
                 .patch(patch_attendee_by_id)
                 .delete(delete_attendee_by_id),
@@ -145,7 +150,7 @@ pub fn route() -> Router<AppState> {
 #[utoipa::path(
     post,
     request_body=Attendee,
-    path = "/attendee",
+    path = "/tournament/{tournament_id}/attendee",
     responses(
         (
             status=200, description = "Attendee created successfully",
@@ -153,159 +158,237 @@ pub fn route() -> Router<AppState> {
             example=json!(get_attendee_example())
         ),
         (
-            status=400, description = "Attendee position is invalid",
+            status=400, description = "Bad request",
         ),
         (
+            status=403,
+            description = "The user is not permitted to create attendees within this tournament",
+        ),
+        (status=404, description = "Tournament not found"),
+        (
             status=409, description = "Attendee position is duplicated",
+        ),
+        (
+            status=500, description = "Internal server error",
         ),
     )
 )]
 async fn create_attendee(
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(attendee): Json<Attendee>,
-) -> Response {
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteAttendees) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     if !attendee.position.is_none() {
         if !attendee_position_is_valid(attendee.position.unwrap()) {
-            return (StatusCode::BAD_REQUEST, POSITION_OUT_OF_RANGE_MESSAGE)
-                .into_response();
+            return Err(OmniError::BadRequestError);
         }
-        match attendee_position_is_duplicated(&attendee, &state.connection_pool).await {
+        match attendee_position_is_duplicated(&attendee, pool).await {
             Ok(position_duplicated) => {
                 if position_duplicated {
-                    return OmniError::ResourceAlreadyExistsError.into_response();
+                    return Err(OmniError::ResourceAlreadyExistsError);
                 }
             }
-            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Err(_) => return Err(OmniError::InternalServerError),
         }
     }
 
-    match Attendee::post(attendee, &state.connection_pool).await {
-        Ok(attendee) => Json(attendee).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    match Attendee::post(attendee, pool).await {
+        Ok(attendee) => Ok(Json(attendee).into_response()),
+        Err(e) => Err(e)?,
     }
 }
 
-#[utoipa::path(get, path = "/attendee", 
-    responses((
-    status=200, description = "Ok",
-    body=Vec<Attendee>,
-    example=json!(get_attendees_list_example())
-)))]
+#[utoipa::path(get, path = "/tournament/{tournament_id}/attendee", 
+    responses(
+        (
+            status=200,
+            description = "Ok",
+            body=Vec<Attendee>,
+            example=json!(get_attendees_list_example())
+        ),
+        (
+            status=403,
+            description = "The user is not get to create attendees within this tournament",
+        ),
+        (status=404, description = "Tournament not found"),
+        (
+            status=500, description = "Internal server error",
+        ),
+    )
+)]
 /// Get a list of all attendees
-async fn get_attendees(State(state): State<AppState>) -> Response {
+async fn get_attendees(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteAttendees) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match query_as!(Attendee, "SELECT * FROM attendees")
         .fetch_all(&state.connection_pool)
         .await
     {
-        Ok(attendees) => Json(attendees).into_response(),
+        Ok(attendees) => Ok(Json(attendees).into_response()),
         Err(e) => {
             error!("Error getting a list of attendees: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
 
 /// Get details of an existing attendee
-#[utoipa::path(get, path = "/attendee/{id}", 
+#[utoipa::path(get, path = "/tournament/{tournament_id}/attendee/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Attendee,
             example=json!(get_attendee_example())
         ),
         (
-            status=400, description = "Attendee not found",
+            status=403,
+            description = "The user is not permitted to get attendees within this tournament",
+        ),
+        (status=404, description = "Tournament or attendee not found"),
+        (
+            status=500, description = "Internal server error",
         ),
     ),
-    params(("id", description = "Attendee id"))
 )]
 async fn get_attendee_by_id(
     Path(id): Path<Uuid>,
+    Path(tournament_id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
+    headers: HeaderMap,
+    cookies: Cookies,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadAttendees) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match Attendee::get_by_id(id, &state.connection_pool).await {
-        Ok(attendee) => Json(attendee).into_response(),
+        Ok(attendee) => Ok(Json(attendee).into_response()),
         Err(e) => match e {
-            OmniError::ResourceNotFoundError => e.into_response(),
-            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            OmniError::ResourceNotFoundError => Err(e),
+            _ => Err(e)?,
         },
     }
 }
 
 /// Patch an existing attendee
-#[utoipa::path(patch, path = "/attendee/{id}", 
+#[utoipa::path(patch, path = "/tournament/{tournament_id}/attendee/{id}", 
     request_body=AttendeePatch,
-    params(("id", description = "Attendee id")),
     responses(
         (
             status=200, description = "Attendee patched successfully",
             body=Attendee,
             example=json!(get_attendee_example())
         ),
-        (status=422, description = "Attendee position out of range [1-4]")
+        (
+            status=403,
+            description = "The user is not permitted to patch attendees within this tournament",
+        ),
+        (status=404, description = "Tournament or attendee not found"),
+        (status=409, description = "Attendee position is duplicated"),
+        (status=422, description = "Attendee position out of range [1-4]"),
+        (status=500, description = "Internal server error"),
     )
 )]
 async fn patch_attendee_by_id(
     Path(id): Path<Uuid>,
+    Path(tournament_id): Path<Uuid>,
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
     Json(new_attendee): Json<AttendeePatch>,
-) -> Response {
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteAttendees) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     if !new_attendee.position.is_none() {
         if !attendee_position_is_valid(new_attendee.position.unwrap()) {
-            return (
+            return Ok((
                 StatusCode::UNPROCESSABLE_ENTITY,
                 POSITION_OUT_OF_RANGE_MESSAGE,
             )
-                .into_response();
+                .into_response());
         }
     }
-    let pool = &state.connection_pool;
-    let attendee_exists_result = Attendee::get_by_id(id, pool).await;
-    if attendee_exists_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let attendee = attendee_exists_result.ok().unwrap();
-
-    let position_is_unique_result =
-        attendee_position_is_duplicated(&attendee, pool).await;
-    if position_is_unique_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let position_is_unique = position_is_unique_result.ok().unwrap();
+    let attendee = Attendee::get_by_id(id, pool).await?;
+    let position_is_unique = attendee_position_is_duplicated(&attendee, pool).await?;
     if !position_is_unique {
-        return (StatusCode::CONFLICT, POSITION_CONFLICT_MESSAGE).into_response();
+        return Err(OmniError::ResourceAlreadyExistsError);
     }
 
     match attendee.patch(pool, new_attendee).await {
-        Ok(attendee) => Json(attendee).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(attendee) => Ok(Json(attendee).into_response()),
+        Err(e) => Err(e)?,
     }
 }
 
 /// Delete an existing attendee
-#[utoipa::path(delete, path = "/attendee/{id}", 
+#[utoipa::path(delete, path = "/tournament/{tournament_id}/attendee/{id}", 
     responses
     (
         (status=204, description = "Attendee deleted successfully"),
-
-        (status=400, description = "Attendee not found"),
+        (
+            status=403,
+            description = "The user is not permitted to delete attendees within this tournament",
+        ),
+        (status=404, description = "Tournament or attendee not found"),
+        (
+            status=500, description = "Internal server error",
+        ),
     ),
-    params(("id", description = "Attendee id"))
 )]
 async fn delete_attendee_by_id(
     Path(id): Path<Uuid>,
+    Path(tournament_id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
+    headers: HeaderMap,
+    cookies: Cookies,
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let attendee_exists_result = Attendee::get_by_id(id, pool).await;
-    match attendee_exists_result {
-        Ok(_) => (),
-        Err(e) => handle_failed_to_get_resource_by_id(e),
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteAttendees) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
     }
 
-    let attendee = attendee_exists_result.ok().unwrap();
+    let attendee = Attendee::get_by_id(id, pool).await?;
     match attendee.delete(pool).await {
-        Ok(_) => StatusCode::NO_CONTENT.into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Err(e) => Err(e)?,
     }
 }
 

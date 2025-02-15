@@ -1,8 +1,7 @@
-use super::utils::handle_failed_to_get_resource_by_id;
-use crate::{omni_error::OmniError, setup::AppState};
+use crate::{omni_error::OmniError, setup::AppState, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
@@ -10,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{query, query_as, Pool, Postgres};
+use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -106,146 +106,226 @@ impl Debate {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/debate", get(get_debates).post(create_debate))
+        .route("/:tournament_id/debate", get(get_debates).post(create_debate))
         .route(
-            "/debate/:id",
+            "/:tournament_id/debate/:id",
             get(get_debate_by_id)
                 .delete(delete_debate_by_id)
                 .patch(patch_debate_by_id),
         )
 }
 
-#[utoipa::path(get, path = "/debate", 
-    responses((
-        status=200, description = "Ok",
-        body=Vec<Debate>,
-    ))
+#[utoipa::path(get, path = "/tournament/{tournament_id}/debate", 
+    responses(
+        (
+            status=200, description = "Ok",
+            body=Vec<Debate>,
+        ),
+        (
+            status=403,
+            description = "The user is not permitted to read debates within this tournament",
+        ),
+        (status=404, description = "Tournament not found"),
+        (status=500, description = "Internal server error"),
+    )
 )]
 /// Get a list of all debates
-async fn get_debates(State(state): State<AppState>) -> Response {
+async fn get_debates(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadDebates) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match query_as!(Debate, "SELECT * FROM debates")
         .fetch_all(&state.connection_pool)
         .await
     {
-        Ok(debates) => Json(debates).into_response(),
+        Ok(debates) => Ok(Json(debates).into_response()),
         Err(e) => {
             error!("Error getting a list of debates: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
 
 /// Create a new debate
-#[utoipa::path(post, request_body=Debate, path = "/debate",
-    responses((
-        status=200,
-        description = "Debate created successfully",
-        body=Debate,
-    ))
+#[utoipa::path(post, request_body=Debate, path = "/tournament/{tournament_id}/debate",
+    responses(
+        (
+            status=200,
+            description = "Debate created successfully",
+            body=Debate,
+        ),
+        (
+            status=403,
+            description = "The user is not permitted to modify debates within this tournament",
+        ),
+        (status=404, description = "Tournament or attendee not found"),
+        (status=500, description = "Internal server error"),
+    )
 )]
 async fn create_debate(
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(json): Json<Debate>,
-) -> Response {
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteDebates) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match Debate::post(json, &state.connection_pool).await {
-        Ok(debate) => Json(debate).into_response(),
+        Ok(debate) => Ok(Json(debate).into_response()),
         Err(e) => {
             error!("Error creating a new debate: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
 
 /// Get details of an existing debate
-#[utoipa::path(get, path = "/debate/{id}", 
+#[utoipa::path(get, path = "/tournament/{tournament_id}/debate/{id}", 
     responses(
         (
             status=200,
             description = "Ok",
             body=Debate,
         ),
-        (status=400, description = "Debate not found")
+        (
+            status=403,
+            description = "The user is not permitted to read debates within this tournament",
+        ),
+        (status=404, description = "Tournament or debate not found"),
+        (status=500, description = "Internal server error"),
     ),
-    params(("id", description = "Debate id"))
 )]
 async fn get_debate_by_id(
-    Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+    Path(id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadDebates) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match Debate::get_by_id(id, &state.connection_pool).await {
-        Ok(debate) => Json(debate).into_response(),
+        Ok(debate) => Ok(Json(debate).into_response()),
         Err(e) => match e {
-            OmniError::ResourceNotFoundError => e.into_response(),
+            OmniError::ResourceNotFoundError => Err(e),
             _ => {
                 error!("Error getting a debate with id {id}: {e}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                Err(e)?
             }
         },
     }
 }
 
 /// Patch an existing debate
-#[utoipa::path(patch, path = "/debate/{id}", 
+#[utoipa::path(patch, path = "tournament/{tournament_id}/debate/{id}", 
     request_body=DebatePatch,
-    params(("id", description = "Debate id")),
     responses(
         (
             status=200, description = "Debate patched successfully",
             body=Debate,
         ),
-        (status=400, description = "Debate not found")
+        (
+            status=403, 
+            description = "The user is not permitted to modify debates within this tournament"
+        ),
+        (status=404, description = "Tournament or debate not found"),
+        (status=500, description = "Internal server error"),
     )
 )]
 async fn patch_debate_by_id(
-    Path(id): Path<Uuid>,
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+    Path(id): Path<Uuid>,
     Json(new_debate): Json<DebatePatch>,
-) -> Response {
-    let existing_debate_result = Debate::get_by_id(id, &state.connection_pool).await;
-    match existing_debate_result {
-        Ok(_) => (),
-        Err(e) => match e {
-            OmniError::ResourceNotFoundError => return e.into_response(),
-            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        },
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteDebates) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
     }
 
-    let existing_debate = existing_debate_result.unwrap();
+    let existing_debate = Debate::get_by_id(id, &state.connection_pool).await?;
     match existing_debate
         .patch(new_debate, &state.connection_pool)
         .await
     {
-        Ok(debate) => Json(debate).into_response(),
+        Ok(debate) => Ok(Json(debate).into_response()),
         Err(e) => {
             error!("Error patching a debate with id {id}: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
 
 /// Delete an existing debate
-#[utoipa::path(delete, path = "/debate/{id}", 
+#[utoipa::path(delete, path = "{tournament_id}/debate/{id}", 
     responses
     (
         (status=204, description = "Debate deleted successfully"),
-        (status=400, description = "Debate not found")
+        (status=404, description = "Debate not found"),
+        (
+            status=403, 
+            description = "The user is not permitted to modify debates within this tournament"
+        ),
+        (status=404, description = "Tournament or debate not found"),
+        (status=500, description = "Internal server error"),
     ),
-    params(
-        ("id", description = "Debate id"),
-    )
 )]
 async fn delete_debate_by_id(
-    Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+    Path(id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteDebates) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match Debate::get_by_id(id, &state.connection_pool).await {
         Ok(debate) => match debate.delete(&state.connection_pool).await {
-            Ok(_) => StatusCode::NO_CONTENT.into_response(),
+            Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
             Err(e) => match e {
-                OmniError::ResourceAlreadyExistsError => e.into_response(),
-                _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+                OmniError::ResourceAlreadyExistsError => Err(e),
+                _ => Err(e),
             },
         },
-        Err(e) => return handle_failed_to_get_resource_by_id(e),
+        Err(e) => Err(e),
     }
 }

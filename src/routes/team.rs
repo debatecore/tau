@@ -1,19 +1,20 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Error, Pool, Postgres};
+use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::setup::AppState;
+use crate::{omni_error::OmniError, setup::AppState, users::{permissions::Permission, TournamentUser}};
 
-use super::utils::handle_failed_to_get_resource_by_id;
+use super::tournament::Tournament;
 
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
@@ -39,7 +40,10 @@ pub struct TeamPatch {
 }
 
 impl Team {
-    async fn post(team: Team, connection_pool: &Pool<Postgres>) -> Result<Team, Error> {
+    async fn post(
+        team: Team,
+        connection_pool: &Pool<Postgres>,
+    ) -> Result<Team, OmniError> {
         match team_with_name_exists_in_tournament(
             &team.full_name,
             &team.tournament_id,
@@ -49,17 +53,10 @@ impl Team {
         {
             Ok(exists) => {
                 if exists {
-                    // TO-DO: change the error to actually represent what's going on
-                    // (team name already exists in this tournament)
-                    return Err(sqlx::Error::PoolClosed);
+                    return Err(OmniError::ResourceAlreadyExistsError);
                 }
             }
-            Err(e) => {
-                return {
-                    error!("Error creating a team: {e}");
-                    Err(e)
-                }
-            }
+            Err(e) => return Err(e)?,
         }
         match query_as!(
             Team,
@@ -74,7 +71,7 @@ impl Team {
         .await
         {
             Ok(_) => Ok(team),
-            Err(e) => Err(e),
+            Err(e) => Err(e)?,
         }
     }
 
@@ -129,9 +126,9 @@ impl Team {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/team", get(get_teams).post(create_team))
+        .route("/:tournament_id/team", get(get_teams).post(create_team))
         .route(
-            "/team/:id",
+            "/:tournament_id/team/:id",
             get(get_team_by_id)
                 .patch(patch_team_by_id)
                 .delete(delete_team_by_id),
@@ -139,59 +136,104 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new team
-#[utoipa::path(post, request_body=Team, path = "/team",
-    responses((
-        status=200, description = "Team created successfully",
-        body=Team,
-        example=json!(get_team_example())
-    ))
+#[utoipa::path(post, request_body=Team, path = "/{tournament_id}/team",
+    responses
+    (
+        (
+            status=200, description = "Team created successfully",
+            body=Team,
+            example=json!(get_team_example())
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to modify teams within this tournament"
+        ),
+        (status=404, description = "Tournament or team not found"),
+        (status=500, description = "Internal server error"),
+    )
 )]
-async fn create_team(State(state): State<AppState>, Json(json): Json<Team>) -> Response {
+async fn create_team(
+    State(state): State<AppState>,
+    Json(json): Json<Team>,
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     match Tournament::get_by_id(json.tournament_id, &state.connection_pool).await {
         Ok(_) => (),
-        Err(e) => return handle_failed_to_get_resource_by_id(e),
+        Err(e) => return Err(e),
     };
 
     match Team::post(json, pool).await {
-        Ok(team) => Json(team).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(team) => Ok(Json(team).into_response()),
+        Err(e) => Err(e),
     }
 }
 
-#[utoipa::path(get, path = "/team", 
-    responses((
-    status=200, description = "Ok",
-    body=Vec<Motion>,
-    example=json!(get_teams_list_example())
-)))]
+#[utoipa::path(get, path = "/{tournament_id}/team", 
+    responses
+    (
+        (
+            status=200, description = "Ok",
+            body=Vec<Motion>,
+            example=json!(get_teams_list_example())
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to read teams within this tournament"
+        ),
+        (status=404, description = "Tournament or team not found"),
+        (status=500, description = "Internal server error"),
+    )
+)]
 /// Get a list of all teams
-async fn get_teams(State(state): State<AppState>) -> Response {
+async fn get_teams(State(state): State<AppState>) -> Result<Response, OmniError> {
     match query_as!(Team, "SELECT * FROM teams")
         .fetch_all(&state.connection_pool)
         .await
     {
-        Ok(teams) => Json(teams).into_response(),
+        Ok(teams) => Ok(Json(teams).into_response()),
         Err(e) => {
             error!("Error getting a list of teams: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
 
 /// Get details of an existing team
-#[utoipa::path(get, path = "/team/{id}", 
-    responses((status=200, description = "Ok", body=Team,
-    example=json!(get_team_example())
-    )),
-    params(("id", description = "Team id"))
+#[utoipa::path(get, path = "{tournament_id}/team/{id}", 
+    responses(
+        (
+            status=200, description = "Ok", body=Team,
+            example=json!(get_team_example())
+        ),
+        (
+            status=403, 
+            description = "The user is not permitted to read teams within this tournament"
+        ),
+        (status=404, description = "Tournament or team not found"),
+        (status=500, description = "Internal server error"),
+    ),
 )]
-async fn get_team_by_id(Path(id): Path<Uuid>, State(state): State<AppState>) -> Response {
-    match Team::get_by_id(id, &state.connection_pool).await {
-        Ok(team) => Json(team).into_response(),
+async fn get_team_by_id(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+    Path(id): Path<Uuid>
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadTeams) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    match Team::get_by_id(id, pool).await {
+        Ok(team) => Ok(Json(team).into_response()),
         Err(e) => {
             error!("Error getting a team with id {id}: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
@@ -199,7 +241,6 @@ async fn get_team_by_id(Path(id): Path<Uuid>, State(state): State<AppState>) -> 
 /// Patch an existing team
 #[utoipa::path(patch, path = "/team/{id}", 
     request_body=Team,
-    params(("id", description = "Team id")),
     responses(
         (
             status=200, description = "Team patched successfully",
@@ -207,49 +248,49 @@ async fn get_team_by_id(Path(id): Path<Uuid>, State(state): State<AppState>) -> 
             example=json!(get_team_example())
         ),
         (
+            status=403, 
+            description = "The user is not permitted to modify teams within this tournament"
+        ),
+        (status=404, description = "Tournament or team not found"),
+        (
             status=409,
             description = DUPLICATE_NAME_ERROR,
-        )
+        ),
+        (status=500, description = "Internal server error"),
     )
 )]
 async fn patch_team_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
     Json(new_team): Json<TeamPatch>,
-) -> Response {
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
 
-    let team_exists_result = Team::get_by_id(id, pool).await;
-    if team_exists_result.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    let team = team_exists_result.unwrap();
-
-    let team_with_this_name_exists =
-        team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool)
-            .await;
-    if team_with_this_name_exists.is_err() {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    } else if team_with_this_name_exists
-        .is_ok_and(|name_is_duplicate| name_is_duplicate == true)
-    {
-        return (StatusCode::CONFLICT, DUPLICATE_NAME_ERROR).into_response();
+    let team = Team::get_by_id(id, pool).await?;
+    if team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool).await? {
+        return Err(OmniError::ResourceAlreadyExistsError)
     }
 
     match team.patch(new_team, pool).await {
-        Ok(team) => Json(team).into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(team) => Ok(Json(team).into_response()),
+        Err(e) => Err(e)?,
     }
 }
 
 /// Delete an existing team
 ///
-/// This operation is only allowed when there are no entities (i.e. attendees)
+/// This operation is only allowed when there are no entities
 /// referencing this team.
 #[utoipa::path(delete, path = "/team/{id}", 
     responses
-    ((status=204, description = "Team deleted successfully")),
-    params(("id", description = "Team id"))
+    (
+        (status=204, description = "Team deleted successfully"),
+        (
+            status=403, 
+            description = "The user is not permitted to modify teams within this tournament"
+        ),
+        (status=404, description = "Tournament or team not found"),
+    ),
 )]
 async fn delete_team_by_id(
     Path(id): Path<Uuid>,

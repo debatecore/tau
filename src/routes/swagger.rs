@@ -66,6 +66,7 @@ pub fn route() -> Router<AppState> {
         debate::Debate,
         debate::DebatePatch,
         attendee::Attendee,
+        attendee::AttendeePatch,
     ))
 )]
 

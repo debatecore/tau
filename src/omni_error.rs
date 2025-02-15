@@ -6,6 +6,9 @@ use axum::{
 const RESOURCE_ALREADY_EXISTS_MESSAGE: &str = "Resource already exists";
 const RESOURCE_NOT_FOUND_MESSAGE: &str = "Resource not found";
 const DEPENDENT_RESOURCES_MESSAGE: &str = "Dependent resources must be deleted first";
+const INTERNAL_SERVER_ERROR_MESSAGE: &str = "Internal Server Error";
+const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
+const BAD_REQUEST: &str = "Bad Request";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -34,6 +37,12 @@ pub enum OmniError {
     ResourceNotFoundError,
     #[error("{DEPENDENT_RESOURCES_MESSAGE}")]
     DependentResourcesError,
+    #[error("{INTERNAL_SERVER_ERROR_MESSAGE}")]
+    InternalServerError,
+    #[error("{UNAUTHORIZED_MESSAGE}")]
+    UnauthorizedError,
+    #[error("{BAD_REQUEST}")]
+    BadRequestError,
 }
 
 impl IntoResponse for OmniError {
@@ -84,7 +93,7 @@ impl OmniError {
             E::AuthError(e) => (e.status_code(), e.to_string()).into_response(),
             E::SqlxError(e) => match e {
                 sqlx::Error::RowNotFound => {
-                    return (StatusCode::BAD_REQUEST, RESOURCE_NOT_FOUND_MESSAGE)
+                    return (StatusCode::NOT_FOUND, RESOURCE_NOT_FOUND_MESSAGE)
                         .into_response()
                 }
                 sqlx::Error::Database(e) => {
@@ -118,6 +127,13 @@ impl OmniError {
             E::DependentResourcesError => {
                 (StatusCode::CONFLICT, self.clerr()).into_response()
             }
+            E::InternalServerError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.clerr()).into_response()
+            }
+            E::UnauthorizedError => {
+                (StatusCode::UNAUTHORIZED, self.clerr()).into_response()
+            }
+            E::BadRequestError => (StatusCode::BAD_REQUEST, self.clerr()).into_response(),
         }
     }
 
@@ -135,6 +151,9 @@ impl OmniError {
             E::ResourceAlreadyExistsError => RESOURCE_ALREADY_EXISTS_MESSAGE,
             E::ResourceNotFoundError => RESOURCE_NOT_FOUND_MESSAGE,
             E::DependentResourcesError => DEPENDENT_RESOURCES_MESSAGE,
+            E::InternalServerError => INTERNAL_SERVER_ERROR_MESSAGE,
+            E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
+            E::BadRequestError => BAD_REQUEST,
         }
         .to_string()
     }

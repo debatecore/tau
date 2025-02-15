@@ -1,7 +1,7 @@
-use crate::{omni_error::OmniError, setup::AppState};
+use crate::{omni_error::OmniError, setup::AppState, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
@@ -9,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{query, query_as, Error, Pool, Postgres};
+use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -118,31 +119,45 @@ impl Motion {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/motion", get(get_motions).post(create_motion))
+        .route("/tournament/:tournament/motion", get(get_motions).post(create_motion))
         .route(
-            "/motion/:id",
+            "/tournament/:tournament_id/motion/:id",
             get(get_motion_by_id)
                 .delete(delete_motion_by_id)
                 .patch(patch_motion_by_id),
         )
 }
 
-#[utoipa::path(get, path = "/motion", 
+#[utoipa::path(get, path = "/tournament/{tournament_id}/motion", 
     responses((
     status=200, description = "Ok",
     body=Vec<Motion>,
     example=json!(get_motions_list_example())
 )))]
 /// Get a list of all motions
-async fn get_motions(State(state): State<AppState>) -> Response {
+async fn get_motions(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadMotions) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match query_as!(Motion, "SELECT * FROM motions")
-        .fetch_all(&state.connection_pool)
+        .fetch_all(pool)
         .await
     {
-        Ok(motions) => Json(motions).into_response(),
+        Ok(motions) => Ok(Json(motions).into_response()),
         Err(e) => {
             error!("Error getting a list of motions: {e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(e)?
         }
     }
 }
@@ -151,30 +166,43 @@ async fn get_motions(State(state): State<AppState>) -> Response {
 #[utoipa::path(
     post,
     request_body=Motion,
-    path = "/motion",
+    path = "/tournament/{tournament_id}/motion",
     responses(
         (
         status=200, description = "Motion created successfully",
         body=Motion, 
         example=json!(get_motion_example())
         ),
+        (
+            status=403, 
+            description = "The user is not permitted to modify motions within this tournament"
+        ),
+        (status=404, description = "Tournament or motion not found"),
         (status=409, description = DUPLICATE_MOTION_ERROR)
     
     )
 )]
 async fn create_motion(
-    State(state): State<AppState>,
+State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(json): Json<Motion>,
-) -> Response {
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteMotions) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match Motion::post(json, &state.connection_pool).await {
         Ok(motion) => {
-            // TO-DO: Log successful motion creation
-            Json(motion).into_response()
+            Ok(Json(motion).into_response())
         },
-        Err(e) => match e {
-            OmniError::ResourceAlreadyExistsError => return e.into_response(),
-            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
+        Err(e) => Err(e)?
     }
 }
 
@@ -183,87 +211,104 @@ async fn create_motion(
     responses((status=200, description = "Ok", body=Motion,
     example=json!(get_motion_example())
     )),
-    params(("id", description = "Motion id"))
 )]
 async fn get_motion_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+    match tournament_user.has_permission(Permission::ReadMotions) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
     match Motion::get_by_id(id, &state.connection_pool).await {
-        Ok(motion) => Json(motion).into_response(),
-        Err(e) => match e {
-            OmniError::ResourceNotFoundError => e.into_response(),
-            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        },
+        Ok(motion) => Ok(Json(motion).into_response()),
+        Err(e) => Err(e)?
     }
 }
 
 /// Patch an existing motion
-#[utoipa::path(patch, path = "/motion/{id}", 
+#[utoipa::path(patch, path = "/tournament/{tournament_id}/motion/{id}", 
     request_body=MotionPatch,
-    params(("id", description = "Motion id")),
     responses(
         (
             status=200, description = "Motion patched successfully",
             body=Motion,
             example=json!(get_motion_example())
         ),
-        (status=400, description = "Motion not found")
+        (
+            status=403, 
+            description = "The user is not permitted to modify motions within this tournament"
+        ),
+        (status=404, description = "Tournament or motion not found")
     )
 )]
 async fn patch_motion_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
     Json(new_motion): Json<MotionPatch>,
-) -> Response {
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let get_motion_by_id_result = Motion::get_by_id(id, pool).await;
-    match get_motion_by_id_result {
-        Ok(_) => (),
-        Err(e) => match e {
-            OmniError::ResourceNotFoundError => return e.into_response(),
-            _ => return StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
-    let existing_motion = get_motion_by_id_result.ok().unwrap();
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
+    match tournament_user.has_permission(Permission::WriteMotions) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let existing_motion = Motion::get_by_id(id, pool).await?;
     match existing_motion.patch(new_motion, &state.connection_pool).await {
-        Ok(patched_motion) => Json(patched_motion).into_response(),
-        Err(e) => match e {
-            OmniError::ResourceAlreadyExistsError => e.into_response(),
-            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
+        Ok(patched_motion) => Ok(Json(patched_motion).into_response()),
+        Err(e) => Err(e)
     }
 }
 
 /// Delete an existing motion
 /// This operation is only allowed when there are no entities (i.e. debates)
 /// referencing this tournament.
-#[utoipa::path(delete, path = "/motion/{id}", 
+#[utoipa::path(delete, path = "/tournament/{tournament_id}/motion/{id}", 
     responses
     (
         (status=204, description = "Motion deleted successfully"),
-        (status=400, description = "Motion not found")
+        (
+            status=403, 
+            description = "The user is not permitted to modify motions within this tournament"
+        ),
+        (status=404, description = "Tournament or motion not found")
     ),
     
-    params(("id", description = "Motion id"))
 )]
 async fn delete_motion_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Response {
-    match Motion::get_by_id(id, &state.connection_pool).await {
-        Ok(motion) => match motion.delete(&state.connection_pool).await {
-            Ok(_) => StatusCode::NO_CONTENT.into_response(),
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        },
-        Err(e) => match e {
-            OmniError::ResourceNotFoundError => e.into_response(),
-            _ => {
-                error!("Error deleting a motion with id {id}: {e}");
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        }
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteMotions) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let motion = Motion::get_by_id(id, pool).await?;
+    match motion.delete(pool).await {
+            Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
+            Err(e) => Err(e)?
     }
 }
 
