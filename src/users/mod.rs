@@ -17,7 +17,7 @@ pub mod photourl;
 pub mod queries;
 pub mod roles;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct User {
     pub id: Uuid,
     pub handle: String,

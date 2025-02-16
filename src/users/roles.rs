@@ -27,11 +27,24 @@ impl Role {
                 P::WriteDebates,
                 P::ReadTeams,
                 P::WriteTeams,
-                P::ReadTournaments,
-                P::WriteTournaments,
+                P::ReadTournament,
+                P::WriteTournament,
+                P::SubmitVerdict,
             ],
-            Role::Judge => vec![P::SubmitOwnVerdictVote],
-            Role::Marshall => vec![P::SubmitVerdict],
+            Role::Judge => vec![
+                P::ReadAttendees,
+                P::ReadDebates,
+                P::ReadTeams,
+                P::ReadTournament,
+                P::SubmitOwnVerdictVote,
+            ],
+            Role::Marshall => vec![
+                P::ReadDebates,
+                P::ReadAttendees,
+                P::ReadTeams,
+                P::ReadTournament,
+                P::SubmitVerdict,
+            ],
         }
     }
 }

@@ -9,6 +9,7 @@ use crate::routes::debate;
 use crate::routes::motion;
 use crate::routes::team;
 use crate::routes::tournament;
+use crate::users::permissions;
 
 use super::health_check;
 use super::teapot;
@@ -67,6 +68,7 @@ pub fn route() -> Router<AppState> {
         debate::DebatePatch,
         attendee::Attendee,
         attendee::AttendeePatch,
+        permissions::Permission,
     ))
 )]
 

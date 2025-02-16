@@ -130,16 +130,18 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Get a list of all tournaments
+/// 
+/// This request only returns the tournaments the user is permitted to see
 #[utoipa::path(get, path = "/tournament", 
     responses(
         (
-        status=200, description = "Ok",
-        body=Vec<Tournament>,
-        example=json!(get_tournaments_list_example())
+            status=200, description = "Ok",
+            body=Vec<Tournament>,
+            example=json!(get_tournaments_list_example())
         ),
         (
             status=403, 
-            description = "The user is not permitted to read tournaments"
+            description = "The user is not permitted to list tournaments"
         ),
         (status=500, description = "Internal server error")
 ))]
@@ -147,24 +149,23 @@ async fn get_tournaments(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+    let user = User::authenticate(&headers, cookies, pool).await?;
 
-    match tournament_user.has_permission(Permission::WriteDebates) {
-        true => (),
-        false => return Err(OmniError::UnauthorizedError),
-    }
-    match Tournament::get_all(&state.connection_pool).await
-    {
-        Ok(tournaments) => Ok(Json(tournaments).into_response()),
-        Err(e) => {
-            error!("Error getting a list of tournaments: {e}");
-            Err(e)?
+    let tournaments = Tournament::get_all(pool).await?;
+    let mut visible_tournaments: Vec<Tournament> = vec![];
+    for tournament in tournaments {
+        let tournament_id = tournament.id;
+        let tournament_user = TournamentUser {
+            user: user.clone(),
+            roles: user.get_roles(tournament_id, pool).await?
+        };
+        if tournament_user.has_permission(Permission::ReadTournament) {
+            visible_tournaments.push(tournament);
         }
     }
+    Ok(Json(visible_tournaments).into_response())
 }
 
 /// Create a new tournament
@@ -182,7 +183,7 @@ async fn get_tournaments(
         ),
         (
             status=403, 
-            description = "The user is not permitted to modify tournaments"
+            description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error")
@@ -217,7 +218,7 @@ async fn create_tournament(
         ),
         (
             status=403, 
-            description = "The user is not permitted to read tournaments"
+            description = "The user is not permitted to read this tournament"
         ),
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error")
@@ -234,7 +235,7 @@ async fn get_tournament_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
-    match tournament_user.has_permission(Permission::ReadTournaments) {
+    match tournament_user.has_permission(Permission::ReadTournament) {
         true => (),
         false => return Err(OmniError::UnauthorizedError),
     }
@@ -255,7 +256,7 @@ async fn get_tournament_by_id(
         ),
         (
             status=403, 
-            description = "The user is not permitted to modify tournaments"
+            description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
         (status=409, description = "A tournament with this name already exists"),
@@ -274,7 +275,7 @@ async fn patch_tournament_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match tournament_user.has_permission(Permission::WriteTournaments) {
+    match tournament_user.has_permission(Permission::WriteTournament) {
         true => (),
         false => return Err(OmniError::UnauthorizedError),
     }
@@ -297,7 +298,7 @@ async fn patch_tournament_by_id(
 #[utoipa::path(delete, path = "/tournament/{id}", 
     responses(
         (status=204, description = "Tournament deleted successfully"),
-        (status=403, description = "The user is not permitted to modify tournaments"),
+        (status=403, description = "The user is not permitted to modify this tournament"),
         (status=404, description = "Tournament not found"),
         (status=409, description = "Other resources reference this tournament. They must be deleted first")
     ),
@@ -305,22 +306,32 @@ async fn patch_tournament_by_id(
 async fn delete_tournament_by_id(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
-    match Tournament::get_by_id(id, &state.connection_pool).await {
-        Ok(tournament) => match tournament.delete(&state.connection_pool).await {
-            Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
-            Err(e) =>
-            {
-                if e.is_sqlx_foreign_key_violation() {
-                    return Err(OmniError::DependentResourcesError)
-                }
-                else {
-                    error!("Error deleting a tournament with id {id}: {e}");
-                    return Err(e)?;
-                }
-            },
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
+
+    match tournament_user.has_permission(Permission::WriteTournament) {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    let tournament = Tournament::get_by_id(id, pool).await?;
+    match tournament.delete(pool).await {
+        Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Err(e) =>
+        {
+            if e.is_sqlx_foreign_key_violation() {
+                return Err(OmniError::DependentResourcesError)
+            }
+            else {
+                error!("Error deleting a tournament with id {id}: {e}");
+                return Err(e)?;
+            }
         },
-        Err(e) => return Err(e),
     }
 }
 

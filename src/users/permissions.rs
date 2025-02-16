@@ -1,6 +1,7 @@
 use strum::{EnumIter, VariantArray};
+use utoipa::ToSchema;
 
-#[derive(Debug, VariantArray, EnumIter, Clone, PartialEq)]
+#[derive(Debug, VariantArray, EnumIter, Clone, PartialEq, ToSchema)]
 pub enum Permission {
     ReadAttendees,
     WriteAttendees,
@@ -14,8 +15,8 @@ pub enum Permission {
     ReadMotions,
     WriteMotions,
 
-    ReadTournaments,
-    WriteTournaments,
+    ReadTournament,
+    WriteTournament,
 
     CreateUsersManually,
     CreateUsersWithLink,
