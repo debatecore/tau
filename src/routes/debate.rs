@@ -121,8 +121,9 @@ pub fn route() -> Router<AppState> {
             status=200, description = "Ok",
             body=Vec<Debate>,
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not permitted to read debates within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -130,6 +131,8 @@ pub fn route() -> Router<AppState> {
     )
 )]
 /// Get a list of all debates
+/// 
+/// The user must be given a role within this tournament to use this endpoint.
 async fn get_debates(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -158,6 +161,8 @@ async fn get_debates(
 }
 
 /// Create a new debate
+/// 
+/// Available only to Organizers and Admins.
 #[utoipa::path(post, request_body=Debate, path = "/tournament/{tournament_id}/debate",
     responses(
         (
@@ -165,8 +170,9 @@ async fn get_debates(
             description = "Debate created successfully",
             body=Debate,
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not permitted to modify debates within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -199,6 +205,8 @@ async fn create_debate(
 }
 
 /// Get details of an existing debate
+/// 
+/// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournament/{tournament_id}/debate/{id}", 
     responses(
         (
@@ -206,8 +214,9 @@ async fn create_debate(
             description = "Ok",
             body=Debate,
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not permitted to read debates within this tournament",
         ),
         (status=404, description = "Tournament or debate not found"),
@@ -243,6 +252,8 @@ async fn get_debate_by_id(
 }
 
 /// Patch an existing debate
+/// 
+/// Available only to Organizers and Admins.
 #[utoipa::path(patch, path = "tournament/{tournament_id}/debate/{id}", 
     request_body=DebatePatch,
     responses(
@@ -250,8 +261,9 @@ async fn get_debate_by_id(
             status=200, description = "Debate patched successfully",
             body=Debate,
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),
@@ -289,13 +301,15 @@ async fn patch_debate_by_id(
 }
 
 /// Delete an existing debate
+/// 
+/// Available only to Organizers and Admins.
 #[utoipa::path(delete, path = "{tournament_id}/debate/{id}", 
     responses
     (
         (status=204, description = "Debate deleted successfully"),
-        (status=404, description = "Debate not found"),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),

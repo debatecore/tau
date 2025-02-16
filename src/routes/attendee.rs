@@ -147,6 +147,8 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create an attendee
+///
+/// Requires the WritesAttendee permission.
 #[utoipa::path(
     post,
     request_body=Attendee,
@@ -157,11 +159,9 @@ pub fn route() -> Router<AppState> {
             body=Attendee,
             example=json!(get_attendee_example())
         ),
+        (status=400, description = "Bad request",),
         (
-            status=400, description = "Bad request",
-        ),
-        (
-            status=403,
+            status=401,
             description = "The user is not permitted to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -217,8 +217,9 @@ async fn create_attendee(
             body=Vec<Attendee>,
             example=json!(get_attendees_list_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not get to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -262,8 +263,9 @@ async fn get_attendees(
             status=200, description = "Ok", body=Attendee,
             example=json!(get_attendee_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not permitted to get attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -306,8 +308,9 @@ async fn get_attendee_by_id(
             body=Attendee,
             example=json!(get_attendee_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not permitted to patch attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -359,8 +362,9 @@ async fn patch_attendee_by_id(
     responses
     (
         (status=204, description = "Attendee deleted successfully"),
+        (status=400, description = "Bad request"),
         (
-            status=403,
+            status=401,
             description = "The user is not permitted to delete attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),

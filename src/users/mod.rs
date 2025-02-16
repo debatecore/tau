@@ -5,7 +5,6 @@ use roles::Role;
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
-use tracing::error;
 use uuid::Uuid;
 
 use crate::omni_error::OmniError;

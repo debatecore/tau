@@ -2,6 +2,7 @@ use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::routes::auth;
 use crate::setup::AppState;
 
 use crate::routes::attendee;
@@ -10,6 +11,7 @@ use crate::routes::motion;
 use crate::routes::team;
 use crate::routes::tournament;
 use crate::users::permissions;
+use crate::users::roles;
 
 use super::health_check;
 use super::teapot;
@@ -52,7 +54,8 @@ pub fn route() -> Router<AppState> {
         attendee::create_attendee,
         attendee::get_attendee_by_id,
         attendee::patch_attendee_by_id,
-        attendee::delete_attendee_by_id
+        attendee::delete_attendee_by_id,
+        auth::auth_login,
     ),
     components(schemas(
         version::VersionDetails,
@@ -69,6 +72,8 @@ pub fn route() -> Router<AppState> {
         attendee::Attendee,
         attendee::AttendeePatch,
         permissions::Permission,
+        roles::Role,
+        auth::LoginRequest,
     ))
 )]
 

@@ -1,6 +1,10 @@
 use super::User;
-use crate::omni_error::OmniError;
+use crate::{
+    omni_error::OmniError,
+    users::{permissions::Permission, roles::Role, TournamentUser},
+};
 use sqlx::{Pool, Postgres};
+use strum::VariantArray;
 use tracing::{error, info};
 use uuid::Uuid;
 

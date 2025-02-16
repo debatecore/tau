@@ -1,5 +1,4 @@
 use axum::Router;
-use setup::AppState;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{Any, CorsLayer};

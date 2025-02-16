@@ -131,7 +131,8 @@ pub fn route() -> Router<AppState> {
 
 /// Get a list of all tournaments
 /// 
-/// This request only returns the tournaments the user is permitted to see
+/// This request only returns the tournaments the user is permitted to see.
+/// The user must be given any role within a tournament to see it.
 #[utoipa::path(get, path = "/tournament", 
     responses(
         (
@@ -139,9 +140,10 @@ pub fn route() -> Router<AppState> {
             body=Vec<Tournament>,
             example=json!(get_tournaments_list_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
-            description = "The user is not permitted to list tournaments"
+            status=401, 
+            description = "The user is not permitted to list any tournaments, meaning they do not have any roles within any tournament."
         ),
         (status=500, description = "Internal server error")
 ))]
@@ -165,10 +167,15 @@ async fn get_tournaments(
             visible_tournaments.push(tournament);
         }
     }
+    if visible_tournaments.is_empty() {
+        return Err(OmniError::UnauthorizedError);
+    }
     Ok(Json(visible_tournaments).into_response())
 }
 
 /// Create a new tournament
+/// 
+/// Requires the Admin role.
 #[utoipa::path(
     post,
     request_body=Tournament,
@@ -181,8 +188,9 @@ async fn get_tournaments(
             body=Tournament,
             example=json!(get_tournament_example_with_id())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -203,11 +211,11 @@ async fn create_tournament(
 
     let tournament = Tournament::post(json, pool).await?;
     return Ok(Json(tournament).into_response());
-
-    // TO-DO: make the user performing the operation admin within this tournament
 }
 
 /// Get details of an existing tournament
+/// 
+/// The user must be given any role within the tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournament/{id}", 
     responses
     (
@@ -216,8 +224,9 @@ async fn create_tournament(
             example=json!
             (get_tournament_example_with_id())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to read this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -246,6 +255,8 @@ async fn get_tournament_by_id(
 }
 
 /// Patch an existing tournament
+/// 
+/// Requires either the Organizer or Admin role.
 #[utoipa::path(patch, path = "/tournament/{id}", 
     request_body=TournamentPatch,
     responses(
@@ -254,8 +265,9 @@ async fn get_tournament_by_id(
             body=Tournament,
             example=json!(get_tournament_example_with_id())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -293,12 +305,14 @@ async fn patch_tournament_by_id(
 
 /// Delete an existing tournament.
 /// 
+/// /// Requires either the Organizer or Admin role.
 /// This operation is only allowed when there are no resources
 /// referencing this tournament.
 #[utoipa::path(delete, path = "/tournament/{id}", 
     responses(
         (status=204, description = "Tournament deleted successfully"),
-        (status=403, description = "The user is not permitted to modify this tournament"),
+        (status=400, description = "Bad request"),
+        (status=401, description = "The user is not permitted to modify this tournament"),
         (status=404, description = "Tournament not found"),
         (status=409, description = "Other resources reference this tournament. They must be deleted first")
     ),

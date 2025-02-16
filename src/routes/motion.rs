@@ -135,6 +135,8 @@ pub fn route() -> Router<AppState> {
     example=json!(get_motions_list_example())
 )))]
 /// Get a list of all motions
+/// 
+/// The user must be given a role within this tournament to use this endpoint.
 async fn get_motions(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -163,6 +165,8 @@ async fn get_motions(
 }
 
 /// Create a new motion
+/// 
+/// Available only to Organizers and Admins.
 #[utoipa::path(
     post,
     request_body=Motion,
@@ -173,8 +177,9 @@ async fn get_motions(
         body=Motion, 
         example=json!(get_motion_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found"),
@@ -207,6 +212,8 @@ State(state): State<AppState>,
 }
 
 /// Get details of an existing motion
+/// 
+/// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/motion/{id}", 
     responses((status=200, description = "Ok", body=Motion,
     example=json!(get_motion_example())
@@ -235,6 +242,8 @@ async fn get_motion_by_id(
 }
 
 /// Patch an existing motion
+/// 
+/// Available only to Organizers and Admins.
 #[utoipa::path(patch, path = "/tournament/{tournament_id}/motion/{id}", 
     request_body=MotionPatch,
     responses(
@@ -243,8 +252,9 @@ async fn get_motion_by_id(
             body=Motion,
             example=json!(get_motion_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")
@@ -276,13 +286,14 @@ async fn patch_motion_by_id(
 
 /// Delete an existing motion
 /// This operation is only allowed when there are no entities (i.e. debates)
-/// referencing this tournament.
+/// referencing this tournament. Available only to Organizers and Admins.
 #[utoipa::path(delete, path = "/tournament/{tournament_id}/motion/{id}", 
     responses
     (
         (status=204, description = "Motion deleted successfully"),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")

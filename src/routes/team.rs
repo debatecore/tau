@@ -136,6 +136,8 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new team
+/// 
+/// Available only to Organizers and Admins
 #[utoipa::path(post, request_body=Team, path = "/{tournament_id}/team",
     responses
     (
@@ -144,8 +146,9 @@ pub fn route() -> Router<AppState> {
             body=Team,
             example=json!(get_team_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -183,8 +186,9 @@ async fn create_team(
             body=Vec<Motion>,
             example=json!(get_teams_list_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to read teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -192,6 +196,8 @@ async fn create_team(
     )
 )]
 /// Get a list of all teams
+/// 
+/// The user must be given a role within this tournament to use this endpoint.
 async fn get_teams(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -221,14 +227,17 @@ async fn get_teams(
 }
 
 /// Get details of an existing team
+/// 
+/// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "{tournament_id}/team/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Team,
             example=json!(get_team_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to read teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -261,6 +270,8 @@ async fn get_team_by_id(
 }
 
 /// Patch an existing team
+/// 
+/// Available only to Organizers and Admins.
 #[utoipa::path(patch, path = "/team/{id}", 
     request_body=Team,
     responses(
@@ -269,8 +280,9 @@ async fn get_team_by_id(
             body=Team,
             example=json!(get_team_example())
         ),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -312,13 +324,14 @@ async fn patch_team_by_id(
 /// Delete an existing team
 ///
 /// This operation is only allowed when there are no entities
-/// referencing this team.
+/// referencing this team. Available only to Organizers and Admins.
 #[utoipa::path(delete, path = "/team/{id}", 
     responses
     (
         (status=204, description = "Team deleted successfully"),
+        (status=400, description = "Bad request"),
         (
-            status=403, 
+            status=401, 
             description = "The user is not permitted to modify teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
