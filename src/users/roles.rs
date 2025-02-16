@@ -10,7 +10,6 @@ use super::permissions::Permission;
 /// set of permissions to perform certain operations.
 /// By default, a newly created user has no roles.
 pub enum Role {
-    Admin,
     Organizer,
     Judge,
     Marshall,
@@ -20,22 +19,7 @@ impl Role {
     pub fn get_role_permissions(&self) -> Vec<Permission> {
         use Permission as P;
         match self {
-            Role::Admin => Permission::VARIANTS.to_vec(), // all permissions
-            Role::Organizer => vec![
-                P::CreateUsersManually,
-                P::CreateUsersWithLink,
-                P::DeleteUsers,
-                P::ModifyUserRoles,
-                P::ReadAttendees,
-                P::WriteAttendees,
-                P::ReadDebates,
-                P::WriteDebates,
-                P::ReadTeams,
-                P::WriteTeams,
-                P::ReadTournament,
-                P::WriteTournament,
-                P::SubmitVerdict,
-            ],
+            Role::Organizer => P::VARIANTS.to_vec(),
             Role::Judge => vec![
                 P::ReadAttendees,
                 P::ReadDebates,

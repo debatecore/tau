@@ -54,7 +54,7 @@ fn construct_infradmin() {
     let infradmin = User::new_infrastructure_admin();
     assert!(infradmin.is_infrastructure_admin());
     let permissions: Vec<Permission> = Permission::VARIANTS.to_vec();
-    let roles: Vec<Role> = vec![Role::Admin];
+    let roles: Vec<Role> = vec![];
     let user = TournamentUser {
         user: infradmin,
         roles: roles,

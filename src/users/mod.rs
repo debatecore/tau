@@ -39,7 +39,7 @@ impl TournamentUser {
         if user.is_infrastructure_admin() {
             return Ok(TournamentUser {
                 user,
-                roles: vec![Role::Admin],
+                roles: vec![],
             });
         }
         let roles = user.get_roles(tournament_id, pool).await?;

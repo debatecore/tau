@@ -253,7 +253,7 @@ async fn get_debate_by_id(
 
 /// Patch an existing debate
 /// 
-/// Available only to Organizers and Admins.
+/// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "tournament/{tournament_id}/debate/{id}", 
     request_body=DebatePatch,
     responses(
@@ -302,7 +302,7 @@ async fn patch_debate_by_id(
 
 /// Delete an existing debate
 /// 
-/// Available only to Organizers and Admins.
+/// Available only to the tournament Organizers.
 #[utoipa::path(delete, path = "{tournament_id}/debate/{id}", 
     responses
     (

@@ -175,7 +175,7 @@ async fn get_tournaments(
 
 /// Create a new tournament
 /// 
-/// Requires the Admin role.
+/// Available only to the infrastructure admin.
 #[utoipa::path(
     post,
     request_body=Tournament,
@@ -305,7 +305,7 @@ async fn patch_tournament_by_id(
 
 /// Delete an existing tournament.
 /// 
-/// /// Requires either the Organizer or Admin role.
+/// Available only to the tournament Organizers.
 /// This operation is only allowed when there are no resources
 /// referencing this tournament.
 #[utoipa::path(delete, path = "/tournament/{id}", 

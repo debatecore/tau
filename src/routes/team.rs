@@ -137,7 +137,7 @@ pub fn route() -> Router<AppState> {
 
 /// Create a new team
 /// 
-/// Available only to Organizers and Admins
+/// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Team, path = "/{tournament_id}/team",
     responses
     (
@@ -271,7 +271,7 @@ async fn get_team_by_id(
 
 /// Patch an existing team
 /// 
-/// Available only to Organizers and Admins.
+/// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/team/{id}", 
     request_body=Team,
     responses(
@@ -324,7 +324,7 @@ async fn patch_team_by_id(
 /// Delete an existing team
 ///
 /// This operation is only allowed when there are no entities
-/// referencing this team. Available only to Organizers and Admins.
+/// referencing this team. Available only to the tournament Organizers.
 #[utoipa::path(delete, path = "/team/{id}", 
     responses
     (
