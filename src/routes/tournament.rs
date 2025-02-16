@@ -9,7 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use tower_cookies::Cookies;
-use tracing::error;
+use tracing::{error, info};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -159,9 +159,10 @@ async fn get_tournaments(
     let mut visible_tournaments: Vec<Tournament> = vec![];
     for tournament in tournaments {
         let tournament_id = tournament.id;
+        let roles = user.get_roles(tournament_id, pool).await?;
         let tournament_user = TournamentUser {
             user: user.clone(),
-            roles: user.get_roles(tournament_id, pool).await?
+            roles
         };
         if tournament_user.has_permission(Permission::ReadTournament) {
             visible_tournaments.push(tournament);

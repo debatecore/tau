@@ -243,7 +243,7 @@ async fn get_motion_by_id(
 
 /// Patch an existing motion
 /// 
-/// Available only to Organizers and Admins.
+/// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournament/{tournament_id}/motion/{id}", 
     request_body=MotionPatch,
     responses(
@@ -286,7 +286,7 @@ async fn patch_motion_by_id(
 
 /// Delete an existing motion
 /// This operation is only allowed when there are no entities (i.e. debates)
-/// referencing this tournament. Available only to Organizers and Admins.
+/// referencing this tournament. Available only to the tournament Organizers.
 #[utoipa::path(delete, path = "/tournament/{tournament_id}/motion/{id}", 
     responses
     (
