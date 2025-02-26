@@ -12,7 +12,6 @@ mod swagger;
 mod team;
 mod teapot;
 mod tournament;
-mod utils;
 mod version;
 
 pub fn routes() -> Router<AppState> {

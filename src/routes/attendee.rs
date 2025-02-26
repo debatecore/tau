@@ -7,7 +7,8 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Error, Pool, Postgres};
+use serde_json::Error;
+use sqlx::{query, query_as, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
@@ -32,7 +33,7 @@ pub struct Attendee {
     /// Represents the attendee's position as a speaker
     /// (1 for the 1st speaker, 2 for the 2nd speaker, etc.).
     /// If the attendee is not a speaker, but is nonetheless
-    /// affiliated with the team, the position should be null.
+    /// affiliated with the team, the position should be None.
     /// Two attendees from the same team cannot be placed on the same position.
     position: Option<i32>,
     team_id: Uuid,
@@ -94,12 +95,12 @@ impl Attendee {
         self,
         connection_pool: &Pool<Postgres>,
         patch: AttendeePatch,
-    ) -> Result<Attendee, Error> {
+    ) -> Result<Attendee, OmniError> {
         let new_attendee = Attendee {
             id: self.id,
             name: patch.name.unwrap_or(self.name),
             position: patch.position,
-            team_id: patch.team_id,
+            team_id: patch.team_id.unwrap_or(self.team_id),
             individual_points: patch.individual_points.unwrap_or(self.individual_points),
             penalty_points: patch.penalty_points.unwrap_or(self.penalty_points),
         };
@@ -117,17 +118,17 @@ impl Attendee {
         .await
         {
             Ok(_) => Ok(new_attendee),
-            Err(e) => Err(e),
+            Err(e) => Err(e)?,
         }
     }
 
-    async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), Error> {
+    async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
         match query!("DELETE FROM attendees WHERE id = $1", self.id)
             .execute(connection_pool)
             .await
         {
             Ok(_) => Ok(()),
-            Err(e) => Err(e),
+            Err(e) => Err(e)?,
         }
     }
 }
@@ -403,7 +404,7 @@ fn attendee_position_is_valid(position: i32) -> bool {
 async fn attendee_position_is_duplicated(
     attendee: &Attendee,
     connection_pool: &Pool<Postgres>,
-) -> Result<bool, Error> {
+) -> Result<bool, OmniError> {
     match query!(
         "SELECT EXISTS(SELECT 1 FROM attendees WHERE team_id = $1 AND position = $2)",
         attendee.team_id,
@@ -415,7 +416,7 @@ async fn attendee_position_is_duplicated(
         Ok(result) => Ok(result.exists.unwrap()),
         Err(e) => {
             error!("Error checking speaker position uniqueness: {e}");
-            Err(e)
+            Err(e)?
         }
     }
 }

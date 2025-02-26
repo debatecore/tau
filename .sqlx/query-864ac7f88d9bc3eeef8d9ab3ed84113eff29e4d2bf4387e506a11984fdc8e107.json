@@ -10,12 +10,12 @@
       },
       {
         "ordinal": 1,
-        "name": "marshall_user_id",
+        "name": "motion_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 2,
-        "name": "motion_id",
+        "name": "marshall_user_id",
         "type_info": "Uuid"
       },
       {
@@ -32,7 +32,7 @@
     "nullable": [
       false,
       true,
-      true,
+      false,
       false
     ]
   },

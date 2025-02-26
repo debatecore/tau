@@ -9,6 +9,8 @@ const DEPENDENT_RESOURCES_MESSAGE: &str = "Dependent resources must be deleted f
 const INTERNAL_SERVER_ERROR_MESSAGE: &str = "Internal Server Error";
 const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
 const BAD_REQUEST: &str = "Bad Request";
+const ATTENDEE_POSITION_MESSAGE: &str =
+    "Attendee position must be in range [1,4] or None";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -43,6 +45,8 @@ pub enum OmniError {
     UnauthorizedError,
     #[error("{BAD_REQUEST}")]
     BadRequestError,
+    #[error("{ATTENDEE_POSITION_MESSAGE}")]
+    AttendeePositionError,
 }
 
 impl IntoResponse for OmniError {
@@ -134,6 +138,9 @@ impl OmniError {
                 (StatusCode::UNAUTHORIZED, self.clerr()).into_response()
             }
             E::BadRequestError => (StatusCode::BAD_REQUEST, self.clerr()).into_response(),
+            E::AttendeePositionError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+            }
         }
     }
 
@@ -154,6 +161,7 @@ impl OmniError {
             E::InternalServerError => INTERNAL_SERVER_ERROR_MESSAGE,
             E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
             E::BadRequestError => BAD_REQUEST,
+            E::AttendeePositionError => ATTENDEE_POSITION_MESSAGE,
         }
         .to_string()
     }
