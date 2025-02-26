@@ -12,6 +12,7 @@ mod swagger;
 mod team;
 mod teapot;
 mod tournament;
+mod user;
 mod utils;
 mod version;
 
@@ -28,4 +29,5 @@ pub fn routes() -> Router<AppState> {
         .merge(attendee::route())
         .merge(motion::route())
         .merge(debate::route())
+        .merge(user::route())
 }

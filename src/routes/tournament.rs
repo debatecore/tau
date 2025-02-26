@@ -9,7 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use tower_cookies::Cookies;
-use tracing::{error, info};
+use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -19,7 +19,7 @@ use uuid::Uuid;
 pub struct Tournament {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
-    id: Uuid,
+    pub id: Uuid,
     // Full name of the tournament. Must be unique.
     full_name: String,
     shortened_name: String,
