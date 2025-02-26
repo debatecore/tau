@@ -167,13 +167,3 @@ async fn auth_clear_to_response(
         Err(e) => e.respond(),
     }
 }
-
-fn get_admin_credentials() -> String {
-    r#"
-    {
-        "login": "admin",
-        "password": "admin"
-    }
-    "#
-    .to_owned()
-}

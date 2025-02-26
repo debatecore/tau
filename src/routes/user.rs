@@ -95,21 +95,14 @@ impl User {
     
     pub async fn post(
         user: User,
-        pass: String,
+        password: String,
         pool: &Pool<Postgres>,
     ) -> Result<User, OmniError> {
         let pic = match &user.picture_link {
             Some(url) => Some(url.as_str()),
             None => None,
         };
-        let hash = {
-            let argon = Argon2::default();
-            let salt = SaltString::generate(&mut OsRng);
-            match argon.hash_password(pass.as_bytes(), &salt) {
-                Ok(hash) => hash.to_string(),
-                Err(e) => return Err(e)?,
-            }
-        };
+        let hash = User::generate_password_hash(&password).unwrap();
         match sqlx::query!(
             "INSERT INTO users VALUES ($1, $2, $3, $4)",
             &user.id,
@@ -152,7 +145,7 @@ impl User {
             Some(url) => Some(url.as_url().to_string()),
             None => Some(self.picture_link.as_ref().unwrap().as_str().to_owned()),
         };
-        let password_hash = self.generate_password_hash(&patch.password.as_ref().unwrap()).unwrap().clone();
+        let password_hash = User::generate_password_hash(&patch.password.as_ref().unwrap()).unwrap().clone();
         match query!("UPDATE users SET handle = $1, picture_link = $2, password_hash = $3 WHERE id = $4",
             patch.handle,
             picture_link,
@@ -162,6 +155,18 @@ impl User {
             Ok(_) => Ok(()),
             Err(e) => Err(e)?,
         }
+    }
+    
+    fn generate_password_hash(password: &str) -> Result<String, OmniError> {
+        let hash = {
+            let argon = Argon2::default();
+            let salt = SaltString::generate(&mut OsRng);
+            match argon.hash_password(password.as_bytes(), &salt) {
+                Ok(hash) => hash.to_string(),
+                Err(e) => return Err(e)?,
+            }
+        };
+        Ok(hash)
     }
 
     async fn update_user_without_changing_password(&self, patch: &UserPatch, pool: &Pool<Postgres>) -> Result<(), OmniError> {
@@ -238,18 +243,6 @@ impl User {
             Ok(_) => Ok(()),
             Err(e) => Err(e)?,
         }
-    }
-
-    fn generate_password_hash(&self, password: &str) -> Result<String, OmniError> {
-        let hash = {
-            let argon = Argon2::default();
-            let salt = SaltString::generate(&mut OsRng);
-            match argon.hash_password(password.as_bytes(), &salt) {
-                Ok(hash) => hash.to_string(),
-                Err(e) => return Err(e)?,
-            }
-        };
-        Ok(hash)
     }
 }
 
@@ -501,7 +494,7 @@ fn get_user_example_with_id() -> String {
     {
         "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
         "handle": "jmanczak",
-        "picture_link": "https://placehold.co/128x128"
+        "picture_link": "https://placehold.co/128x128.png"
     }
     "#
     .to_owned()
@@ -513,12 +506,12 @@ fn get_users_list_example() -> String {
         {
             "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
             "handle": "jmanczak",
-            "picture_link": "https://placehold.co/128x128"
+            "picture_link": "https://placehold.co/128x128.png"
         },
         {
             "id": "01941265-8b3c-733f-a6ae-091c079c2921",
             "handle": "Matthew Goodman",
-            "picture_link": "https://placehold.co/128x128"
+            "picture_link": "https://placehold.co/128x128.png"
         }
         ]
     "#.to_owned()
