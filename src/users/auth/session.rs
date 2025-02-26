@@ -5,7 +5,6 @@ use sqlx::{
     types::chrono::{DateTime, Utc},
     Pool, Postgres,
 };
-use tracing::info;
 use uuid::Uuid;
 
 #[derive(Serialize)]

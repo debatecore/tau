@@ -29,9 +29,9 @@ pub struct VersionBits {
 
 #[derive(Serialize, ToSchema)]
 pub struct GitInfo {
-    /// latest git commit hash, or 'UNKNOWN!'
+    /// Latest git commit hash, or 'UNKNOWN!'
     git_commit_hash: &'static str,
-    /// this is either 'clean', 'changed' or 'UNKNOWN!'
+    /// This is either 'clean', 'changed' or 'UNKNOWN!'
     git_status_porcelain: &'static str,
 }
 
@@ -42,7 +42,7 @@ pub struct GitInfo {
     responses((
         status = StatusCode::OK,
         description = "Returns API semver version.",
-        body = str
+        body = str,
     ))
 )]
 async fn version() -> &'static str {
