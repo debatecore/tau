@@ -35,7 +35,7 @@ pub struct Attendee {
     /// affiliated with the team, the position should be null.
     /// Two attendees from the same team cannot be placed on the same position.
     position: Option<i32>,
-    team_id: Option<Uuid>,
+    team_id: Uuid,
     #[serde_inline_default(0)]
     individual_points: i32,
     #[serde_inline_default(0)]

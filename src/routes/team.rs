@@ -44,20 +44,6 @@ impl Team {
         team: Team,
         connection_pool: &Pool<Postgres>,
     ) -> Result<Team, OmniError> {
-        match team_with_name_exists_in_tournament(
-            &team.full_name,
-            &team.tournament_id,
-            connection_pool,
-        )
-        .await
-        {
-            Ok(exists) => {
-                if exists {
-                    return Err(OmniError::ResourceAlreadyExistsError);
-                }
-            }
-            Err(e) => return Err(e)?,
-        }
         match query_as!(
             Team,
             r#"INSERT INTO teams(id, full_name, shortened_name, tournament_id)
@@ -126,9 +112,9 @@ impl Team {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/:tournament_id/team", get(get_teams).post(create_team))
+        .route("/tournament/:tournament_id/team", get(get_teams).post(create_team))
         .route(
-            "/:tournament_id/team/:id",
+            "/tournament/:tournament_id/team/:id",
             get(get_team_by_id)
                 .patch(patch_team_by_id)
                 .delete(delete_team_by_id),
@@ -138,7 +124,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new team
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Team, path = "/{tournament_id}/team",
+#[utoipa::path(post, request_body=Team, path = "/tournament/{tournament_id}/team",
     responses
     (
         (
@@ -171,19 +157,26 @@ async fn create_team(
         false => return Err(OmniError::UnauthorizedError),
     }
 
+    if team_with_name_exists_in_tournament(&json.full_name, &tournament_id, pool).await? {
+        return Err(OmniError::ResourceAlreadyExistsError);
+    }
+
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
     match Team::post(json, pool).await {
         Ok(team) => Ok(Json(team).into_response()),
-        Err(e) => Err(e),
+        Err(e) => {
+            error!("Error creating a new team: {e}");
+            Err(e)
+        },
     }
 }
 
-#[utoipa::path(get, path = "/{tournament_id}/team", 
+#[utoipa::path(get, path = "/tournament/{tournament_id}/team", 
     responses
     (
         (
             status=200, description = "Ok",
-            body=Vec<Motion>,
+            body=Vec<Team>,
             example=json!(get_teams_list_example())
         ),
         (status=400, description = "Bad request"),
@@ -229,7 +222,7 @@ async fn get_teams(
 /// Get details of an existing team
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "{tournament_id}/team/{id}", 
+#[utoipa::path(get, path = "/tournament/{tournament_id}/team/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Team,
@@ -272,7 +265,7 @@ async fn get_team_by_id(
 /// Patch an existing team
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/team/{id}", 
+#[utoipa::path(patch, path = "/tournament/{tournament_id}/team/{id}", 
     request_body=Team,
     responses(
         (
