@@ -323,6 +323,7 @@ async fn get_users(
             description = "The user is not permitted to create users"
         ),
         (status=404, description = "User not found"),
+        (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
     )
 )]
@@ -404,6 +405,7 @@ async fn get_user_by_id(
         ),
         (status=404, description = "User not found"),
         (status=409, description = "A user with this name already exists"),
+        (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
     )
 )]
@@ -425,7 +427,7 @@ async fn patch_user_by_id(
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    match requesting_user.patch(new_user, pool).await {
+    match user_to_be_patched.patch(new_user, pool).await {
         Ok(patched_user) => Ok(Json(patched_user).into_response()),
         Err(e) => {
             error!("Error patching a user with id {}: {e}", id);
