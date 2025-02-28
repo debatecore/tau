@@ -1,7 +1,7 @@
+use crate::routes::role::Role;
 use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
-use roles::Role;
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
@@ -14,7 +14,6 @@ pub mod auth;
 pub mod infradmin;
 pub mod permissions;
 pub mod photourl;
-pub mod roles;
 
 #[derive(Serialize, Clone, ToSchema)]
 pub struct User {

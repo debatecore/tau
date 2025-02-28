@@ -8,7 +8,7 @@ mod debate;
 mod health_check;
 mod infradmin;
 mod motion;
-mod role;
+pub(crate) mod role;
 mod swagger;
 mod team;
 mod teapot;

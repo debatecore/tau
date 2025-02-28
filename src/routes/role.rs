@@ -16,10 +16,50 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    users::{permissions::Permission, roles::Role, TournamentUser, User},
+    users::{permissions::Permission, TournamentUser, User},
 };
 
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+#[derive(Debug, PartialEq, Deserialize, ToSchema, VariantArray, Clone, Serialize)]
+/// Within a tournament, users must be granted roles for their
+/// permissions to be defined. Each role comes with a predefined
+/// set of permissions to perform certain operations.
+/// By default, a newly created user has no roles.
+/// Multiple users can have the same role.
+pub enum Role {
+    /// This role grants all possible permissions within a tournament.
+    Organizer,
+    /// Judges can submit their verdicts regarding debates they were assigned to.
+    Judge,
+    /// Marshalls are responsible for conducting debates.
+    /// For pragmatic reasons, they can submit verdicts on Judges' behalf.
+    Marshall,
+}
+
 impl Role {
+    pub fn get_role_permissions(&self) -> Vec<Permission> {
+        use Permission as P;
+        match self {
+            Role::Organizer => P::VARIANTS.to_vec(),
+            Role::Judge => vec![
+                P::ReadAttendees,
+                P::ReadDebates,
+                P::ReadTeams,
+                P::ReadTournament,
+                P::SubmitOwnVerdictVote,
+            ],
+            Role::Marshall => vec![
+                P::ReadDebates,
+                P::ReadAttendees,
+                P::ReadTeams,
+                P::ReadTournament,
+                P::SubmitVerdict,
+            ],
+        }
+    }
+
     pub async fn post(
         user_id: Uuid,
         tournament_id: Uuid,
@@ -56,15 +96,6 @@ impl Role {
             string_vec.push(role.to_string());
         }
         return string_vec;
-    }
-
-    pub fn string_to_roles(string: String) -> Result<Vec<Role>, OmniError> {
-        let mut roles_vec: Vec<Role> = vec![];
-        let role_strings = string.split(",");
-        for role_string in role_strings {
-            roles_vec.push(Role::try_from(role_string)?);
-        }
-        todo!()
     }
 
     pub async fn patch(

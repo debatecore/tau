@@ -14,7 +14,6 @@ use crate::routes::team;
 use crate::routes::tournament;
 use crate::users::permissions;
 use crate::users::photourl;
-use crate::users::roles;
 
 use super::health_check;
 use super::teapot;
@@ -85,7 +84,7 @@ pub fn route() -> Router<AppState> {
         attendee::Attendee,
         attendee::AttendeePatch,
         permissions::Permission,
-        roles::Role,
+        role::Role,
         auth::LoginRequest,
         user::UserWithPassword,
         user::UserPatch,
