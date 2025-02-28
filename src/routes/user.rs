@@ -16,7 +16,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use serde_json::Error as JsonError;
 
-use super::{role::Role, tournament::Tournament};
+use super::{roles::Role, tournament::Tournament};
 
 #[derive(Deserialize, ToSchema)]
 pub struct UserPatch {

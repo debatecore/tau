@@ -192,7 +192,7 @@ pub fn route() -> Router<AppState> {
     )
 }
 
-/// Grant Roles to a user.
+/// Grant roles to a user
 ///
 /// Available only to Organizers and and the infrastructure admin.
 #[utoipa::path(
@@ -250,7 +250,7 @@ async fn create_user_roles(
     }
 }
 
-/// Get roles a user is given within a tournament
+/// List roles a user is given within a tournament
 ///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/user/{user_id}/tournament/{tournament_id}/roles",
@@ -295,7 +295,7 @@ async fn get_user_roles(
 /// Overwrite roles a user is given within a tournament
 ///
 /// Available only to the tournament Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/role/{id}",
+#[utoipa::path(patch, path = "/user/{user_id}/tournament/{tournament_id}/roles",
     request_body=Vec<Role>,
     responses(
         (
@@ -348,10 +348,10 @@ async fn patch_user_roles(
 /// Delete user roles within a tournament
 /// This operation effectively means banning the user from a tournament.
 /// Available only to the tournament Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/tournament/{tournament_id}/role/{id}",
+#[utoipa::path(delete, path = "/user/{user_id}/tournament/{tournament_id}/roles",
     responses
     (
-        (status=204, description = "Role deleted successfully"),
+        (status=204, description = "Roles deleted successfully"),
         (status=400, description = "Bad request"),
         (
             status=401,

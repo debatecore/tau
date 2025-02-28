@@ -1,5 +1,5 @@
 use super::User;
-use crate::routes::role::Role;
+use crate::routes::roles::Role;
 use crate::{
     omni_error::OmniError,
     users::{permissions::Permission, TournamentUser},

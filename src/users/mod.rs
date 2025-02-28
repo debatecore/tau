@@ -1,4 +1,4 @@
-use crate::routes::role::Role;
+use crate::routes::roles::Role;
 use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
