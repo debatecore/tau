@@ -29,4 +29,6 @@ pub enum Permission {
 
     SubmitOwnVerdictVote,
     SubmitVerdict,
+
+    WriteRoles,
 }

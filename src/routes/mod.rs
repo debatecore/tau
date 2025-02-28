@@ -8,6 +8,7 @@ mod debate;
 mod health_check;
 mod infradmin;
 mod motion;
+mod role;
 mod swagger;
 mod team;
 mod teapot;
@@ -30,4 +31,5 @@ pub fn routes() -> Router<AppState> {
         .merge(motion::route())
         .merge(debate::route())
         .merge(user::route())
+        .merge(role::route())
 }

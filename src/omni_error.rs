@@ -9,6 +9,7 @@ const DEPENDENT_RESOURCES_MESSAGE: &str = "Dependent resources must be deleted f
 const INTERNAL_SERVER_ERROR_MESSAGE: &str = "Internal Server Error";
 const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
 const BAD_REQUEST: &str = "Bad Request";
+const ROLES_PARSING_MESSAGE: &str = "Failed to parse user roles";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -43,6 +44,8 @@ pub enum OmniError {
     UnauthorizedError,
     #[error("{BAD_REQUEST}")]
     BadRequestError,
+    #[error("ROLES_PARSING_MESSAGE")]
+    RolesParsingError,
 }
 
 impl IntoResponse for OmniError {
@@ -134,6 +137,9 @@ impl OmniError {
                 (StatusCode::UNAUTHORIZED, self.clerr()).into_response()
             }
             E::BadRequestError => (StatusCode::BAD_REQUEST, self.clerr()).into_response(),
+            E::RolesParsingError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+            }
         }
     }
 
@@ -154,6 +160,7 @@ impl OmniError {
             E::InternalServerError => INTERNAL_SERVER_ERROR_MESSAGE,
             E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
             E::BadRequestError => BAD_REQUEST,
+            E::RolesParsingError => ROLES_PARSING_MESSAGE,
         }
         .to_string()
     }

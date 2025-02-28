@@ -9,6 +9,7 @@ use crate::setup::AppState;
 use crate::routes::attendee;
 use crate::routes::debate;
 use crate::routes::motion;
+use crate::routes::role;
 use crate::routes::team;
 use crate::routes::tournament;
 use crate::users::permissions;
@@ -64,6 +65,10 @@ pub fn route() -> Router<AppState> {
         user::get_user_by_id,
         user::patch_user_by_id,
         user::delete_user_by_id,
+        role::create_user_roles,
+        role::get_user_roles,
+        role::patch_user_roles,
+        role::delete_user_roles,
     ),
     components(schemas(
         version::VersionDetails,
