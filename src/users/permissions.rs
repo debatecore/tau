@@ -29,4 +29,7 @@ pub enum Permission {
 
     SubmitOwnVerdictVote,
     SubmitVerdict,
+
+    ReadAffiliations,
+    WriteAffiliations,
 }

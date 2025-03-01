@@ -80,3 +80,10 @@ CREATE TABLE IF NOT EXISTS debate_judge_assignments (
     judge_user_id     UUID NOT NULL REFERENCES users(id),
     debate_id         UUID NOT NULL REFERENCES debates(id)
 );
+
+CREATE TABLE IF NOT EXISTS judge_team_assignments (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    judge_user_id     UUID NOT NULL REFERENCES users(id),
+    team_id           UUID NOT NULL REFERENCES teams(id),
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id)
+)

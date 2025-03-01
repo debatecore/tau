@@ -122,6 +122,16 @@ impl User {
 
         Ok(vec)
     }
+
+    pub async fn has_role(
+        &self,
+        role: Role,
+        tournament_id: Uuid,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        let roles = self.get_roles(tournament_id, pool).await?;
+        return Ok(roles.contains(&role));
+    }
 }
 
 impl TournamentUser {

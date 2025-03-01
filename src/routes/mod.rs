@@ -2,6 +2,7 @@ use axum::Router;
 
 use crate::setup::AppState;
 
+mod affiliation;
 mod attendee;
 mod auth;
 mod debate;
@@ -27,4 +28,5 @@ pub fn routes() -> Router<AppState> {
         .merge(attendee::route())
         .merge(motion::route())
         .merge(debate::route())
+        .merge(affiliation::route())
 }

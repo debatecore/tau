@@ -13,6 +13,8 @@ const ATTENDEE_POSITION_MESSAGE: &str =
     "Attendee position must be in range [1,4] or None";
 const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
     "You are not permitted to perform this operation";
+const NOT_A_JUDGE_MESSAGE: &str =
+    "This user is not a Judge and therefore cannot have affiliations";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -51,6 +53,8 @@ pub enum OmniError {
     AttendeePositionError,
     #[error("{INSUFFICIENT_PERMISSIONS_MESSAGE}")]
     InsufficientPermissionsError,
+    #[error{"NOT_A_JUDGE_MESSAGE"}]
+    NotAJudgeError,
 }
 
 impl IntoResponse for OmniError {
@@ -148,6 +152,7 @@ impl OmniError {
             E::InsufficientPermissionsError => {
                 (StatusCode::FORBIDDEN, self.clerr()).into_response()
             }
+            E::NotAJudgeError => (StatusCode::CONFLICT, self.clerr()).into_response(),
         }
     }
 
@@ -170,6 +175,7 @@ impl OmniError {
             E::BadRequestError => BAD_REQUEST,
             E::AttendeePositionError => ATTENDEE_POSITION_MESSAGE,
             E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
+            E::NotAJudgeError => NOT_A_JUDGE_MESSAGE,
         }
         .to_string()
     }
