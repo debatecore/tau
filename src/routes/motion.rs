@@ -149,7 +149,7 @@ async fn get_motions(
 
     match tournament_user.has_permission(Permission::ReadMotions) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match query_as!(Motion, "SELECT * FROM motions")
@@ -178,8 +178,9 @@ async fn get_motions(
         example=json!(get_motion_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found"),
@@ -200,7 +201,7 @@ State(state): State<AppState>,
 
     match tournament_user.has_permission(Permission::WriteMotions) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Motion::post(json, &state.connection_pool).await {
@@ -232,7 +233,7 @@ async fn get_motion_by_id(
 
     match tournament_user.has_permission(Permission::ReadMotions) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Motion::get_by_id(id, &state.connection_pool).await {
@@ -253,8 +254,9 @@ async fn get_motion_by_id(
             example=json!(get_motion_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")
@@ -274,7 +276,7 @@ async fn patch_motion_by_id(
 
     match tournament_user.has_permission(Permission::WriteMotions) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let existing_motion = Motion::get_by_id(id, pool).await?;
@@ -292,8 +294,9 @@ async fn patch_motion_by_id(
     (
         (status=204, description = "Motion deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")
@@ -313,7 +316,7 @@ async fn delete_motion_by_id(
 
     match tournament_user.has_permission(Permission::WriteMotions) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let motion = Motion::get_by_id(id, pool).await?;

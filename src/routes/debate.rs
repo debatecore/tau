@@ -122,8 +122,9 @@ pub fn route() -> Router<AppState> {
             body=Vec<Debate>,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to read debates within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -145,7 +146,7 @@ async fn get_debates(
 
     match tournament_user.has_permission(Permission::ReadDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match query_as!(Debate, "SELECT * FROM debates")
@@ -171,8 +172,9 @@ async fn get_debates(
             body=Debate,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to modify debates within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -192,7 +194,7 @@ async fn create_debate(
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Debate::post(json, &state.connection_pool).await {
@@ -215,8 +217,9 @@ async fn create_debate(
             body=Debate,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to read debates within this tournament",
         ),
         (status=404, description = "Tournament or debate not found"),
@@ -236,7 +239,7 @@ async fn get_debate_by_id(
 
     match tournament_user.has_permission(Permission::ReadDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Debate::get_by_id(id, &state.connection_pool).await {
@@ -262,8 +265,9 @@ async fn get_debate_by_id(
             body=Debate,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),
@@ -284,7 +288,7 @@ async fn patch_debate_by_id(
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let existing_debate = Debate::get_by_id(id, &state.connection_pool).await?;
@@ -308,8 +312,9 @@ async fn patch_debate_by_id(
     (
         (status=204, description = "Debate deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),
@@ -329,7 +334,7 @@ async fn delete_debate_by_id(
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Debate::get_by_id(id, &state.connection_pool).await {

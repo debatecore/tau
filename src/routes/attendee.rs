@@ -160,9 +160,10 @@ pub fn route() -> Router<AppState> {
             body=Attendee,
             example=json!(get_attendee_example())
         ),
-        (status=400, description = "Bad request",),
+        (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -187,7 +188,7 @@ async fn create_attendee(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if !attendee.position.is_none() {
@@ -219,8 +220,9 @@ async fn create_attendee(
             example=json!(get_attendees_list_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not get to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -242,7 +244,7 @@ async fn get_attendees(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match query_as!(Attendee, "SELECT * FROM attendees")
@@ -265,8 +267,9 @@ async fn get_attendees(
             example=json!(get_attendee_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to get attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -288,7 +291,7 @@ async fn get_attendee_by_id(
 
     match tournament_user.has_permission(Permission::ReadAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Attendee::get_by_id(id, &state.connection_pool).await {
@@ -310,8 +313,9 @@ async fn get_attendee_by_id(
             example=json!(get_attendee_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to patch attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -334,7 +338,7 @@ async fn patch_attendee_by_id(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if !new_attendee.position.is_none() {
@@ -364,8 +368,9 @@ async fn patch_attendee_by_id(
     (
         (status=204, description = "Attendee deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to delete attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -387,7 +392,7 @@ async fn delete_attendee_by_id(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let attendee = Attendee::get_by_id(id, pool).await?;

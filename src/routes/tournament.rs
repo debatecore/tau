@@ -141,8 +141,9 @@ pub fn route() -> Router<AppState> {
             example=json!(get_tournaments_list_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to list any tournaments, meaning they do not have any roles within any tournament."
         ),
         (status=500, description = "Internal server error")
@@ -169,7 +170,7 @@ async fn get_tournaments(
         }
     }
     if visible_tournaments.is_empty() {
-        return Err(OmniError::UnauthorizedError);
+        return Err(OmniError::InsufficientPermissionsError);
     }
     Ok(Json(visible_tournaments).into_response())
 }
@@ -190,8 +191,9 @@ async fn get_tournaments(
             example=json!(get_tournament_example_with_id())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -207,7 +209,7 @@ async fn create_tournament(
     let pool = &state.connection_pool;
     let user = User::authenticate(&headers, cookies, &pool).await?;
     if !user.is_infrastructure_admin() {
-        return Err(OmniError::UnauthorizedError);
+        return Err(OmniError::InsufficientPermissionsError);
     }
 
     let tournament = Tournament::post(json, pool).await?;
@@ -226,8 +228,9 @@ async fn create_tournament(
             (get_tournament_example_with_id())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to read this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -247,7 +250,7 @@ async fn get_tournament_by_id(
 
     match tournament_user.has_permission(Permission::ReadTournament) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
     match Tournament::get_by_id(id, pool).await {
         Ok(tournament) => Ok(Json(tournament).into_response()),
@@ -267,8 +270,9 @@ async fn get_tournament_by_id(
             example=json!(get_tournament_example_with_id())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -290,7 +294,7 @@ async fn patch_tournament_by_id(
 
     match tournament_user.has_permission(Permission::WriteTournament) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let tournament = Tournament::get_by_id(id, pool).await?;
@@ -313,7 +317,8 @@ async fn patch_tournament_by_id(
     responses(
         (status=204, description = "Tournament deleted successfully"),
         (status=400, description = "Bad request"),
-        (status=401, description = "The user is not permitted to modify this tournament"),
+        (status=401, description = "Authentication error"),
+        (status=403, description = "The user is not permitted to modify this tournament"),
         (status=404, description = "Tournament not found"),
         (status=409, description = "Other resources reference this tournament. They must be deleted first")
     ),
@@ -331,7 +336,7 @@ async fn delete_tournament_by_id(
 
     match tournament_user.has_permission(Permission::WriteTournament) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let tournament = Tournament::get_by_id(id, pool).await?;
