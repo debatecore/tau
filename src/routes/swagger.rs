@@ -5,6 +5,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::routes::auth;
 use crate::setup::AppState;
 
+use crate::routes::affiliation;
 use crate::routes::attendee;
 use crate::routes::debate;
 use crate::routes::motion;
@@ -56,6 +57,11 @@ pub fn route() -> Router<AppState> {
         attendee::patch_attendee_by_id,
         attendee::delete_attendee_by_id,
         auth::auth_login,
+        affiliation::create_affiliation,
+        affiliation::get_affiliations,
+        affiliation::get_affiliation_by_id,
+        affiliation::patch_affiliation_by_id,
+        affiliation::delete_affiliation_by_id,
     ),
     components(schemas(
         version::VersionDetails,
@@ -74,6 +80,8 @@ pub fn route() -> Router<AppState> {
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
+        affiliation::Affiliation,
+        affiliation::AffiliationPatch,
     ))
 )]
 

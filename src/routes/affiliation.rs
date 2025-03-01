@@ -164,7 +164,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(post, request_body=Affiliation, path = "/user/{user_id}/affiliation",
+#[utoipa::path(post, request_body=Affiliation, path = "/user/{user_id}/tournament/{tournament_id}/affiliation",
     responses
     (
         (
@@ -312,7 +312,7 @@ async fn get_affiliation_by_id(
 /// Patch an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/affiliation/{id}",
+#[utoipa::path(patch, path = "/user/{user_id}/tournament/{tournament_id}/affiliation/{id}",
     request_body=Affiliation,
     responses(
         (status=200, description = "Affiliation patched successfully", body=Affiliation),
@@ -370,7 +370,7 @@ async fn patch_affiliation_by_id(
 /// Delete an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/affiliation/{id}",
+#[utoipa::path(delete, path = "/user/{user_id}/tournament/{tournament_id}/affiliation/{id}",
     responses
     (
         (status=204, description = "Affiliation deleted successfully"),
