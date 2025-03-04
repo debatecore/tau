@@ -148,12 +148,11 @@ async fn get_location_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
-    Path(id): Path<Uuid>
+    Path( (_tournament_id, id)): Path<(Uuid, Uuid)>
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
 
     match tournament_user.has_permission(Permission::ReadLocations) {
         true => (),
@@ -195,7 +194,7 @@ async fn get_location_by_id(
     )
 )]
 async fn patch_location_by_id(
-    Path((id, tournament_id)): Path<(Uuid, Uuid)>,
+    Path((_tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
@@ -203,7 +202,7 @@ async fn patch_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),
@@ -211,8 +210,12 @@ async fn patch_location_by_id(
     }
 
     let location = Location::get_by_id(id, pool).await?;
-    if location_with_name_exists_in_tournament(&location.name, &location.tournament_id, pool).await? {
-        return Err(OmniError::ResourceAlreadyExistsError)
+    
+    let name = new_location.name.clone();
+    if name.is_some() {
+        if location_with_name_exists_in_tournament(&name.unwrap(), &location.tournament_id, pool).await? {
+            return Err(OmniError::ResourceAlreadyExistsError);
+        }
     }
 
     match location.patch(new_location, pool).await {
@@ -239,11 +242,10 @@ async fn patch_location_by_id(
     ),
 )]
 async fn delete_location_by_id(
-    Path(id): Path<Uuid>,
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =

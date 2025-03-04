@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
+use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::utils::get_optional_value_to_be_patched;
+use super::{room_impl::Room, utils::get_optional_value_to_be_patched};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -28,7 +29,7 @@ pub struct Location {
     pub tournament_id: Uuid,
 }
 
-#[derive(ToSchema, Deserialize)]
+#[derive(ToSchema, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct LocationPatch {
     pub name: Option<String>,
@@ -110,6 +111,19 @@ impl Location {
         {
             Ok(_) => Ok(()),
             Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_rooms(&self, pool: &Pool<Postgres>) -> Result<Vec<Room>, OmniError> {
+        match query_as!(Room, "SELECT * FROM rooms WHERE location_id = $1", self.id)
+            .fetch_all(pool)
+            .await
+        {
+            Ok(rooms) => Ok(rooms),
+            Err(e) => {
+                error!("Error getting rooms of location {}: {e}", self.id);
+                Err(e)?
+            }
         }
     }
 }

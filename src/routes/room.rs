@@ -50,7 +50,7 @@ async fn create_room(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
+    Path((tournament_id, _location_id)): Path<(Uuid, Uuid)>,
     Json(json): Json<Room>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
@@ -112,10 +112,8 @@ async fn get_rooms(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    let _location = Location::get_by_id(tournament_id, pool).await?;
-    match query_as!(Room, "SELECT * FROM rooms WHERE location_id = $1", location_id)
-        .fetch_all(&state.connection_pool)
-        .await
+    let location = Location::get_by_id(location_id, pool).await?;
+    match location.get_rooms(pool).await
     {
         Ok(rooms) => Ok(Json(rooms).into_response()),
         Err(e) => {
@@ -148,8 +146,7 @@ async fn get_room_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
-    Path(id): Path<Uuid>
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -195,7 +192,7 @@ async fn get_room_by_id(
     )
 )]
 async fn patch_room_by_id(
-    Path((id, tournament_id)): Path<(Uuid, Uuid)>,
+    Path(( tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
@@ -211,8 +208,11 @@ async fn patch_room_by_id(
     }
 
     let room = Room::get_by_id(id, pool).await?;
-    if room_with_name_exists_in_location(&room.name, &room.location_id, pool).await? {
-        return Err(OmniError::ResourceAlreadyExistsError)
+    let new_name = new_room.name.clone();
+    if new_name.is_some() {
+        if room_with_name_exists_in_location(&new_name.unwrap(), &room.location_id, pool).await? {
+            return Err(OmniError::ResourceAlreadyExistsError)
+        }
     }
 
     match room.patch(new_room, pool).await {
@@ -239,7 +239,7 @@ async fn patch_room_by_id(
     ),
 )]
 async fn delete_room_by_id(
-    Path(id): Path<Uuid>,
+    Path((_tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
@@ -252,6 +252,15 @@ async fn delete_room_by_id(
     match tournament_user.has_permission(Permission::ModifyAllRoomDetails) {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
+    }
+
+    match Location::get_by_id(_location_id, pool).await {
+        Ok(_) => (),
+        Err(e) => {
+            if  e.is_not_found_error() {
+                return Err(OmniError::ResourceNotFoundError);
+            }
+        } 
     }
 
     let room = Room::get_by_id(id, pool).await?;

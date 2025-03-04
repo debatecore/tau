@@ -77,7 +77,7 @@ impl Room {
         let patch = Room {
             id: self.id,
             name: new_room.name.unwrap_or(self.name),
-            remarks: get_optional_value_to_be_patched(new_room.remarks, self.remarks),
+            remarks: get_optional_value_to_be_patched(self.remarks, new_room.remarks),
             location_id: new_room.location_id.unwrap_or(self.location_id),
             is_occupied: new_room.is_occupied.unwrap_or(self.is_occupied),
         };
