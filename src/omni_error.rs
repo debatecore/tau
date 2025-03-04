@@ -9,8 +9,9 @@ const DEPENDENT_RESOURCES_MESSAGE: &str = "Dependent resources must be deleted f
 const INTERNAL_SERVER_ERROR_MESSAGE: &str = "Internal Server Error";
 const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
 const BAD_REQUEST: &str = "Bad Request";
-const ATTENDEE_POSITION_MESSAGE: &str =
-    "Attendee position must be in range [1,4] or None";
+const ATTENDEE_POSITION_MESSAGE: &str = "Attendee position must be in range 1-4 or None";
+const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
+    "You don't have permissions required to perform this operation";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -47,6 +48,8 @@ pub enum OmniError {
     BadRequestError,
     #[error("{ATTENDEE_POSITION_MESSAGE}")]
     AttendeePositionError,
+    #[error("INSUFFICIENT_PERMISSIONS_MESSAGE")]
+    InsufficientPermissionsError,
 }
 
 impl IntoResponse for OmniError {
@@ -141,6 +144,9 @@ impl OmniError {
             E::AttendeePositionError => {
                 (StatusCode::BAD_REQUEST, self.clerr()).into_response()
             }
+            E::InsufficientPermissionsError => {
+                (StatusCode::FORBIDDEN, self.clerr()).into_response()
+            }
         }
     }
 
@@ -162,6 +168,7 @@ impl OmniError {
             E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
             E::BadRequestError => BAD_REQUEST,
             E::AttendeePositionError => ATTENDEE_POSITION_MESSAGE,
+            E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
         }
         .to_string()
     }

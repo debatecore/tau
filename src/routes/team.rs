@@ -5,110 +5,16 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Error, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, users::{permissions::Permission, TournamentUser}};
-
-use super::tournament::Tournament;
+use crate::{omni_error::OmniError, setup::AppState, tournament_impl::{team_impl::{Team, TeamPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
     scope of the tournament, to which the team is assigned."#;
-
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Team {
-    #[serde(skip_deserializing)]
-    #[serde(default = "Uuid::now_v7")]
-    id: Uuid,
-    /// Full name of the team (e.g. "Debate Team Buster").
-    /// Must be unique within a scope of a tournament it's assigned to.
-    full_name: String,
-    shortened_name: String,
-    tournament_id: Uuid,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct TeamPatch {
-    full_name: Option<String>,
-    shortened_name: Option<String>,
-}
-
-impl Team {
-    async fn post(
-        team: Team,
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Team, OmniError> {
-        match query_as!(
-            Team,
-            r#"INSERT INTO teams(id, full_name, shortened_name, tournament_id)
-            VALUES ($1, $2, $3, $4) RETURNING id, full_name, shortened_name, tournament_id"#,
-            team.id,
-            team.full_name,
-            team.shortened_name,
-            team.tournament_id
-        )
-        .fetch_one(connection_pool)
-        .await
-        {
-            Ok(_) => Ok(team),
-            Err(e) => Err(e)?,
-        }
-    }
-
-    async fn get_by_id(
-        id: Uuid,
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Team, Error> {
-        match query_as!(Team, "SELECT * FROM teams WHERE id = $1", id)
-            .fetch_one(connection_pool)
-            .await
-        {
-            Ok(team) => Ok(team),
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn patch(
-        self,
-        new_team: TeamPatch,
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Team, Error> {
-        let patch = Team {
-            id: self.id,
-            full_name: new_team.full_name.unwrap_or(self.full_name),
-            shortened_name: new_team.shortened_name.unwrap_or(self.shortened_name),
-            tournament_id: self.tournament_id,
-        };
-        match query!(
-            "UPDATE teams set full_name = $1, shortened_name = $2 WHERE id = $3",
-            patch.full_name,
-            patch.shortened_name,
-            self.id,
-        )
-        .execute(connection_pool)
-        .await
-        {
-            Ok(_) => Ok(patch),
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), Error> {
-        match query!("DELETE FROM teams WHERE id = $1", self.id)
-            .execute(connection_pool)
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
-    }
-}
 
 pub fn route() -> Router<AppState> {
     Router::new()
@@ -133,8 +39,9 @@ pub fn route() -> Router<AppState> {
             example=json!(get_team_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -154,7 +61,7 @@ async fn create_team(
 
     match tournament_user.has_permission(Permission::WriteTeams) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if team_with_name_exists_in_tournament(&json.full_name, &tournament_id, pool).await? {
@@ -180,8 +87,9 @@ async fn create_team(
             example=json!(get_teams_list_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to read teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -203,7 +111,7 @@ async fn get_teams(
 
     match tournament_user.has_permission(Permission::ReadTeams) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
@@ -229,8 +137,9 @@ async fn get_teams(
             example=json!(get_team_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to read teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -250,7 +159,7 @@ async fn get_team_by_id(
 
     match tournament_user.has_permission(Permission::ReadTeams) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Team::get_by_id(id, pool).await {
@@ -274,8 +183,9 @@ async fn get_team_by_id(
             example=json!(get_team_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -300,7 +210,7 @@ async fn patch_team_by_id(
 
     match tournament_user.has_permission(Permission::WriteTeams) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let team = Team::get_by_id(id, pool).await?;
@@ -323,8 +233,9 @@ async fn patch_team_by_id(
     (
         (status=204, description = "Team deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify teams within this tournament"
         ),
         (status=404, description = "Tournament or team not found"),
@@ -343,7 +254,7 @@ async fn delete_team_by_id(
 
     match tournament_user.has_permission(Permission::WriteTeams) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let team = Team::get_by_id(id, pool).await?;

@@ -10,6 +10,11 @@ use crate::routes::debate;
 use crate::routes::motion;
 use crate::routes::team;
 use crate::routes::tournament;
+use crate::tournament_impl;
+use crate::tournament_impl::attendee_impl;
+use crate::tournament_impl::debate_impl;
+use crate::tournament_impl::motion_impl;
+use crate::tournament_impl::team_impl;
 use crate::users::permissions;
 use crate::users::roles;
 
@@ -61,16 +66,16 @@ pub fn route() -> Router<AppState> {
         version::VersionDetails,
         version::VersionBits,
         version::GitInfo,
-        tournament::Tournament,
-        tournament::TournamentPatch,
-        motion::Motion,
-        motion::MotionPatch,
-        team::Team,
-        team::TeamPatch,
-        debate::Debate,
-        debate::DebatePatch,
-        attendee::Attendee,
-        attendee::AttendeePatch,
+        tournament_impl::Tournament,
+        tournament_impl::TournamentPatch,
+        motion_impl::Motion,
+        motion_impl::MotionPatch,
+        team_impl::Team,
+        team_impl::TeamPatch,
+        debate_impl::Debate,
+        debate_impl::DebatePatch,
+        attendee_impl::Attendee,
+        attendee_impl::AttendeePatch,
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
