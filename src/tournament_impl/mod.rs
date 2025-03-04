@@ -8,8 +8,11 @@ use crate::omni_error::OmniError;
 
 pub(crate) mod attendee_impl;
 pub(crate) mod debate_impl;
+pub(crate) mod location_impl;
 pub(crate) mod motion_impl;
+pub(crate) mod room_impl;
 pub(crate) mod team_impl;
+pub(crate) mod utils;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
