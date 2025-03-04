@@ -1,3 +1,4 @@
+use location_impl::Location;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use tracing::error;
@@ -34,7 +35,7 @@ pub struct TournamentPatch {
 impl Tournament {
     pub async fn post(
         tournament: Tournament,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
         match query_as!(
             Tournament,
@@ -44,7 +45,7 @@ impl Tournament {
             tournament.full_name,
             tournament.shortened_name
         )
-        .fetch_one(connection_pool)
+        .fetch_one(pool)
         .await
         {
             Ok(_) => Ok(tournament),
@@ -52,11 +53,9 @@ impl Tournament {
         }
     }
 
-    pub async fn get_all(
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Vec<Tournament>, OmniError> {
+    pub async fn get_all(pool: &Pool<Postgres>) -> Result<Vec<Tournament>, OmniError> {
         match query_as!(Tournament, "SELECT * FROM tournaments")
-            .fetch_all(connection_pool)
+            .fetch_all(pool)
             .await
         {
             Ok(tournaments) => Ok(tournaments),
@@ -66,10 +65,10 @@ impl Tournament {
 
     pub async fn get_by_id(
         id: Uuid,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
         match query_as!(Tournament, "SELECT * FROM tournaments WHERE id = $1", id)
-            .fetch_one(connection_pool)
+            .fetch_one(pool)
             .await
         {
             Ok(tournament) => Ok(tournament),
@@ -83,7 +82,7 @@ impl Tournament {
     pub async fn patch(
         self,
         patch: TournamentPatch,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
         let tournament = Tournament {
             id: self.id,
@@ -96,7 +95,7 @@ impl Tournament {
             tournament.shortened_name,
             tournament.id,
         )
-        .execute(connection_pool)
+        .execute(pool)
         .await
         {
             Ok(_) => Ok(tournament),
@@ -104,12 +103,29 @@ impl Tournament {
         }
     }
 
-    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
+    pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
         match query!("DELETE FROM tournaments WHERE id = $1", self.id)
-            .execute(connection_pool)
+            .execute(pool)
             .await
         {
             Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_locations(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Location>, OmniError> {
+        match query_as!(
+            Location,
+            "SELECT * FROM locations WHERE tournament_id = $1",
+            self.id
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(locations) => Ok(locations),
             Err(e) => Err(e)?,
         }
     }
