@@ -7,13 +7,17 @@ use crate::setup::AppState;
 
 use crate::routes::attendee;
 use crate::routes::debate;
+use crate::routes::location;
 use crate::routes::motion;
+use crate::routes::room;
 use crate::routes::team;
 use crate::routes::tournament;
 use crate::tournament_impl;
 use crate::tournament_impl::attendee_impl;
 use crate::tournament_impl::debate_impl;
+use crate::tournament_impl::location_impl;
 use crate::tournament_impl::motion_impl;
+use crate::tournament_impl::room_impl;
 use crate::tournament_impl::team_impl;
 use crate::users::permissions;
 use crate::users::roles;
@@ -61,6 +65,16 @@ pub fn route() -> Router<AppState> {
         attendee::patch_attendee_by_id,
         attendee::delete_attendee_by_id,
         auth::auth_login,
+        location::create_location,
+        location::get_locations,
+        location::get_location_by_id,
+        location::patch_location_by_id,
+        location::delete_location_by_id,
+        room::create_room,
+        room::get_rooms,
+        room::get_room_by_id,
+        room::patch_room_by_id,
+        room::delete_room_by_id,
     ),
     components(schemas(
         version::VersionDetails,
@@ -79,6 +93,10 @@ pub fn route() -> Router<AppState> {
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
+        location_impl::Location,
+        location_impl::LocationPatch,
+        room_impl::Room,
+        room_impl::RoomPatch,
     ))
 )]
 

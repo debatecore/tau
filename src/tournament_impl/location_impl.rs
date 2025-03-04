@@ -18,15 +18,18 @@ pub struct Location {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
+    /// Location name. Must be unique within a tournament.
     pub name: String,
     /// A field dedicated to store information about location address.
     /// While contents of this field could be included in remarks,
-    /// its presence prompts the user to include address information
+    /// its presence prompts the user to include address information.
     pub address: Option<String>,
     pub remarks: Option<String>,
     pub tournament_id: Uuid,
 }
 
+#[derive(ToSchema, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LocationPatch {
     pub name: Option<String>,
     pub address: Option<String>,

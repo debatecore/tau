@@ -17,12 +17,14 @@ pub struct Room {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
+    /// Must be unique within a location.
     pub name: String,
     pub remarks: Option<String>,
     pub location_id: Uuid,
     pub is_occupied: bool,
 }
 
+#[derive(ToSchema, Deserialize)]
 pub struct RoomPatch {
     pub name: Option<String>,
     pub address: Option<String>,
