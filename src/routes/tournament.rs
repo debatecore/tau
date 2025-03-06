@@ -62,7 +62,7 @@ async fn get_tournaments(
         }
     }
     if visible_tournaments.is_empty() {
-        return Err(OmniError::UnauthorizedError);
+        return Ok(vec![].into_response());
     }
     Ok(Json(visible_tournaments).into_response())
 }
