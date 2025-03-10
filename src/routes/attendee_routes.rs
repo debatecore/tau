@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament_impl::attendee_impl::{Attendee, AttendeePatch},
+    tournament::attendee::{Attendee, AttendeePatch},
     users::{permissions::Permission, TournamentUser},
 };
 

@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament_impl::motion_impl::{Motion, MotionPatch}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::motion::{Motion, MotionPatch}, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},

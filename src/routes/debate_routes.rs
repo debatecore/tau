@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament_impl::debate_impl::{Debate, DebatePatch}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::debate::{Debate, DebatePatch}, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},

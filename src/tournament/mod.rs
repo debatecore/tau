@@ -6,10 +6,10 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-pub(crate) mod attendee_impl;
-pub(crate) mod debate_impl;
-pub(crate) mod motion_impl;
-pub(crate) mod team_impl;
+pub(crate) mod attendee;
+pub(crate) mod debate;
+pub(crate) mod motion;
+pub(crate) mod team;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

@@ -10,7 +10,7 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament_impl::{team_impl::{Team, TeamPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{team::{Team, TeamPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
