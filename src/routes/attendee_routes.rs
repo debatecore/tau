@@ -135,10 +135,7 @@ async fn get_attendees(
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    match query_as!(Attendee, "SELECT * FROM attendees")
-        .fetch_all(&state.connection_pool)
-        .await
-    {
+    match Attendee::get_all(pool).await {
         Ok(attendees) => Ok(Json(attendees).into_response()),
         Err(e) => {
             error!("Error getting a list of attendees: {e}");

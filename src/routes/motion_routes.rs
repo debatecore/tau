@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament::motion::{Motion, MotionPatch}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{motion::{Motion, MotionPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -48,9 +48,7 @@ async fn get_motions(
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    match query_as!(Motion, "SELECT * FROM motions")
-        .fetch_all(pool)
-        .await
+    match Motion::get_all(pool).await
     {
         Ok(motions) => Ok(Json(motions).into_response()),
         Err(e) => {

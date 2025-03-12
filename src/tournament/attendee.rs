@@ -33,7 +33,7 @@ pub struct AttendeePatch {
 impl Attendee {
     pub async fn post(
         attendee: Attendee,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
     ) -> Result<Attendee, OmniError> {
         match query_as!(
             Attendee,
@@ -46,7 +46,7 @@ impl Attendee {
             attendee.position,
             attendee.team_id,
         )
-        .fetch_one(connection_pool)
+        .fetch_one(pool)
         .await
         {
             Ok(attendee) => Ok(attendee),
@@ -56,10 +56,10 @@ impl Attendee {
 
     pub async fn get_by_id(
         id: Uuid,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
     ) -> Result<Attendee, OmniError> {
         match query_as!(Attendee, "SELECT * FROM attendees WHERE id = $1", id)
-            .fetch_one(connection_pool)
+            .fetch_one(pool)
             .await
         {
             Ok(attendee) => Ok(attendee),
@@ -69,7 +69,7 @@ impl Attendee {
 
     pub async fn patch(
         self,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
         patch: AttendeePatch,
     ) -> Result<Attendee, OmniError> {
         let new_attendee = Attendee {
@@ -85,7 +85,7 @@ impl Attendee {
             new_attendee.team_id,
             new_attendee.id
         )
-        .execute(connection_pool)
+        .execute(pool)
         .await
         {
             Ok(_) => Ok(new_attendee),
@@ -93,12 +93,22 @@ impl Attendee {
         }
     }
 
-    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
+    pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
         match query!("DELETE FROM attendees WHERE id = $1", self.id)
-            .execute(connection_pool)
+            .execute(pool)
             .await
         {
             Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_all(pool: &Pool<Postgres>) -> Result<Vec<Attendee>, OmniError> {
+        match query_as!(Attendee, "SELECT * FROM attendees")
+            .fetch_all(pool)
+            .await
+        {
+            Ok(attendees) => Ok(attendees),
             Err(e) => Err(e)?,
         }
     }

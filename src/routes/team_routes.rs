@@ -114,10 +114,8 @@ async fn get_teams(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match query_as!(Team, "SELECT * FROM teams WHERE tournament_id = $1", tournament_id)
-        .fetch_all(&state.connection_pool)
-        .await
+    let tournament = Tournament::get_by_id(tournament_id, pool).await?;
+    match tournament.get_debates(pool).await
     {
         Ok(teams) => Ok(Json(teams).into_response()),
         Err(e) => {

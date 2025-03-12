@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament::debate::{Debate, DebatePatch}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{debate::{Debate, DebatePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -56,9 +56,7 @@ async fn get_debates(
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    match query_as!(Debate, "SELECT * FROM debates")
-        .fetch_all(&state.connection_pool)
-        .await
+    match Tournament::get_by_id(tournament_id, pool).await?.get_debates(pool).await
     {
         Ok(debates) => Ok(Json(debates).into_response()),
         Err(e) => {
