@@ -2,7 +2,10 @@ use super::{
     cookie::set_session_token_cookie, crypto::hash_token, error::AuthError,
     session::Session, AUTH_SESSION_COOKIE_NAME,
 };
-use crate::{omni_error::OmniError, users::User};
+use crate::{
+    omni_error::OmniError,
+    users::{auth::login_tokens::LoginToken, User},
+};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::http::{header::AUTHORIZATION, HeaderMap};
 use base64::{prelude::BASE64_STANDARD, Engine};
@@ -116,6 +119,30 @@ impl User {
                 sqlx::Error::RowNotFound => Err(AuthError::InvalidCredentials)?,
                 _ => Err(OmniError::SqlxError(e))?,
             },
+        }
+    }
+
+    pub async fn auth_via_link(
+        token: &str,
+        pool: &Pool<Postgres>,
+    ) -> Result<User, OmniError> {
+        let hashed_token = hash_token(token);
+        let token_record = sqlx::query_as!(
+            LoginToken,
+            "SELECT * FROM login_tokens WHERE token_hash = $1",
+            hashed_token
+        )
+        .fetch_one(pool)
+        .await?;
+        // If no token was found, return 401
+        if token_record.expired() {
+            // Return forbidden
+        } else if token_record.used {
+            // Return forbidden
+        }
+        match User::get_by_id(token_record.id, pool).await {
+            Ok(user) => Ok(user),
+            Err(e) => Err(e),
         }
     }
 }

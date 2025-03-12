@@ -14,7 +14,7 @@ use crate::{
     },
 };
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::{header::AUTHORIZATION, HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -23,11 +23,13 @@ use axum::{
 use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
+use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(auth_login))
         .route("/auth/clear", get(auth_clear))
+        .route("/auth/login/:token", post(login_with_link))
 }
 
 #[derive(Deserialize)]
@@ -60,6 +62,40 @@ async fn auth_login(
 
     set_session_token_cookie(&token, cookies);
     (StatusCode::OK, token).into_response()
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/login/{token}",
+    responses(
+        (
+            status = 200,
+            description = "Returns an auth token to be used for authentication in subsequent requests",
+            body=String,
+            example=json!("UaKN-h7_eD5LlKt8ba4P376G0LGvW3JmccCDMUaPaQk")
+        ),
+        (status = 401, description = "Provided token was invalid"),
+        (status = 403, description = "Provided token was used used or expired"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+/// Log in with a single-use link
+///
+/// This endpoint can be used to utilize single-use login links
+/// generated with /user/{user_id}/login_link.
+async fn login_with_link(
+    cookies: Cookies,
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+) -> Result<Response, OmniError> {
+    let user = User::auth_via_link(&token, &state.connection_pool).await?;
+    let (_, token) = match Session::create(&user.id, &state.connection_pool).await {
+        Ok(o) => o,
+        Err(e) => Err(e)?,
+    };
+
+    set_session_token_cookie(&token, cookies);
+    Ok((StatusCode::OK, token).into_response())
 }
 
 const TOO_MANY_TOKENS: &str = "Please provide one session token to destroy at a time.";
