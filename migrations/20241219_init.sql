@@ -56,9 +56,7 @@ CREATE TABLE IF NOT EXISTS attendees (
     id                 UUID NOT NULL UNIQUE PRIMARY KEY,
     name               TEXT NOT NULL,
     position           INTEGER DEFAULT NULL,
-    team_id            UUID NOT NULL REFERENCES teams(id),
-    individual_points  INTEGER NOT NULL DEFAULT 0,
-    penalty_points     INTEGER NOT NULL DEFAULT 0
+    team_id            UUID NOT NULL REFERENCES teams(id)
 );
 
 CREATE TABLE IF NOT EXISTS debates (

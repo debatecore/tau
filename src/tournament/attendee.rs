@@ -21,10 +21,6 @@ pub struct Attendee {
     /// Two attendees from the same team cannot be placed on the same position.
     pub position: Option<i32>,
     pub team_id: Uuid,
-    #[serde_inline_default(0)]
-    pub individual_points: i32,
-    #[serde_inline_default(0)]
-    pub penalty_points: i32,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -32,8 +28,6 @@ pub struct AttendeePatch {
     pub name: Option<String>,
     pub position: Option<i32>,
     pub team_id: Option<Uuid>,
-    pub individual_points: Option<i32>,
-    pub penalty_points: Option<i32>,
 }
 
 impl Attendee {
@@ -44,15 +38,13 @@ impl Attendee {
         match query_as!(
             Attendee,
             r#"INSERT INTO attendees
-            (id, name, position, team_id, individual_points, penalty_points)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, name, position, team_id, individual_points, penalty_points"#,
+            (id, name, position, team_id)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, name, position, team_id"#,
             attendee.id,
             attendee.name,
             attendee.position,
             attendee.team_id,
-            attendee.individual_points,
-            attendee.penalty_points
         )
         .fetch_one(connection_pool)
         .await
@@ -85,17 +77,12 @@ impl Attendee {
             name: patch.name.unwrap_or(self.name),
             position: patch.position,
             team_id: patch.team_id.unwrap_or(self.team_id),
-            individual_points: patch.individual_points.unwrap_or(self.individual_points),
-            penalty_points: patch.penalty_points.unwrap_or(self.penalty_points),
         };
         match query!(
-            r#"UPDATE attendees SET name = $1, position = $2, team_id = $3,
-            individual_points = $4, penalty_points = $5 WHERE id = $6"#,
+            "UPDATE attendees SET name = $1, position = $2, team_id = $3 WHERE id = $4",
             new_attendee.name,
             new_attendee.position,
             new_attendee.team_id,
-            new_attendee.individual_points,
-            new_attendee.penalty_points,
             new_attendee.id
         )
         .execute(connection_pool)
