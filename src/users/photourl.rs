@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::error::Error;
 use url::Url;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct PhotoUrl {
     url: Url,
 }

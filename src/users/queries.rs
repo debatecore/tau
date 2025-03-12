@@ -99,15 +99,19 @@ impl User {
         tournament: Uuid,
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
-        let roles = sqlx::query!(
+        let roles_result = sqlx::query!(
             "SELECT roles FROM roles WHERE user_id = $1 AND tournament_id = $2",
             self.id,
             tournament
         )
-        .fetch_one(pool)
-        .await?
-        .roles;
+        .fetch_optional(pool)
+        .await?;
 
+        if roles_result.is_none() {
+            return Ok(vec![]);
+        }
+
+        let roles = roles_result.unwrap().roles;
         let vec = match roles {
             Some(vec) => vec
                 .iter()

@@ -1,8 +1,13 @@
+use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
 use roles::Role;
 use serde::Serialize;
+use sqlx::{Pool, Postgres};
+use tower_cookies::Cookies;
 use uuid::Uuid;
+
+use crate::omni_error::OmniError;
 
 pub mod auth;
 pub mod infradmin;
@@ -11,7 +16,7 @@ pub mod photourl;
 pub mod queries;
 pub mod roles;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct User {
     pub id: Uuid,
     pub handle: String,
@@ -24,10 +29,31 @@ pub struct TournamentUser {
 }
 
 impl TournamentUser {
+    pub async fn authenticate(
+        tournament_id: Uuid,
+        headers: &HeaderMap,
+        cookies: Cookies,
+        pool: &Pool<Postgres>,
+    ) -> Result<TournamentUser, OmniError> {
+        let user = User::authenticate(headers, cookies, pool).await?;
+        if user.is_infrastructure_admin() {
+            return Ok(TournamentUser {
+                user,
+                roles: vec![],
+            });
+        }
+        let roles = user.get_roles(tournament_id, pool).await?;
+        return Ok(TournamentUser { user, roles });
+    }
+
     pub fn has_permission(&self, permission: Permission) -> bool {
-        self.roles
-            .iter()
-            .any(|role| role.get_role_permissions().contains(&permission))
+        if self.user.is_infrastructure_admin() {
+            return true;
+        } else {
+            self.roles
+                .iter()
+                .any(|role| role.get_role_permissions().contains(&permission))
+        }
     }
 }
 

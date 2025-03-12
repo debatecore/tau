@@ -23,6 +23,7 @@ use axum::{
 use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
+use utoipa::ToSchema;
 
 pub fn route() -> Router<AppState> {
     Router::new()
@@ -30,14 +31,35 @@ pub fn route() -> Router<AppState> {
         .route("/auth/clear", get(auth_clear))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-struct LoginRequest {
+pub struct LoginRequest {
     login: String,
     password: String,
 }
 
-async fn auth_login(
+/// Log in to tau
+///
+/// Returns an auth token and sets a session cookie.
+/// Providing the token either by including it in the
+/// request header or sending the cookie is required
+/// to perform any further operations.
+#[utoipa::path(post, path = "/auth/login", request_body=LoginRequest,
+    responses
+        (
+            (
+                status=200,
+                description = "Auth token",
+                body=String,
+                example=json!("UaKN-h7_eD5LlKt8ba4P376G0LGvW3JmccCDMUaPaQk")
+            ),
+            (status=400, description = "Bad request"),
+            (status=401, description = "Invalid credentials"),
+            (status=500, description = "Internal server error"),
+        )
+    )
+]
+pub async fn auth_login(
     cookies: Cookies,
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,
@@ -66,6 +88,22 @@ const TOO_MANY_TOKENS: &str = "Please provide one session token to destroy at a 
 const NO_TOKENS: &str = "Please provide a session token to destroy.";
 const SESSION_DESTROYED: &str = "Logged out - Session destroyed";
 
+/// Log out of tau
+///
+/// Can be used to invalidate auth tokens.
+/// Can only invalidate one token at a time.
+#[utoipa::path(get, path = "/auth/clear",
+    responses
+        (
+            (
+                status=200,
+                description = SESSION_DESTROYED,
+            ),
+            (status=400, description = "Bad request"),
+            (status=500, description = "Internal server error"),
+        )
+    )
+]
 async fn auth_clear(
     headers: HeaderMap,
     cookies: Cookies,
