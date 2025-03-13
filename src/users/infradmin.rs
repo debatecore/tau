@@ -17,7 +17,7 @@ impl User {
         User {
             id: Uuid::max(),
             handle: String::from("admin"),
-            profile_picture: None,
+            picture_link: None,
         }
     }
 }
@@ -30,7 +30,7 @@ pub async fn guarantee_infrastructure_admin_exists(pool: &Pool<Postgres>) {
         Ok(Some(_)) => (),
         Ok(None) => {
             let admin = User::new_infrastructure_admin();
-            match User::create(admin, "admin".to_string(), pool).await {
+            match User::post(admin, "admin".to_string(), pool).await {
                 Ok(_) => info!("Infrastructure admin created."),
                 Err(e) => {
                     let err = OmniError::from(e);
