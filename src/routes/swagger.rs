@@ -3,6 +3,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::routes::auth;
+use crate::routes::user_routes;
 use crate::setup::AppState;
 
 use crate::routes::attendee_routes;
@@ -20,6 +21,7 @@ use crate::tournament::motion;
 use crate::tournament::room;
 use crate::tournament::team;
 use crate::users::permissions;
+use crate::users::photourl;
 use crate::users::roles;
 
 use super::health_check;
@@ -75,6 +77,12 @@ pub fn route() -> Router<AppState> {
         room_routes::get_room_by_id,
         room_routes::patch_room_by_id,
         room_routes::delete_room_by_id,
+        auth::auth_clear,
+        user_routes::get_users,
+        user_routes::create_user,
+        user_routes::get_user_by_id,
+        user_routes::patch_user_by_id,
+        user_routes::delete_user_by_id,
     ),
     components(schemas(
         version::VersionDetails,
@@ -97,6 +105,10 @@ pub fn route() -> Router<AppState> {
         location::LocationPatch,
         room::Room,
         room::RoomPatch,
+        user_routes::UserWithPassword,
+        user_routes::UserPatch,
+        crate::users::User,
+        photourl::PhotoUrl
     ))
 )]
 

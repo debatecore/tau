@@ -14,6 +14,7 @@ mod swagger;
 mod team_routes;
 mod teapot;
 mod tournament_routes;
+mod user_routes;
 mod version;
 
 pub fn routes() -> Router<AppState> {
@@ -31,4 +32,5 @@ pub fn routes() -> Router<AppState> {
         .merge(debate_routes::route())
         .merge(location_routes::route())
         .merge(room_routes::route())
+        .merge(user_routes::route())
 }
