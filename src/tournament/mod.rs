@@ -1,18 +1,20 @@
-use location_impl::Location;
+use debate::Debate;
+use location::Location;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
+use team::Team;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-pub(crate) mod attendee_impl;
-pub(crate) mod debate_impl;
-pub(crate) mod location_impl;
-pub(crate) mod motion_impl;
-pub(crate) mod room_impl;
-pub(crate) mod team_impl;
+pub(crate) mod attendee;
+pub(crate) mod debate;
+pub(crate) mod location;
+pub(crate) mod motion;
+pub(crate) mod room;
+pub(crate) mod team;
 pub(crate) mod utils;
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -109,6 +111,37 @@ impl Tournament {
             .await
         {
             Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_debates(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Debate>, OmniError> {
+        match query_as!(
+            Debate,
+            "SELECT * FROM debates WHERE tournament_id = $1",
+            &self.id
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(debates) => Ok(debates),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_teams(&self, pool: &Pool<Postgres>) -> Result<Vec<Team>, OmniError> {
+        match query_as!(
+            Team,
+            "SELECT * FROM teams WHERE tournament_id = $1",
+            &self.id
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(debates) => Ok(debates),
             Err(e) => Err(e)?,
         }
     }

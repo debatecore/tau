@@ -10,7 +10,7 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament_impl::{location_impl::Location, room_impl::{Room, RoomPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{location::Location, room::{Room, RoomPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = "Room with this name already exists within the scope of the tournament, to which the room is assigned.";
 

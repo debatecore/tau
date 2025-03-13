@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament_impl::{Tournament, TournamentPatch}, users::{permissions::Permission, TournamentUser, User}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{Tournament, TournamentPatch}, users::{permissions::Permission, TournamentUser, User}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -62,7 +62,7 @@ async fn get_tournaments(
         }
     }
     if visible_tournaments.is_empty() {
-        return Err(OmniError::UnauthorizedError);
+        return Ok(vec![].into_response());
     }
     Ok(Json(visible_tournaments).into_response())
 }

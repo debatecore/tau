@@ -5,20 +5,20 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::routes::auth;
 use crate::setup::AppState;
 
-use crate::routes::attendee;
-use crate::routes::debate;
-use crate::routes::location;
-use crate::routes::motion;
-use crate::routes::room;
-use crate::routes::team;
-use crate::routes::tournament;
-use crate::tournament_impl;
-use crate::tournament_impl::attendee_impl;
-use crate::tournament_impl::debate_impl;
-use crate::tournament_impl::location_impl;
-use crate::tournament_impl::motion_impl;
-use crate::tournament_impl::room_impl;
-use crate::tournament_impl::team_impl;
+use crate::routes::attendee_routes;
+use crate::routes::debate_routes;
+use crate::routes::location_routes;
+use crate::routes::motion_routes;
+use crate::routes::room_routes;
+use crate::routes::team_routes;
+use crate::routes::tournament_routes;
+use crate::tournament;
+use crate::tournament::attendee;
+use crate::tournament::debate;
+use crate::tournament::location;
+use crate::tournament::motion;
+use crate::tournament::room;
+use crate::tournament::team;
 use crate::users::permissions;
 use crate::users::roles;
 
@@ -39,64 +39,64 @@ pub fn route() -> Router<AppState> {
         teapot::route,
         version::version,
         version::version_details,
-        tournament::create_tournament,
-        tournament::get_tournament_by_id,
-        tournament::patch_tournament_by_id,
-        tournament::delete_tournament_by_id,
-        tournament::get_tournaments,
-        motion::get_motions,
-        motion::create_motion,
-        motion::get_motion_by_id,
-        motion::patch_motion_by_id,
-        motion::delete_motion_by_id,
-        team::get_teams,
-        team::create_team,
-        team::get_team_by_id,
-        team::patch_team_by_id,
-        team::delete_team_by_id,
-        debate::get_debates,
-        debate::create_debate,
-        debate::get_debate_by_id,
-        debate::patch_debate_by_id,
-        debate::delete_debate_by_id,
-        attendee::get_attendees,
-        attendee::create_attendee,
-        attendee::get_attendee_by_id,
-        attendee::patch_attendee_by_id,
-        attendee::delete_attendee_by_id,
+        tournament_routes::create_tournament,
+        tournament_routes::get_tournament_by_id,
+        tournament_routes::patch_tournament_by_id,
+        tournament_routes::delete_tournament_by_id,
+        tournament_routes::get_tournaments,
+        motion_routes::get_motions,
+        motion_routes::create_motion,
+        motion_routes::get_motion_by_id,
+        motion_routes::patch_motion_by_id,
+        motion_routes::delete_motion_by_id,
+        team_routes::get_teams,
+        team_routes::create_team,
+        team_routes::get_team_by_id,
+        team_routes::patch_team_by_id,
+        team_routes::delete_team_by_id,
+        debate_routes::get_debates,
+        debate_routes::create_debate,
+        debate_routes::get_debate_by_id,
+        debate_routes::patch_debate_by_id,
+        debate_routes::delete_debate_by_id,
+        attendee_routes::get_attendees,
+        attendee_routes::create_attendee,
+        attendee_routes::get_attendee_by_id,
+        attendee_routes::patch_attendee_by_id,
+        attendee_routes::delete_attendee_by_id,
         auth::auth_login,
-        location::create_location,
-        location::get_locations,
-        location::get_location_by_id,
-        location::patch_location_by_id,
-        location::delete_location_by_id,
-        room::create_room,
-        room::get_rooms,
-        room::get_room_by_id,
-        room::patch_room_by_id,
-        room::delete_room_by_id,
+        location_routes::create_location,
+        location_routes::get_locations,
+        location_routes::get_location_by_id,
+        location_routes::patch_location_by_id,
+        location_routes::delete_location_by_id,
+        room_routes::create_room,
+        room_routes::get_rooms,
+        room_routes::get_room_by_id,
+        room_routes::patch_room_by_id,
+        room_routes::delete_room_by_id,
     ),
     components(schemas(
         version::VersionDetails,
         version::VersionBits,
         version::GitInfo,
-        tournament_impl::Tournament,
-        tournament_impl::TournamentPatch,
-        motion_impl::Motion,
-        motion_impl::MotionPatch,
-        team_impl::Team,
-        team_impl::TeamPatch,
-        debate_impl::Debate,
-        debate_impl::DebatePatch,
-        attendee_impl::Attendee,
-        attendee_impl::AttendeePatch,
+        tournament::Tournament,
+        tournament::TournamentPatch,
+        motion::Motion,
+        motion::MotionPatch,
+        team::Team,
+        team::TeamPatch,
+        debate::Debate,
+        debate::DebatePatch,
+        attendee::Attendee,
+        attendee::AttendeePatch,
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
-        location_impl::Location,
-        location_impl::LocationPatch,
-        room_impl::Room,
-        room_impl::RoomPatch,
+        location::Location,
+        location::LocationPatch,
+        room::Room,
+        room::RoomPatch,
     ))
 )]
 

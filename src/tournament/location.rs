@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::{room_impl::Room, utils::get_optional_value_to_be_patched};
+use super::{room::Room, utils::get_optional_value_to_be_patched};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

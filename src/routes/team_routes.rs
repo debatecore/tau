@@ -10,7 +10,7 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament_impl::{team_impl::{Team, TeamPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{team::{Team, TeamPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
@@ -114,10 +114,8 @@ async fn get_teams(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match query_as!(Team, "SELECT * FROM teams WHERE tournament_id = $1", tournament_id)
-        .fetch_all(&state.connection_pool)
-        .await
+    let tournament = Tournament::get_by_id(tournament_id, pool).await?;
+    match tournament.get_debates(pool).await
     {
         Ok(teams) => Ok(Json(teams).into_response()),
         Err(e) => {

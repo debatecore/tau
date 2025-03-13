@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament_impl::attendee_impl::{Attendee, AttendeePatch},
+    tournament::attendee::{Attendee, AttendeePatch},
     users::{permissions::Permission, TournamentUser},
 };
 
@@ -79,7 +79,10 @@ async fn create_attendee(
 
     if !attendee.position.is_none() {
         if !attendee_position_is_valid(attendee.position.unwrap()) {
-            return Err(OmniError::BadRequestError);
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::UNPROCESSABLE_ENTITY,
+                message: POSITION_OUT_OF_RANGE_MESSAGE.to_owned(),
+            });
         }
         match attendee_position_is_duplicated(&attendee, pool).await {
             Ok(position_duplicated) => {
@@ -132,10 +135,7 @@ async fn get_attendees(
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    match query_as!(Attendee, "SELECT * FROM attendees")
-        .fetch_all(&state.connection_pool)
-        .await
-    {
+    match Attendee::get_all(pool).await {
         Ok(attendees) => Ok(Json(attendees).into_response()),
         Err(e) => {
             error!("Error getting a list of attendees: {e}");
@@ -225,11 +225,10 @@ async fn patch_attendee_by_id(
 
     if !new_attendee.position.is_none() {
         if !attendee_position_is_valid(new_attendee.position.unwrap()) {
-            return Ok((
-                StatusCode::UNPROCESSABLE_ENTITY,
-                POSITION_OUT_OF_RANGE_MESSAGE,
-            )
-                .into_response());
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::UNPROCESSABLE_ENTITY,
+                message: POSITION_OUT_OF_RANGE_MESSAGE.to_owned(),
+            });
         }
     }
     let attendee = Attendee::get_by_id(id, pool).await?;

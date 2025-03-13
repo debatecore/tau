@@ -106,4 +106,14 @@ impl Motion {
             }
         }
     }
+
+    pub async fn get_all(pool: &Pool<Postgres>) -> Result<Vec<Motion>, OmniError> {
+        match query_as!(Motion, "SELECT * FROM motions",)
+            .fetch_all(pool)
+            .await
+        {
+            Ok(motions) => Ok(motions),
+            Err(e) => Err(e)?,
+        }
+    }
 }
