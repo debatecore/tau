@@ -12,6 +12,7 @@ const BAD_REQUEST: &str = "Bad Request";
 const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
     "You don't have permissions required to perform this operation";
 const REFERRING_TO_A_NONEXISTENT_RESOURCE: &str = "Referring to a nonexistent resource";
+const ROLES_PARSING_MESSAGE: &str = "Failed to parse user roles";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -51,6 +52,8 @@ pub enum OmniError {
     InsufficientPermissionsError,
     #[error("REFERRING_TO_A_NONEXISTENT_RESOURCE")]
     ReferringToNonexistentResourceError,
+    #[error("ROLES_PARSING_MESSAGE")]
+    RolesParsingError,
 }
 
 impl IntoResponse for OmniError {
@@ -152,6 +155,9 @@ impl OmniError {
             E::ReferringToNonexistentResourceError => {
                 (StatusCode::NOT_FOUND, self.clerr()).into_response()
             }
+            E::RolesParsingError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+            }
         }
     }
 
@@ -174,6 +180,7 @@ impl OmniError {
             E::BadRequestError => BAD_REQUEST,
             E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
             E::ReferringToNonexistentResourceError => REFERRING_TO_A_NONEXISTENT_RESOURCE,
+            E::RolesParsingError => ROLES_PARSING_MESSAGE,
         }
         .to_string()
     }

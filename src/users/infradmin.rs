@@ -1,7 +1,8 @@
 use super::User;
 use crate::{
     omni_error::OmniError,
-    users::{permissions::Permission, roles::Role, TournamentUser},
+    tournament::roles::Role,
+    users::{permissions::Permission, TournamentUser},
 };
 use sqlx::{Pool, Postgres};
 use strum::VariantArray;

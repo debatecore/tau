@@ -1,20 +1,18 @@
 use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
-use roles::Role;
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::omni_error::OmniError;
+use crate::{omni_error::OmniError, tournament::roles::Role};
 
 pub mod auth;
 pub mod infradmin;
 pub mod permissions;
 pub mod photourl;
-pub mod roles;
 
 #[derive(Serialize, Clone, ToSchema)]
 pub struct User {

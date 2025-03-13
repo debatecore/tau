@@ -36,4 +36,5 @@ pub enum Permission {
     ReadRooms,
     ModifyAllRoomDetails,
     ChangeRoomOccupationStatus,
+    WriteRoles,
 }

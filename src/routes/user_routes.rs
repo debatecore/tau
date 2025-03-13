@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament::Tournament, users::{photourl::PhotoUrl, roles::Role, User}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::roles::Role, users::{photourl::PhotoUrl, User}};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use axum::{
     extract::{Path, State},
@@ -14,7 +14,6 @@ use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use serde_json::Error as JsonError;
 
 
 #[derive(Deserialize, ToSchema)]
@@ -36,14 +35,14 @@ pub struct UserWithPassword {
 }
 
 impl User {
-    pub async fn get_by_id(id: Uuid, pool: &Pool<Postgres>) -> Result<User, OmniError> {
+    pub async fn get_by_id(user_id: Uuid, pool: &Pool<Postgres>) -> Result<User, OmniError> {
         let user =
-            sqlx::query!("SELECT handle, picture_link FROM users WHERE id = $1", id)
+            sqlx::query!("SELECT handle, picture_link FROM users WHERE id = $1", user_id)
                 .fetch_one(pool)
                 .await?;
 
         Ok(User {
-            id,
+            id: user_id,
             handle: user.handle,
             picture_link: match user.picture_link {
                 Some(url) => Some(PhotoUrl::new(&url)?),
@@ -199,13 +198,13 @@ impl User {
     // ---------- DATABASE HELPERS ----------
     pub async fn get_roles(
         &self,
-        tournament: Uuid,
+        tournament_id: Uuid,
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
         let roles_result = sqlx::query!(
             "SELECT roles FROM roles WHERE user_id = $1 AND tournament_id = $2",
             self.id,
-            tournament
+            tournament_id
         )
         .fetch_optional(pool)
         .await?;
@@ -214,15 +213,12 @@ impl User {
             return Ok(vec![]);
         }
 
-        let roles = roles_result.unwrap().roles;
-        let vec = match roles {
-            Some(vec) => vec
-                .iter()
-                .map(|role| serde_json::from_str(role.as_str()))
-                .collect::<Result<Vec<Role>, JsonError>>()?,
-            None => vec![],
-        };
-        Ok(vec)
+        let roles_strings = roles_result.unwrap().roles.unwrap();
+        let mut roles_vec = vec![];
+        for role_string in roles_strings {
+            roles_vec.push(Role::try_from(role_string)?);
+        }
+        Ok(roles_vec)
     }
 
     pub async fn is_organizer_of_any_tournament(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
