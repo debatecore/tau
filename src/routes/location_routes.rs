@@ -44,7 +44,8 @@ pub fn route() -> Router<AppState> {
         ),
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="location"
 )]
 async fn create_location(
     State(state): State<AppState>,
@@ -92,7 +93,8 @@ async fn create_location(
         ),
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="location"
 )]
 /// Get a list of all locations
 /// 
@@ -143,6 +145,7 @@ async fn get_locations(
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="location"
 )]
 async fn get_location_by_id(
     State(state): State<AppState>,
@@ -191,7 +194,8 @@ async fn get_location_by_id(
             description = DUPLICATE_NAME_ERROR,
         ),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="location"
 )]
 async fn patch_location_by_id(
     Path((_tournament_id, id)): Path<(Uuid, Uuid)>,
@@ -241,6 +245,7 @@ async fn patch_location_by_id(
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="location"
 )]
 async fn delete_location_by_id(
     Path((tournament_id, id)): Path<(Uuid, Uuid)>,

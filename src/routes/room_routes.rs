@@ -44,7 +44,8 @@ pub fn route() -> Router<AppState> {
         ),
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="room"
 )]
 async fn create_room(
     State(state): State<AppState>,
@@ -92,7 +93,8 @@ async fn create_room(
         ),
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="room"
 )]
 /// Get a list of all rooms within a location
 /// 
@@ -141,6 +143,7 @@ async fn get_rooms(
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="room"
 )]
 async fn get_room_by_id(
     State(state): State<AppState>,
@@ -189,7 +192,8 @@ async fn get_room_by_id(
             description = DUPLICATE_NAME_ERROR,
         ),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="room"
 )]
 async fn patch_room_by_id(
     Path(( tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
@@ -238,6 +242,7 @@ async fn patch_room_by_id(
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="room"
 )]
 async fn delete_room_by_id(
     Path((tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
