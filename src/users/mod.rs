@@ -1,4 +1,3 @@
-use crate::routes::roles::Role;
 use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
@@ -8,7 +7,7 @@ use tower_cookies::Cookies;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::omni_error::OmniError;
+use crate::{omni_error::OmniError, tournament::roles::Role};
 
 pub mod auth;
 pub mod infradmin;
