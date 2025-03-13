@@ -82,8 +82,8 @@ impl Location {
         let patch = Location {
             id: self.id,
             name: new_location.name.unwrap_or(self.name),
-            address: get_optional_value_to_be_patched(new_location.address, self.address),
-            remarks: get_optional_value_to_be_patched(new_location.remarks, self.remarks),
+            address: get_optional_value_to_be_patched(self.address, new_location.address),
+            remarks: get_optional_value_to_be_patched(self.remarks, new_location.remarks),
             tournament_id: new_location.tournament_id.unwrap_or(self.tournament_id),
         };
         match query!(

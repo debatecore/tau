@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
-use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -27,7 +26,6 @@ pub struct Room {
 #[derive(ToSchema, Deserialize)]
 pub struct RoomPatch {
     pub name: Option<String>,
-    pub address: Option<String>,
     pub remarks: Option<String>,
     pub location_id: Option<Uuid>,
     pub is_occupied: Option<bool>,

@@ -239,6 +239,7 @@ async fn patch_location_by_id(
             description = "The user is not permitted to modify locations within this tournament"
         ),
         (status=404, description = "Tournament or location not found"),
+        (status=500, description = "Internal server error"),
     ),
 )]
 async fn delete_location_by_id(

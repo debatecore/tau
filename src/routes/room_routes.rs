@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::{query, query_as, Error, Pool, Postgres};
+use sqlx::{query, Error, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -236,14 +236,14 @@ async fn patch_room_by_id(
             description = "The user is not permitted to modify rooms within this tournament"
         ),
         (status=404, description = "Tournament or room not found"),
+        (status=500, description = "Internal server error"),
     ),
 )]
 async fn delete_room_by_id(
-    Path((_tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
