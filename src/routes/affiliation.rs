@@ -15,10 +15,9 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
+    tournament::Tournament,
     users::{permissions::Permission, roles::Role, TournamentUser, User},
 };
-
-use super::tournament::Tournament;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

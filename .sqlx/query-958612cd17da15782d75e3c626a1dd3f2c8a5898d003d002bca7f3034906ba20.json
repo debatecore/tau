@@ -22,16 +22,6 @@
         "ordinal": 3,
         "name": "team_id",
         "type_info": "Uuid"
-      },
-      {
-        "ordinal": 4,
-        "name": "individual_points",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 5,
-        "name": "penalty_points",
-        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -43,8 +33,6 @@
       false,
       false,
       true,
-      false,
-      false,
       false
     ]
   },
