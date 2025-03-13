@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, users::{photourl::PhotoUrl, roles::Role, User}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::Tournament, users::{photourl::PhotoUrl, roles::Role, User}};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use axum::{
     extract::{Path, State},
@@ -16,7 +16,6 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use serde_json::Error as JsonError;
 
-use super::tournament::Tournament;
 
 #[derive(Deserialize, ToSchema)]
 pub struct UserPatch {

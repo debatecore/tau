@@ -9,6 +9,7 @@ mod database;
 mod omni_error;
 mod routes;
 mod setup;
+mod tournament;
 mod users;
 
 #[tokio::main]

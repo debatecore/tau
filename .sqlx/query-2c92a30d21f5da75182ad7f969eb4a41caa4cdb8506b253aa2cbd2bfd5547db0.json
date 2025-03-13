@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO attendees\n            (id, name, position, team_id, individual_points, penalty_points)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING id, name, position, team_id, individual_points, penalty_points",
+  "query": "INSERT INTO attendees\n            (id, name, position, team_id)\n            VALUES ($1, $2, $3, $4)\n            RETURNING id, name, position, team_id",
   "describe": {
     "columns": [
       {
@@ -22,16 +22,6 @@
         "ordinal": 3,
         "name": "team_id",
         "type_info": "Uuid"
-      },
-      {
-        "ordinal": 4,
-        "name": "individual_points",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 5,
-        "name": "penalty_points",
-        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -39,19 +29,15 @@
         "Uuid",
         "Text",
         "Int4",
-        "Uuid",
-        "Int4",
-        "Int4"
+        "Uuid"
       ]
     },
     "nullable": [
       false,
       false,
       true,
-      false,
-      false,
       false
     ]
   },
-  "hash": "eb0968ee0779fc08c09a6ab506004de65a2b089d086ac6cad6301c7dd26a6aa7"
+  "hash": "2c92a30d21f5da75182ad7f969eb4a41caa4cdb8506b253aa2cbd2bfd5547db0"
 }

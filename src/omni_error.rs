@@ -9,6 +9,8 @@ const DEPENDENT_RESOURCES_MESSAGE: &str = "Dependent resources must be deleted f
 const INTERNAL_SERVER_ERROR_MESSAGE: &str = "Internal Server Error";
 const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
 const BAD_REQUEST: &str = "Bad Request";
+const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
+    "You don't have permissions required to perform this operation";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -31,6 +33,7 @@ pub enum OmniError {
     // this doesn't implement Error for some reason
     #[error("argon2::password_hash::Error: {0}")]
     PassHashError(String),
+
     #[error("{RESOURCE_ALREADY_EXISTS_MESSAGE}")]
     ResourceAlreadyExistsError,
     #[error("{RESOURCE_NOT_FOUND_MESSAGE}")]
@@ -43,6 +46,8 @@ pub enum OmniError {
     UnauthorizedError,
     #[error("{BAD_REQUEST}")]
     BadRequestError,
+    #[error("{INSUFFICIENT_PERMISSIONS_MESSAGE}")]
+    InsufficientPermissionsError,
 }
 
 impl IntoResponse for OmniError {
@@ -134,6 +139,9 @@ impl OmniError {
                 (StatusCode::UNAUTHORIZED, self.clerr()).into_response()
             }
             E::BadRequestError => (StatusCode::BAD_REQUEST, self.clerr()).into_response(),
+            E::InsufficientPermissionsError => {
+                (StatusCode::FORBIDDEN, self.clerr()).into_response()
+            }
         }
     }
 
@@ -154,6 +162,7 @@ impl OmniError {
             E::InternalServerError => INTERNAL_SERVER_ERROR_MESSAGE,
             E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
             E::BadRequestError => BAD_REQUEST,
+            E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
         }
         .to_string()
     }
