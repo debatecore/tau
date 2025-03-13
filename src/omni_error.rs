@@ -11,6 +11,7 @@ const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
 const BAD_REQUEST: &str = "Bad Request";
 const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
     "You don't have permissions required to perform this operation";
+const ROLES_PARSING_MESSAGE: &str = "Failed to parse user roles";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -48,6 +49,8 @@ pub enum OmniError {
     BadRequestError,
     #[error("{INSUFFICIENT_PERMISSIONS_MESSAGE}")]
     InsufficientPermissionsError,
+    #[error("ROLES_PARSING_MESSAGE")]
+    RolesParsingError,
 }
 
 impl IntoResponse for OmniError {
@@ -142,6 +145,9 @@ impl OmniError {
             E::InsufficientPermissionsError => {
                 (StatusCode::FORBIDDEN, self.clerr()).into_response()
             }
+            E::RolesParsingError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+            }
         }
     }
 
@@ -163,6 +169,7 @@ impl OmniError {
             E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
             E::BadRequestError => BAD_REQUEST,
             E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
+            E::RolesParsingError => ROLES_PARSING_MESSAGE,
         }
         .to_string()
     }

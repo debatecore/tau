@@ -12,6 +12,7 @@ use crate::omni_error::OmniError;
 pub(crate) mod attendee;
 pub(crate) mod debate;
 pub(crate) mod motion;
+pub(crate) mod roles;
 pub(crate) mod team;
 
 #[derive(Serialize, Deserialize, ToSchema)]
