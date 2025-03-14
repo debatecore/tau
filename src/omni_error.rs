@@ -57,7 +57,7 @@ pub enum OmniError {
     #[error("ROLES_PARSING_MESSAGE")]
     RolesParsingError,
     #[error{"NOT_A_JUDGE_MESSAGE"}]
-    NotAJudgeError,
+    NotAJudgeAffiliationError,
 }
 
 impl IntoResponse for OmniError {
@@ -162,7 +162,9 @@ impl OmniError {
             E::RolesParsingError => {
                 (StatusCode::BAD_REQUEST, self.clerr()).into_response()
             }
-            E::NotAJudgeError => (StatusCode::CONFLICT, self.clerr()).into_response(),
+            E::NotAJudgeAffiliationError => {
+                (StatusCode::CONFLICT, self.clerr()).into_response()
+            }
         }
     }
 
@@ -186,7 +188,7 @@ impl OmniError {
             E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
             E::ReferringToNonexistentResourceError => REFERRING_TO_A_NONEXISTENT_RESOURCE,
             E::RolesParsingError => ROLES_PARSING_MESSAGE,
-            E::NotAJudgeError => NOT_A_JUDGE_MESSAGE,
+            E::NotAJudgeAffiliationError => NOT_A_JUDGE_MESSAGE,
         }
         .to_string()
     }

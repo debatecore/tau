@@ -5,6 +5,7 @@ use axum::{
     routing::post,
     Json, Router,
 };
+use strum::VariantArray;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;

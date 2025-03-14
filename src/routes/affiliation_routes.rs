@@ -14,7 +14,7 @@ use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournament::{
-        affiliation::{Affiliation, AffiliationPatch},
+        affiliation::{self, Affiliation, AffiliationPatch},
         roles::Role,
         Tournament,
     },
@@ -62,6 +62,10 @@ async fn create_affiliation(
     Path((user_id, tournament_id)): Path<(Uuid, Uuid)>,
     Json(affiliation): Json<Affiliation>,
 ) -> Result<Response, OmniError> {
+    if !params_and_affiliation_fields_match(&affiliation, &user_id, &tournament_id) {
+        return Err(OmniError::BadRequestError);
+    }
+
     let pool = &state.connection_pool;
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
@@ -79,6 +83,20 @@ async fn create_affiliation(
             Err(e)
         }
     }
+}
+
+fn params_and_affiliation_fields_match(
+    affiliation: &Affiliation,
+    user_id: &Uuid,
+    tournament_id: &Uuid,
+) -> bool {
+    if !(&affiliation.judge_user_id == user_id) {
+        return false;
+    }
+    if !(&affiliation.tournament_id == tournament_id) {
+        return false;
+    }
+    return true;
 }
 
 #[utoipa::path(get, path = "/user/{user_id}/tournament/{tournament_id}/affiliation",
@@ -102,7 +120,7 @@ async fn get_affiliations(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((user_id, tournament_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -118,7 +136,7 @@ async fn get_affiliations(
         .has_role(Role::Judge, tournament_id, pool)
         .await?
     {
-        return Err(OmniError::NotAJudgeError);
+        return Err(OmniError::NotAJudgeAffiliationError);
     }
 
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
@@ -161,7 +179,7 @@ async fn get_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((_user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -207,7 +225,7 @@ async fn patch_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((_user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
     Json(new_affiliation): Json<AffiliationPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
@@ -259,7 +277,7 @@ async fn delete_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((_user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =

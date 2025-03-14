@@ -102,7 +102,7 @@ impl Affiliation {
     pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
         let user = User::get_by_id(self.judge_user_id, pool).await?;
         if !user.has_role(Role::Judge, self.tournament_id, pool).await? {
-            return Err(OmniError::NotAJudgeError);
+            return Err(OmniError::NotAJudgeAffiliationError);
         }
 
         let _tournament = Tournament::get_by_id(self.tournament_id, pool).await?;
