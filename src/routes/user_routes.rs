@@ -20,7 +20,7 @@ pub fn route() -> Router<AppState> {
             get(get_user_by_id)
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
-        ).route("/user/:id/login_link", post(generate_login_link))
+        ).route("/user/:id/login_token", post(generate_login_token))
 }
 
 /// Get a list of all users
@@ -247,7 +247,7 @@ async fn delete_user_by_id(
     }
 }
 
-/// Generate a login link.
+/// Generate a single-use login token.
 /// 
 /// Available only to the infrastructure admin.
 #[utoipa::path(delete, path = "/user/{id}/login_link", 
@@ -260,7 +260,7 @@ async fn delete_user_by_id(
     ),
     tag="user"
 )]
-async fn generate_login_link(
+async fn generate_login_token(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -280,8 +280,7 @@ async fn generate_login_link(
         id,
         false,
     ).execute(pool).await?;
-    let link = format!("/auth/login/{}", token);
-    Ok((StatusCode::OK, link).into_response())
+    Ok((StatusCode::OK, token).into_response())
 }
 
 fn get_user_example_with_id() -> String {

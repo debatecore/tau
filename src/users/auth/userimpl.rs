@@ -11,7 +11,6 @@ use axum::http::{header::AUTHORIZATION, HeaderMap};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use sqlx::{types::chrono::Utc, Pool, Postgres};
 use tower_cookies::Cookies;
-use tracing::error;
 
 impl User {
     pub async fn authenticate(

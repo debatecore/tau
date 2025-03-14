@@ -30,7 +30,7 @@ pub fn route() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(auth_login))
         .route("/auth/clear", get(auth_clear))
-        .route("/auth/login/:token", post(login_with_link))
+        .route("/auth/login/:token", post(single_use_login))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -103,11 +103,11 @@ async fn auth_login(
         (status = 500, description = "Internal server error")
     )
 )]
-/// Log in with a single-use link
+/// Log in with a single-use token
 ///
-/// This endpoint can be used to utilize single-use login links
-/// generated with /user/{user_id}/login_link.
-async fn login_with_link(
+/// This endpoint can be used to utilize single-use login tokens
+/// generated with /user/{user_id}/login_token.
+async fn single_use_login(
     cookies: Cookies,
     State(state): State<AppState>,
     Path(token): Path<String>,
