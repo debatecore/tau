@@ -11,6 +11,7 @@ use axum::http::{header::AUTHORIZATION, HeaderMap};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use sqlx::{types::chrono::Utc, Pool, Postgres};
 use tower_cookies::Cookies;
+use tracing::error;
 
 impl User {
     pub async fn authenticate(
@@ -132,15 +133,19 @@ impl User {
             "SELECT * FROM login_tokens WHERE token_hash = $1",
             hashed_token
         )
-        .fetch_one(pool)
+        .fetch_optional(pool)
         .await?;
-        // If no token was found, return 401
-        if token_record.expired() {
-            // Return forbidden
-        } else if token_record.used {
-            // Return forbidden
+        if token_record.is_none() {
+            return Err(AuthError::InvalidToken)?;
         }
-        match User::get_by_id(token_record.id, pool).await {
+        let token = token_record.unwrap();
+        if token.expired() {
+            return Err(AuthError::TokenExpired)?;
+        } else if token.used {
+            return Err(AuthError::TokenAlreadyUsed)?;
+        }
+        token.mark_as_used(pool).await?;
+        match User::get_by_id(token.user_id, pool).await {
             Ok(user) => Ok(user),
             Err(e) => Err(e),
         }

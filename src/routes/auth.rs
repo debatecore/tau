@@ -96,7 +96,7 @@ async fn auth_login(
             status = 200,
             description = "Returns an auth token to be used for authentication in subsequent requests",
             body=String,
-            example=json!("UaKN-h7_eD5LlKt8ba4P376G0LGvW3JmccCDMUaPaQk")
+            example=json!("k1ShPhFwn11_0hBQF2Xh56iB-zGx7mwymarrt39QYLo")
         ),
         (status = 401, description = "Provided token was invalid"),
         (status = 403, description = "Provided token was used used or expired"),
@@ -112,8 +112,9 @@ async fn login_with_link(
     State(state): State<AppState>,
     Path(token): Path<String>,
 ) -> Result<Response, OmniError> {
-    let user = User::auth_via_link(&token, &state.connection_pool).await?;
-    let (_, token) = match Session::create(&user.id, &state.connection_pool).await {
+    let pool = &state.connection_pool;
+    let user = User::auth_via_link(&token, pool).await?;
+    let (_, token) = match Session::create(&user.id, pool).await {
         Ok(o) => o,
         Err(e) => Err(e)?,
     };
