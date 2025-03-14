@@ -159,6 +159,19 @@ impl TryFrom<String> for Role {
     }
 }
 
+impl TryFrom<&String> for Role {
+    type Error = OmniError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "Organizer" => Ok(Role::Organizer),
+            "Marshall" => Ok(Role::Marshall),
+            "Judge" => Ok(Role::Judge),
+            _ => Err(OmniError::RolesParsingError),
+        }
+    }
+}
+
 impl fmt::Display for Role {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

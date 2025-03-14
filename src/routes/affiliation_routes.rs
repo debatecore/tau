@@ -256,11 +256,10 @@ async fn patch_affiliation_by_id(
     ),
 )]
 async fn delete_affiliation_by_id(
-    Path(id): Path<Uuid>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
+    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =

@@ -7,9 +7,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHasher,
 };
-use serde_json::Error as JsonError;
 use sqlx::{query, Pool, Postgres};
-use tracing::error;
 use uuid::Uuid;
 
 impl User {
@@ -99,13 +97,13 @@ impl User {
     // ---------- DATABASE HELPERS ----------
     pub async fn get_roles(
         &self,
-        tournament: Uuid,
+        tournament_id: Uuid,
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
         let roles_result = sqlx::query!(
             "SELECT roles FROM roles WHERE user_id = $1 AND tournament_id = $2",
             self.id,
-            tournament
+            tournament_id
         )
         .fetch_optional(pool)
         .await?;
@@ -115,15 +113,16 @@ impl User {
         }
 
         let roles = roles_result.unwrap().roles;
-        let vec = match roles {
-            Some(vec) => vec
-                .iter()
-                .map(|role| serde_json::from_str(role.as_str()))
-                .collect::<Result<Vec<Role>, JsonError>>()?,
-            None => vec![],
-        };
-
-        Ok(vec)
+        let mut parsed_roles: Vec<Role> = vec![];
+        match roles {
+            Some(vec) => {
+                for value in vec {
+                    parsed_roles.push(Role::try_from(value)?);
+                }
+                return Ok(parsed_roles);
+            }
+            None => return Ok(vec![]),
+        }
     }
 
     pub async fn has_role(
@@ -133,7 +132,6 @@ impl User {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         let roles = self.get_roles(tournament_id, pool).await?;
-        error!("roles parsed");
         return Ok(roles.contains(&role));
     }
 
