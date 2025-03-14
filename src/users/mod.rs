@@ -1,21 +1,28 @@
+use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
-use roles::Role;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use sqlx::{Pool, Postgres};
+use tower_cookies::Cookies;
+use utoipa::ToSchema;
 use uuid::Uuid;
+
+use crate::{omni_error::OmniError, tournament::roles::Role};
 
 pub mod auth;
 pub mod infradmin;
 pub mod permissions;
 pub mod photourl;
 pub mod queries;
-pub mod roles;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, ToSchema)]
 pub struct User {
     pub id: Uuid,
+    /// User handle used to log in and presented to other users.
+    /// Must be unique.
     pub handle: String,
-    pub profile_picture: Option<PhotoUrl>,
+    /// A link to a profile picture. Accepted extensions are: png, jpg, jpeg, and webp.
+    pub picture_link: Option<PhotoUrl>,
 }
 
 pub struct TournamentUser {
@@ -23,11 +30,59 @@ pub struct TournamentUser {
     pub roles: Vec<Role>,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct UserPatch {
+    pub handle: Option<String>,
+    pub picture_link: Option<PhotoUrl>,
+    pub password: Option<String>,
+}
+
+#[derive(Clone, Deserialize, ToSchema)]
+pub struct UserWithPassword {
+    #[serde(skip_deserializing)]
+    #[serde(default = "Uuid::now_v7")]
+    pub id: Uuid,
+    pub handle: String,
+    pub picture_link: Option<PhotoUrl>,
+    pub password: String,
+}
+
+impl From<UserWithPassword> for User {
+    fn from(value: UserWithPassword) -> Self {
+        User {
+            id: value.id,
+            handle: value.handle,
+            picture_link: value.picture_link,
+        }
+    }
+}
+
 impl TournamentUser {
+    pub async fn authenticate(
+        tournament_id: Uuid,
+        headers: &HeaderMap,
+        cookies: Cookies,
+        pool: &Pool<Postgres>,
+    ) -> Result<TournamentUser, OmniError> {
+        let user = User::authenticate(headers, cookies, pool).await?;
+        if user.is_infrastructure_admin() {
+            return Ok(TournamentUser {
+                user,
+                roles: vec![],
+            });
+        }
+        let roles = user.get_roles(tournament_id, pool).await?;
+        return Ok(TournamentUser { user, roles });
+    }
+
     pub fn has_permission(&self, permission: Permission) -> bool {
-        self.roles
-            .iter()
-            .any(|role| role.get_role_permissions().contains(&permission))
+        if self.user.is_infrastructure_admin() {
+            return true;
+        } else {
+            self.roles
+                .iter()
+                .any(|role| role.get_role_permissions().contains(&permission))
+        }
     }
 }
 
@@ -37,9 +92,7 @@ fn construct_tournament_user() {
         user: User {
             id: Uuid::now_v7(),
             handle: String::from("some_org"),
-            profile_picture: Some(
-                PhotoUrl::new("https://i.imgur.com/hbrb2U0.png").unwrap(),
-            ),
+            picture_link: Some(PhotoUrl::new("https://i.imgur.com/hbrb2U0.png").unwrap()),
         },
         roles: vec![Role::Organizer, Role::Judge, Role::Marshall],
     };

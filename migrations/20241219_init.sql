@@ -56,15 +56,14 @@ CREATE TABLE IF NOT EXISTS attendees (
     id                 UUID NOT NULL UNIQUE PRIMARY KEY,
     name               TEXT NOT NULL,
     position           INTEGER DEFAULT NULL,
-    team_id            UUID DEFAULT NULL REFERENCES teams(id),
-    individual_points  INTEGER NOT NULL DEFAULT 0,
-    penalty_points     INTEGER NOT NULL DEFAULT 0
+    team_id            UUID NOT NULL REFERENCES teams(id)
 );
 
 CREATE TABLE IF NOT EXISTS debates (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
-    motion_id         UUID NOT NULL REFERENCES motions(id),
-    marshall_user_id  UUID NOT NULL REFERENCES users(id)
+    motion_id         UUID REFERENCES motions(id),
+    marshall_user_id  UUID NOT NULL REFERENCES users(id),
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id)
 );
 
 CREATE TABLE IF NOT EXISTS debate_teams_assignments (
@@ -78,6 +77,29 @@ CREATE TABLE IF NOT EXISTS debate_judge_assignments (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
     judge_user_id     UUID NOT NULL REFERENCES users(id),
     debate_id         UUID NOT NULL REFERENCES debates(id)
+);
+
+CREATE TABLE IF NOT EXISTS locations (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    name              TEXT NOT NULL,
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id),
+    address           TEXT,
+    remarks           TEXT
+);
+
+CREATE TABLE IF NOT EXISTS rooms (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    name              TEXT NOT NULL,
+    location_id       UUID NOT NULL REFERENCES locations(id),
+    remarks           TEXT,
+    is_occupied       BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS judge_team_assignments (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    judge_user_id     UUID NOT NULL REFERENCES users(id),
+    team_id           UUID NOT NULL REFERENCES teams(id),
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id)
 );
 
 CREATE TABLE IF NOT EXISTS login_tokens (
