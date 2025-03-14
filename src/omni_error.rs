@@ -11,6 +11,10 @@ const UNAUTHORIZED_MESSAGE: &str = "Unauthorized";
 const BAD_REQUEST: &str = "Bad Request";
 const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
     "You don't have permissions required to perform this operation";
+const REFERRING_TO_A_NONEXISTENT_RESOURCE: &str = "Referring to a nonexistent resource";
+const ROLES_PARSING_MESSAGE: &str = "Failed to parse user roles";
+const NOT_A_JUDGE_MESSAGE: &str =
+    "This user is not a Judge and therefore cannot have affiliations";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -48,6 +52,12 @@ pub enum OmniError {
     BadRequestError,
     #[error("{INSUFFICIENT_PERMISSIONS_MESSAGE}")]
     InsufficientPermissionsError,
+    #[error("REFERRING_TO_A_NONEXISTENT_RESOURCE")]
+    ReferringToNonexistentResourceError,
+    #[error("ROLES_PARSING_MESSAGE")]
+    RolesParsingError,
+    #[error{"NOT_A_JUDGE_MESSAGE"}]
+    NotAJudgeAffiliationError,
 }
 
 impl IntoResponse for OmniError {
@@ -87,6 +97,13 @@ impl OmniError {
         return false;
     }
 
+    pub fn is_not_found_error(&self) -> bool {
+        match self {
+            OmniError::ResourceNotFoundError => true,
+            _ => false,
+        }
+    }
+
     pub fn respond(self) -> Response {
         use OmniError as E;
         const ISE: StatusCode = StatusCode::INTERNAL_SERVER_ERROR;
@@ -106,10 +123,7 @@ impl OmniError {
                         return (StatusCode::CONFLICT, RESOURCE_ALREADY_EXISTS_MESSAGE)
                             .into_response();
                     } else if e.is_foreign_key_violation() {
-                        return (
-                            StatusCode::BAD_REQUEST,
-                            "Referring to a nonexistent resource",
-                        )
+                        return OmniError::ReferringToNonexistentResourceError
                             .into_response();
                     } else {
                         (ISE, "SQLx Error").into_response()
@@ -142,6 +156,15 @@ impl OmniError {
             E::InsufficientPermissionsError => {
                 (StatusCode::FORBIDDEN, self.clerr()).into_response()
             }
+            E::ReferringToNonexistentResourceError => {
+                (StatusCode::NOT_FOUND, self.clerr()).into_response()
+            }
+            E::RolesParsingError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+            }
+            E::NotAJudgeAffiliationError => {
+                (StatusCode::CONFLICT, self.clerr()).into_response()
+            }
         }
     }
 
@@ -163,6 +186,9 @@ impl OmniError {
             E::UnauthorizedError => UNAUTHORIZED_MESSAGE,
             E::BadRequestError => BAD_REQUEST,
             E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
+            E::ReferringToNonexistentResourceError => REFERRING_TO_A_NONEXISTENT_RESOURCE,
+            E::RolesParsingError => ROLES_PARSING_MESSAGE,
+            E::NotAJudgeAffiliationError => NOT_A_JUDGE_MESSAGE,
         }
         .to_string()
     }
