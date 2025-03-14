@@ -5,13 +5,14 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::routes::auth;
 use crate::setup::AppState;
 
-use crate::routes::affiliation;
+use crate::routes::affiliation_routes;
 use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
 use crate::routes::motion_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::tournament;
+use crate::tournament::affiliation;
 use crate::tournament::attendee;
 use crate::tournament::debate;
 use crate::tournament::motion;
@@ -62,11 +63,11 @@ pub fn route() -> Router<AppState> {
         attendee_routes::patch_attendee_by_id,
         attendee_routes::delete_attendee_by_id,
         auth::auth_login,
-        affiliation::create_affiliation,
-        affiliation::get_affiliations,
-        affiliation::get_affiliation_by_id,
-        affiliation::patch_affiliation_by_id,
-        affiliation::delete_affiliation_by_id,
+        affiliation_routes::create_affiliation,
+        affiliation_routes::get_affiliations,
+        affiliation_routes::get_affiliation_by_id,
+        affiliation_routes::patch_affiliation_by_id,
+        affiliation_routes::delete_affiliation_by_id,
     ),
     components(schemas(
         version::VersionDetails,

@@ -5,155 +5,29 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, Error, Pool, Postgres};
+use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::Tournament,
+    tournament::{
+        affiliation::{Affiliation, AffiliationPatch},
+        Tournament,
+    },
     users::{permissions::Permission, roles::Role, TournamentUser, User},
 };
-
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(deny_unknown_fields)]
-/// Some Judges might be affiliated with certain teams,
-/// which poses a risk of biased rulings.
-/// Tournament Organizers can denote such affiliations.
-/// A Judge is prevented from ruling debates wherein
-/// one of the sides is a team they're affiliated with.
-pub struct Affiliation {
-    #[serde(skip_deserializing)]
-    #[serde(default = "Uuid::now_v7")]
-    id: Uuid,
-    tournament_id: Uuid,
-    team_id: Uuid,
-    judge_user_id: Uuid,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct AffiliationPatch {
-    tournament_id: Option<Uuid>,
-    team_id: Option<Uuid>,
-    judge_user_id: Option<Uuid>,
-}
-
-impl Affiliation {
-    async fn post(
-        affiliation: Affiliation,
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Affiliation, OmniError> {
-        match query_as!(
-            Affiliation,
-            r#"INSERT INTO judge_team_assignments(id, judge_user_id, team_id, tournament_id)
-            VALUES ($1, $2, $3, $4) RETURNING id, judge_user_id, team_id, tournament_id"#,
-            affiliation.id,
-            affiliation.judge_user_id,
-            affiliation.team_id,
-            affiliation.tournament_id
-        )
-        .fetch_one(connection_pool)
-        .await
-        {
-            Ok(_) => Ok(affiliation),
-            Err(e) => Err(e)?,
-        }
-    }
-
-    async fn get_by_id(
-        id: Uuid,
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Affiliation, Error> {
-        match query_as!(
-            Affiliation,
-            "SELECT * FROM judge_team_assignments WHERE id = $1",
-            id
-        )
-        .fetch_one(connection_pool)
-        .await
-        {
-            Ok(affiliation) => Ok(affiliation),
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn patch(
-        self,
-        patch: Affiliation,
-        connection_pool: &Pool<Postgres>,
-    ) -> Result<Affiliation, Error> {
-        match query!(
-            "UPDATE judge_team_assignments SET judge_user_id = $1, tournament_id = $2, team_id = $3 WHERE id = $4",
-            patch.judge_user_id,
-            patch.tournament_id,
-            patch.team_id,
-            self.id,
-        )
-        .execute(connection_pool)
-        .await
-        {
-            Ok(_) => Ok(patch),
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), Error> {
-        match query!("DELETE FROM judge_team_assignments WHERE id = $1", self.id)
-            .execute(connection_pool)
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
-        let user = User::get_by_id(self.judge_user_id, pool).await?;
-        if !user.has_role(Role::Judge, self.tournament_id, pool).await? {
-            return Err(OmniError::NotAJudgeError);
-        }
-
-        let _tournament = Tournament::get_by_id(self.tournament_id, pool).await?;
-
-        if self.already_exists(pool).await? {
-            return Err(OmniError::ResourceAlreadyExistsError);
-        }
-
-        Ok(())
-    }
-
-    async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
-        match query_as!(Affiliation,
-            "SELECT * FROM judge_team_assignments WHERE judge_user_id = $1 AND tournament_id = $2 AND team_id = $3",
-            self.judge_user_id,
-            self.tournament_id,
-            self.team_id
-        ).fetch_optional(pool).await {
-            Ok(result) => {
-                if result.is_none() {
-                    return Ok(false);
-                }
-                else {
-                    return Ok(true);
-                }
-            },
-            Err(e) => Err(e)?,
-        }
-    }
-}
 
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/affiliation",
+            "/user/:user_id/tournament/:tournament_id/affiliation",
             get(get_affiliations).post(create_affiliation),
         )
         .route(
-            "/affiliation/:affiliation_id",
+            "/user/:user_id/tournament/:tournament_id/affiliation/:id",
             get(get_affiliation_by_id)
                 .patch(patch_affiliation_by_id)
                 .delete(delete_affiliation_by_id),
@@ -184,7 +58,7 @@ async fn create_affiliation(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
+    Path((user_id, tournament_id)): Path<(Uuid, Uuid)>,
     Json(affiliation): Json<Affiliation>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
@@ -227,8 +101,7 @@ async fn get_affiliations(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(user_id): Path<Uuid>,
-    Path(tournament_id): Path<Uuid>,
+    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -287,8 +160,7 @@ async fn get_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
-    Path(id): Path<Uuid>,
+    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -329,12 +201,12 @@ async fn get_affiliation_by_id(
         (status=500, description = "Internal server error"),
     )
 )]
+#[axum::debug_handler]
 async fn patch_affiliation_by_id(
-    Path(id): Path<Uuid>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
+    Path((user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
     Json(new_affiliation): Json<AffiliationPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;

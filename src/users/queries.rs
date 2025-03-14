@@ -6,6 +6,7 @@ use argon2::{
 };
 use serde_json::Error as JsonError;
 use sqlx::{Pool, Postgres};
+use tracing::error;
 use uuid::Uuid;
 
 impl User {
@@ -130,6 +131,7 @@ impl User {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         let roles = self.get_roles(tournament_id, pool).await?;
+        error!("roles parsed");
         return Ok(roles.contains(&role));
     }
 }

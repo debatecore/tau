@@ -1,5 +1,4 @@
 use debate::Debate;
-use motion::Motion;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use team::Team;
@@ -9,6 +8,7 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
+pub(crate) mod affiliation;
 pub(crate) mod attendee;
 pub(crate) mod debate;
 pub(crate) mod motion;
