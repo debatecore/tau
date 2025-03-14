@@ -6,7 +6,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -37,7 +36,8 @@ pub fn route() -> Router<AppState> {
         ),
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="debate"
 )]
 /// Get a list of all debates
 /// 
@@ -85,7 +85,8 @@ async fn get_debates(
         ),
         (status=404, description = "Tournament or attendee not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="debate"
 )]
 async fn create_debate(
     State(state): State<AppState>,
@@ -131,6 +132,7 @@ async fn create_debate(
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="debate"
 )]
 async fn get_debate_by_id(
     State(state): State<AppState>,
@@ -178,7 +180,8 @@ async fn get_debate_by_id(
         ),
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="debate"
 )]
 async fn patch_debate_by_id(
     State(state): State<AppState>,
@@ -225,6 +228,7 @@ async fn patch_debate_by_id(
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="debate"
 )]
 async fn delete_debate_by_id(
     State(state): State<AppState>,

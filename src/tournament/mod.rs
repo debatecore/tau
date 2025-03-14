@@ -1,4 +1,5 @@
 use debate::Debate;
+use location::Location;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use team::Team;
@@ -11,8 +12,12 @@ use crate::omni_error::OmniError;
 pub(crate) mod affiliation;
 pub(crate) mod attendee;
 pub(crate) mod debate;
+pub(crate) mod location;
 pub(crate) mod motion;
+pub(crate) mod roles;
+pub(crate) mod room;
 pub(crate) mod team;
+pub(crate) mod utils;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -139,6 +144,23 @@ impl Tournament {
         .await
         {
             Ok(debates) => Ok(debates),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_locations(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Location>, OmniError> {
+        match query_as!(
+            Location,
+            "SELECT * FROM locations WHERE tournament_id = $1",
+            self.id
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(locations) => Ok(locations),
             Err(e) => Err(e)?,
         }
     }

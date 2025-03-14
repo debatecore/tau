@@ -15,9 +15,10 @@ use crate::{
     setup::AppState,
     tournament::{
         affiliation::{Affiliation, AffiliationPatch},
+        roles::Role,
         Tournament,
     },
-    users::{permissions::Permission, roles::Role, TournamentUser, User},
+    users::{permissions::Permission, TournamentUser, User},
 };
 
 pub fn route() -> Router<AppState> {

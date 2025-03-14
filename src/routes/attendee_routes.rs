@@ -5,7 +5,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -59,7 +59,8 @@ pub fn route() -> Router<AppState> {
         (
             status=500, description = "Internal server error",
         ),
-    )
+    ),
+    tag="attendee"
 )]
 #[axum::debug_handler]
 async fn create_attendee(
@@ -119,7 +120,8 @@ async fn create_attendee(
         (
             status=500, description = "Internal server error",
         ),
-    )
+    ),
+    tag="attendee"
 )]
 /// Get a list of all attendees
 async fn get_attendees(
@@ -164,6 +166,7 @@ async fn get_attendees(
             status=500, description = "Internal server error",
         ),
     ),
+    tag="attendee"
 )]
 async fn get_attendee_by_id(
     Path(id): Path<Uuid>,
@@ -209,7 +212,8 @@ async fn get_attendee_by_id(
         (status=409, description = "Attendee position is duplicated"),
         (status=422, description = "Attendee position out of range [1-4]"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="attendee"
 )]
 async fn patch_attendee_by_id(
     Path((id, tournament_id)): Path<(Uuid, Uuid)>,
@@ -263,6 +267,7 @@ async fn patch_attendee_by_id(
             status=500, description = "Internal server error",
         ),
     ),
+    tag="attendee"
 )]
 async fn delete_attendee_by_id(
     Path(id): Path<Uuid>,

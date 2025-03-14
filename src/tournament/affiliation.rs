@@ -3,12 +3,9 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{
-    omni_error::OmniError,
-    users::{roles::Role, User},
-};
+use crate::{omni_error::OmniError, users::User};
 
-use super::Tournament;
+use super::{roles::Role, Tournament};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

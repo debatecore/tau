@@ -40,7 +40,9 @@ pub fn route() -> Router<AppState> {
             description = "The user is not permitted to list any tournaments, meaning they do not have any roles within any tournament."
         ),
         (status=500, description = "Internal server error")
-))]
+    ),
+    tag="tournament"
+)]
 async fn get_tournaments(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -91,7 +93,8 @@ async fn get_tournaments(
         ),
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error")
-    )
+    ),
+    tag="tournament"
 )]
 async fn create_tournament(
     State(state): State<AppState>,
@@ -129,6 +132,7 @@ async fn create_tournament(
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error")
     ),
+    tag="tournament"
 )]
 async fn get_tournament_by_id(
     Path(id): Path<Uuid>,
@@ -171,7 +175,8 @@ async fn get_tournament_by_id(
         (status=404, description = "Tournament not found"),
         (status=409, description = "A tournament with this name already exists"),
         (status=500, description = "Internal server error")
-    )
+    ),
+    tag="tournament"
 )]
 async fn patch_tournament_by_id(
     Path(id): Path<Uuid>,
@@ -215,6 +220,7 @@ async fn patch_tournament_by_id(
         (status=404, description = "Tournament not found"),
         (status=409, description = "Other resources reference this tournament. They must be deleted first")
     ),
+    tag="tournament"
 )]
 async fn delete_tournament_by_id(
     Path(id): Path<Uuid>,
