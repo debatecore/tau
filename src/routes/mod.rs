@@ -2,16 +2,21 @@ use axum::Router;
 
 use crate::setup::AppState;
 
+mod affiliation_routes;
 mod attendee_routes;
 mod auth;
 mod debate_routes;
 mod health_check;
 mod infradmin_routes;
+mod location_routes;
 mod motion_routes;
+mod roles_routes;
+mod room_routes;
 mod swagger;
 mod team_routes;
 mod teapot;
 mod tournament_routes;
+mod user_routes;
 mod version;
 
 pub fn routes() -> Router<AppState> {
@@ -27,4 +32,9 @@ pub fn routes() -> Router<AppState> {
         .merge(attendee_routes::route())
         .merge(motion_routes::route())
         .merge(debate_routes::route())
+        .merge(location_routes::route())
+        .merge(room_routes::route())
+        .merge(user_routes::route())
+        .merge(roles_routes::route())
+        .merge(affiliation_routes::route())
 }

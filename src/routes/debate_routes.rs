@@ -6,7 +6,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -30,13 +29,15 @@ pub fn route() -> Router<AppState> {
             body=Vec<Debate>,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to read debates within this tournament",
         ),
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="debate"
 )]
 /// Get a list of all debates
 /// 
@@ -53,7 +54,7 @@ async fn get_debates(
 
     match tournament_user.has_permission(Permission::ReadDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Tournament::get_by_id(tournament_id, pool).await?.get_debates(pool).await
@@ -77,13 +78,15 @@ async fn get_debates(
             body=Debate,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to modify debates within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="debate"
 )]
 async fn create_debate(
     State(state): State<AppState>,
@@ -98,7 +101,7 @@ async fn create_debate(
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Debate::post(json, &state.connection_pool).await {
@@ -121,13 +124,15 @@ async fn create_debate(
             body=Debate,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to read debates within this tournament",
         ),
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="debate"
 )]
 async fn get_debate_by_id(
     State(state): State<AppState>,
@@ -142,7 +147,7 @@ async fn get_debate_by_id(
 
     match tournament_user.has_permission(Permission::ReadDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Debate::get_by_id(id, &state.connection_pool).await {
@@ -168,13 +173,15 @@ async fn get_debate_by_id(
             body=Debate,
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="debate"
 )]
 async fn patch_debate_by_id(
     State(state): State<AppState>,
@@ -189,7 +196,7 @@ async fn patch_debate_by_id(
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let existing_debate = Debate::get_by_id(id, &state.connection_pool).await?;
@@ -213,13 +220,15 @@ async fn patch_debate_by_id(
     (
         (status=204, description = "Debate deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401, 
+            status=403, 
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="debate"
 )]
 async fn delete_debate_by_id(
     State(state): State<AppState>,
@@ -234,7 +243,7 @@ async fn delete_debate_by_id(
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Debate::get_by_id(id, &state.connection_pool).await {
