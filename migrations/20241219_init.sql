@@ -27,9 +27,18 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
-    id               UUID NOT NULL UNIQUE PRIMARY KEY,
-    full_name        TEXT NOT NULL UNIQUE,
-    shortened_name   TEXT NOT NULL
+    id                          UUID NOT NULL UNIQUE PRIMARY KEY,
+    full_name                   TEXT NOT NULL UNIQUE,
+    shortened_name              TEXT NOT NULL,
+    speech_time                 INTEGER NOT NULL DEFAULT 300,
+    end_protected_time          INTEGER NOT NULL DEFAULT 30,
+    start_protected_time        INTEGER NOT NULL DEFAULT 0,
+    ad_vocem_time               INTEGER NOT NULL DEFAULT 60,
+    debate_time_slot            INTEGER NOT NULL DEFAULT 120,
+    debate_preparation_time     INTEGER NOT NULL DEFAULT 15,
+    beep_on_speech_end          BOOLEAN NOT NULL DEFAULT true,
+    beep_on_protected_time      BOOLEAN NOT NULL DEFAULT true,
+    visualize_protected_time    BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS roles (

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM tournaments",
+  "query": "INSERT INTO tournaments\n            (\n                id,\n                full_name,\n                shortened_name,\n                speech_time,\n                end_protected_time,\n                start_protected_time,\n                ad_vocem_time,\n                debate_time_slot,\n                debate_preparation_time,\n                beep_on_speech_end,\n                beep_on_protected_time,\n                visualize_protected_time\n            )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING\n                id,\n                full_name,\n                shortened_name,\n                speech_time,\n                end_protected_time,\n                start_protected_time,\n                ad_vocem_time,\n                debate_time_slot,\n                debate_preparation_time,\n                beep_on_speech_end,\n                beep_on_protected_time,\n                visualize_protected_time",
   "describe": {
     "columns": [
       {
@@ -65,7 +65,20 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool",
+        "Bool",
+        "Bool"
+      ]
     },
     "nullable": [
       false,
@@ -82,5 +95,5 @@
       false
     ]
   },
-  "hash": "eadf14fe2912fa689785a4470831b4b6acf97d40433b53771498af3b2f4a1f47"
+  "hash": "2349f0288bb7dd8a98b1fedd6d016c08a8129700621f2ceb70b7b9906f422d2b"
 }
