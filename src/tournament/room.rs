@@ -9,7 +9,6 @@ use crate::omni_error::OmniError;
 #[serde(deny_unknown_fields)]
 /// A debate must be held in a particular place (or Room).
 /// A room must be assigned to a preexisting Location.
-/// While a debate
 pub struct Room {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
