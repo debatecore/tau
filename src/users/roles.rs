@@ -37,7 +37,6 @@ impl Role {
                 P::ReadLocations,
                 P::ReadRooms,
                 P::SubmitVerdict,
-                P::ChangeRoomOccupationStatus,
             ],
         }
     }

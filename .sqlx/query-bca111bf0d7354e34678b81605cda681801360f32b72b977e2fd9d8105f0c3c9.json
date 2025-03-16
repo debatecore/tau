@@ -22,11 +22,6 @@
         "ordinal": 3,
         "name": "remarks",
         "type_info": "Text"
-      },
-      {
-        "ordinal": 4,
-        "name": "is_occupied",
-        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -38,8 +33,7 @@
       false,
       false,
       false,
-      true,
-      false
+      true
     ]
   },
   "hash": "bca111bf0d7354e34678b81605cda681801360f32b72b977e2fd9d8105f0c3c9"

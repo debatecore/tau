@@ -5,8 +5,6 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::utils::get_optional_value_to_be_patched;
-
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 /// A debate must be held in a particular place (or Room).
@@ -20,7 +18,6 @@ pub struct Room {
     pub name: String,
     pub remarks: Option<String>,
     pub location_id: Uuid,
-    pub is_occupied: bool,
 }
 
 #[derive(ToSchema, Deserialize)]
@@ -28,7 +25,6 @@ pub struct RoomPatch {
     pub name: Option<String>,
     pub remarks: Option<String>,
     pub location_id: Option<Uuid>,
-    pub is_occupied: Option<bool>,
 }
 
 impl Room {
@@ -38,13 +34,12 @@ impl Room {
     ) -> Result<Room, OmniError> {
         match query_as!(
             Room,
-            r#"INSERT INTO rooms(id, name, remarks, location_id, is_occupied)
-            VALUES ($1, $2, $3, $4, $5) RETURNING id, name, remarks, location_id, is_occupied"#,
+            r#"INSERT INTO rooms(id, name, remarks, location_id)
+            VALUES ($1, $2, $3, $4) RETURNING id, name, remarks, location_id"#,
             room.id,
             room.name,
             room.remarks,
             room.location_id,
-            room.is_occupied
         )
         .fetch_one(connection_pool)
         .await
@@ -75,9 +70,8 @@ impl Room {
         let patch = Room {
             id: self.id,
             name: new_room.name.unwrap_or(self.name),
-            remarks: get_optional_value_to_be_patched(self.remarks, new_room.remarks),
+            remarks: new_room.remarks.or(self.remarks),
             location_id: new_room.location_id.unwrap_or(self.location_id),
-            is_occupied: new_room.is_occupied.unwrap_or(self.is_occupied),
         };
         match query!(
             r#"UPDATE rooms set name = $1,

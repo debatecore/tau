@@ -91,6 +91,5 @@ CREATE TABLE IF NOT EXISTS rooms (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
     name              TEXT NOT NULL,
     location_id       UUID NOT NULL REFERENCES locations(id),
-    remarks           TEXT,
-    is_occupied       BOOLEAN NOT NULL DEFAULT FALSE
+    remarks           TEXT
 )
