@@ -19,15 +19,24 @@ pub enum AuthError {
     UnsupportedHeaderAuthScheme,
     #[error("Can only clear session given in Bearer scheme.")]
     ClearSessionBearerOnly,
+    #[error("Provided single-use login token has already been used.")]
+    TokenAlreadyUsed,
+    #[error("Provided single-use login token has expired.")]
+    TokenExpired,
+    #[error("Invalid token.")]
+    InvalidToken,
 }
 
 impl AuthError {
     pub fn status_code(&self) -> StatusCode {
         use AuthError as E;
         match self {
-            E::InvalidCredentials | E::NoCredentials | E::SessionExpired => {
-                StatusCode::UNAUTHORIZED
-            }
+            E::InvalidCredentials
+            | E::NoCredentials
+            | E::SessionExpired
+            | E::TokenAlreadyUsed
+            | E::TokenExpired
+            | E::InvalidToken => StatusCode::UNAUTHORIZED,
             E::NonAsciiHeaderCharacters
             | E::NoBasicAuthColonSplit
             | E::BadHeaderAuthSchemeData

@@ -27,9 +27,18 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
-    id               UUID NOT NULL UNIQUE PRIMARY KEY,
-    full_name        TEXT NOT NULL UNIQUE,
-    shortened_name   TEXT NOT NULL
+    id                          UUID NOT NULL UNIQUE PRIMARY KEY,
+    full_name                   TEXT NOT NULL UNIQUE,
+    shortened_name              TEXT NOT NULL,
+    speech_time                 INTEGER NOT NULL DEFAULT 300,
+    end_protected_time          INTEGER NOT NULL DEFAULT 30,
+    start_protected_time        INTEGER NOT NULL DEFAULT 0,
+    ad_vocem_time               INTEGER NOT NULL DEFAULT 60,
+    debate_time_slot            INTEGER NOT NULL DEFAULT 120,
+    debate_preparation_time     INTEGER NOT NULL DEFAULT 15,
+    beep_on_speech_end          BOOLEAN NOT NULL DEFAULT true,
+    beep_on_protected_time      BOOLEAN NOT NULL DEFAULT true,
+    visualize_protected_time    BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -78,3 +87,34 @@ CREATE TABLE IF NOT EXISTS debate_judge_assignments (
     judge_user_id     UUID NOT NULL REFERENCES users(id),
     debate_id         UUID NOT NULL REFERENCES debates(id)
 );
+
+CREATE TABLE IF NOT EXISTS locations (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    name              TEXT NOT NULL,
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id),
+    address           TEXT,
+    remarks           TEXT
+);
+
+CREATE TABLE IF NOT EXISTS rooms (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    name              TEXT NOT NULL,
+    location_id       UUID NOT NULL REFERENCES locations(id),
+    remarks           TEXT,
+    is_occupied       BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS judge_team_assignments (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    judge_user_id     UUID NOT NULL REFERENCES users(id),
+    team_id           UUID NOT NULL REFERENCES teams(id),
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id)
+);
+
+CREATE TABLE IF NOT EXISTS login_tokens (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    token_hash        TEXT NOT NULL,
+    user_id           UUID NOT NULL REFERENCES users(id),
+    used              BOOLEAN NOT NULL DEFAULT FALSE,
+    expiry            TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '2 days'
+)

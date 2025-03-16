@@ -14,7 +14,7 @@ use crate::{
     },
 };
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::{header::AUTHORIZATION, HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -24,11 +24,13 @@ use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(auth_login))
         .route("/auth/clear", get(auth_clear))
+        .route("/auth/login/:token", post(single_use_login))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -44,6 +46,8 @@ pub struct LoginRequest {
 /// Providing the token either by including it in the
 /// request header or sending the cookie is required
 /// to perform any further operations.
+/// By default, the only existing account is the infrastructure admin
+/// with username and password "admin".
 #[utoipa::path(post, path = "/auth/login", request_body=LoginRequest,
     responses
         (
@@ -59,7 +63,7 @@ pub struct LoginRequest {
         )
     )
 ]
-pub async fn auth_login(
+async fn auth_login(
     cookies: Cookies,
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,
@@ -82,6 +86,41 @@ pub async fn auth_login(
 
     set_session_token_cookie(&token, cookies);
     (StatusCode::OK, token).into_response()
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/login/{token}",
+    responses(
+        (
+            status = 200,
+            description = "Returns an auth token to be used for authentication in subsequent requests",
+            body=String,
+            example=json!("k1ShPhFwn11_0hBQF2Xh56iB-zGx7mwymarrt39QYLo")
+        ),
+        (status = 401, description = "Provided token was invalid"),
+        (status = 403, description = "Provided token was used used or expired"),
+        (status = 500, description = "Internal server error")
+    )
+)]
+/// Log in with a single-use token
+///
+/// This endpoint can be used to utilize single-use login tokens
+/// generated with /user/{user_id}/login_token.
+async fn single_use_login(
+    cookies: Cookies,
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let user = User::auth_via_link(&token, pool).await?;
+    let (_, token) = match Session::create(&user.id, pool).await {
+        Ok(o) => o,
+        Err(e) => Err(e)?,
+    };
+
+    set_session_token_cookie(&token, cookies);
+    Ok((StatusCode::OK, token).into_response())
 }
 
 const TOO_MANY_TOKENS: &str = "Please provide one session token to destroy at a time.";
