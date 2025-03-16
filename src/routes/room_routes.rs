@@ -63,7 +63,7 @@ async fn create_room(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    if room_with_name_exists_in_location(&json.name, &tournament_id, pool).await? {
+    if Room::room_with_name_exists_in_location(&json.name, &tournament_id, pool).await? {
         return Err(OmniError::ResourceAlreadyExistsError);
     }
 
@@ -214,7 +214,7 @@ async fn patch_room_by_id(
     let room = Room::get_by_id(id, pool).await?;
     let new_name = new_room.name.clone();
     if new_name.is_some() {
-        if room_with_name_exists_in_location(&new_name.unwrap(), &room.location_id, pool).await? {
+        if Room::room_with_name_exists_in_location(&new_name.unwrap(), &room.location_id, pool).await? {
             return Err(OmniError::ResourceAlreadyExistsError)
         }
     }
@@ -275,24 +275,6 @@ async fn delete_room_by_id(
             error!("Error deleting a room with id {id}: {e}");
             Err(e)?
         }
-    }
-}
-
-async fn room_with_name_exists_in_location(
-    name: &String,
-    location_id: &Uuid,
-    connection_pool: &Pool<Postgres>,
-) -> Result<bool, Error> {
-    match query!(
-        "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = $1 AND location_id = $2)",
-        name,
-        location_id
-    )
-    .fetch_one(connection_pool)
-    .await
-    {
-        Ok(result) => Ok(result.exists.unwrap()),
-        Err(e) => Err(e),
     }
 }
 

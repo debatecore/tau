@@ -126,4 +126,22 @@ impl Location {
             }
         }
     }
+
+    pub async fn location_with_name_exists_in_tournament(
+        name: &String,
+        tournament_id: &Uuid,
+        connection_pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+        "SELECT EXISTS(SELECT 1 FROM locations WHERE name = $1 AND tournament_id = $2)",
+        name,
+        tournament_id
+    )
+        .fetch_one(connection_pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(e) => Err(e)?,
+        }
+    }
 }

@@ -99,4 +99,22 @@ impl Room {
             Err(e) => Err(e)?,
         }
     }
+
+    pub async fn room_with_name_exists_in_location(
+        name: &String,
+        location_id: &Uuid,
+        connection_pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+            "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = $1 AND location_id = $2)",
+            name,
+            location_id
+        )
+        .fetch_one(connection_pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(e) => Err(e)?,
+        }
+    }
 }
