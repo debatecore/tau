@@ -1,13 +1,15 @@
-use crate::{omni_error::OmniError, setup::AppState, users::{User, UserPatch, UserWithPassword}};
+use crate::{omni_error::OmniError, setup::AppState, users::{auth::crypto::{generate_token, hash_token}, User, UserPatch, UserWithPassword}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
+use sqlx::query;
 use tower_cookies::Cookies;
 use tracing::error;
+use tracing_subscriber::fmt::format;
 use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
@@ -18,7 +20,7 @@ pub fn route() -> Router<AppState> {
             get(get_user_by_id)
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
-        )
+        ).route("/user/:id/login_token", post(generate_login_token))
 }
 
 /// Get a list of all users
@@ -90,7 +92,7 @@ async fn create_user(
     let pool = &state.connection_pool;
     let user = User::authenticate(&headers, cookies, &pool).await?;
     if !user.is_infrastructure_admin() && !user.is_organizer_of_any_tournament(pool).await? {
-        return Err(OmniError::UnauthorizedError);
+        return Err(OmniError::InsufficientPermissionsError);
     }
 
     let user_without_password = User::from(json.clone());
@@ -178,7 +180,7 @@ async fn patch_user_by_id(
     
     match requesting_user.is_infrastructure_admin() || requesting_user.id == user_to_be_patched.id {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match user_to_be_patched.patch(new_user, pool).await {
@@ -219,13 +221,13 @@ async fn delete_user_by_id(
 
     match requesting_user.is_infrastructure_admin() {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let user_to_be_deleted = User::get_by_id(id, pool).await?;
 
     match user_to_be_deleted.is_infrastructure_admin() {
-        true => return Err(OmniError::UnauthorizedError),
+        true => return Err(OmniError::InsufficientPermissionsError),
         false => ()
     }
 
@@ -243,6 +245,42 @@ async fn delete_user_by_id(
             }
         },
     }
+}
+
+/// Generate a single-use login token.
+/// 
+/// Available only to the infrastructure admin.
+#[utoipa::path(delete, path = "/user/{id}/login_link", 
+    responses(
+        (status=200, description = "A single-use login link"),
+        (status=400, description = "Bad request"),
+        (status=401, description = "The user is not permitted to delete this user"),
+        (status=404, description = "User not found"),
+        (status=409, description = "Other resources reference this user. They must be deleted first")
+    ),
+    tag="user"
+)]
+async fn generate_login_token(
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let user = User::authenticate(&headers, cookies, pool).await?;
+    if !(user.is_infrastructure_admin()) {
+        return Err(OmniError::InsufficientPermissionsError)
+    }
+    let token = generate_token();
+    query!(r#"
+        INSERT INTO login_tokens (id, token_hash, user_id, used)
+        VALUES ($1, $2, $3, $4)"#,
+        Uuid::now_v7(),
+        hash_token(&token),
+        id,
+        false,
+    ).execute(pool).await?;
+    Ok((StatusCode::OK, token).into_response())
 }
 
 fn get_user_example_with_id() -> String {

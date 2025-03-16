@@ -109,4 +109,12 @@ CREATE TABLE IF NOT EXISTS judge_team_assignments (
     judge_user_id     UUID NOT NULL REFERENCES users(id),
     team_id           UUID NOT NULL REFERENCES teams(id),
     tournament_id     UUID NOT NULL REFERENCES tournaments(id)
+);
+
+CREATE TABLE IF NOT EXISTS login_tokens (
+    id                UUID NOT NULL UNIQUE PRIMARY KEY,
+    token_hash        TEXT NOT NULL,
+    user_id           UUID NOT NULL REFERENCES users(id),
+    used              BOOLEAN NOT NULL DEFAULT FALSE,
+    expiry            TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '2 days'
 )
