@@ -14,6 +14,7 @@ pub(crate) mod attendee;
 pub(crate) mod debate;
 pub(crate) mod location;
 pub(crate) mod motion;
+pub(crate) mod phase;
 pub(crate) mod roles;
 pub(crate) mod room;
 pub(crate) mod team;
