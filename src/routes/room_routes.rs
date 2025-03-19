@@ -58,7 +58,7 @@ async fn create_room(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match tournament_user.has_permission(Permission::ModifyAllRoomDetails) {
+    match tournament_user.has_permission(Permission::WriteRooms) {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
     }
@@ -206,7 +206,7 @@ async fn patch_room_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match tournament_user.has_permission(Permission::ModifyAllRoomDetails) {
+    match tournament_user.has_permission(Permission::WriteRooms) {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
     }
@@ -254,7 +254,7 @@ async fn delete_room_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match tournament_user.has_permission(Permission::ModifyAllRoomDetails) {
+    match tournament_user.has_permission(Permission::WriteRooms) {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
     }

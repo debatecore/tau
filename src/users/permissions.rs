@@ -34,5 +34,5 @@ pub enum Permission {
     WriteLocations,
 
     ReadRooms,
-    ModifyAllRoomDetails,
+    WriteRooms,
 }
