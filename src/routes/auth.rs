@@ -29,6 +29,7 @@ pub fn route() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(auth_login))
         .route("/auth/clear", get(auth_clear))
+        .route("/auth/me", get(auth_me))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -36,6 +37,18 @@ pub fn route() -> Router<AppState> {
 pub struct LoginRequest {
     login: String,
     password: String,
+}
+
+/// Return current user data
+///
+/// Returns user data associated with the auth token.
+async fn auth_me(
+    cookies: Cookies,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+) -> Result<Response, OmniError> {
+    let user = User::authenticate(&headers, cookies, &state.connection_pool).await?;
+    Ok(Json(user).into_response())
 }
 
 /// Log in to tau
