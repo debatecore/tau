@@ -42,6 +42,12 @@ pub struct LoginRequest {
 /// Return current user data
 ///
 /// Returns user data associated with the auth token.
+#[utoipa::path(get, path="/auth/me", responses(
+    (status=200, description="User data"),
+    (status=400, description="Bad request"),
+    (status=401, description="Unauthorized"),
+    (status=500, description="Internal server error"),
+))]
 async fn auth_me(
     cookies: Cookies,
     headers: HeaderMap,
