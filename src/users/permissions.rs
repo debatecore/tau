@@ -40,4 +40,10 @@ pub enum Permission {
 
     ReadAffiliations,
     WriteAffiliations,
+
+    ReadPhases,
+    WritePhases,
+
+    ReadRounds,
+    WriteRounds,
 }

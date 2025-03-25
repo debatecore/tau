@@ -35,6 +35,8 @@ impl Role {
                 P::ReadTeams,
                 P::ReadTournament,
                 P::SubmitOwnVerdictVote,
+                P::ReadPhases,
+                P::ReadRounds,
             ],
             Role::Marshall => vec![
                 P::ReadDebates,
@@ -42,6 +44,8 @@ impl Role {
                 P::ReadTeams,
                 P::ReadTournament,
                 P::SubmitVerdict,
+                P::ReadPhases,
+                P::ReadRounds,
             ],
         }
     }

@@ -137,5 +137,5 @@ CREATE TABLE IF NOT EXISTS rounds (
     planned_end_time     TIMESTAMPTZ,
     motion_id            UUID REFERENCES motions(id),
     previous_round_id    UUID REFERENCES rounds(id),
-    status               TEXT
+    status               TEXT NOT NULL
 )

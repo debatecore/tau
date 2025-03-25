@@ -5,8 +5,6 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::utils::get_optional_value_to_be_patched;
-
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 /// A debate must be held in a particular place (or Room).
@@ -75,7 +73,7 @@ impl Room {
         let patch = Room {
             id: self.id,
             name: new_room.name.unwrap_or(self.name),
-            remarks: get_optional_value_to_be_patched(self.remarks, new_room.remarks),
+            remarks: new_room.remarks.or(self.remarks),
             location_id: new_room.location_id.unwrap_or(self.location_id),
             is_occupied: new_room.is_occupied.unwrap_or(self.is_occupied),
         };

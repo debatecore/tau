@@ -1,5 +1,6 @@
 use debate::Debate;
 use location::Location;
+use phase::{Phase, PhaseStatus};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use team::Team;
@@ -17,8 +18,8 @@ pub(crate) mod motion;
 pub(crate) mod phase;
 pub(crate) mod roles;
 pub(crate) mod room;
+pub(crate) mod round;
 pub(crate) mod team;
-pub(crate) mod utils;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -275,5 +276,28 @@ impl Tournament {
             Ok(locations) => Ok(locations),
             Err(e) => Err(e)?,
         }
+    }
+
+    pub async fn get_phases(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Phase>, OmniError> {
+        let mut phases: Vec<Phase> = vec![];
+        let records = query!("SELECT * FROM phases WHERE tournament_id = $1", self.id)
+            .fetch_all(pool)
+            .await?;
+        for record in records {
+            let phase = Phase {
+                id: record.id,
+                name: record.name,
+                tournament_id: record.tournament_id,
+                is_finals: record.is_finals,
+                previous_phase_id: record.previous_phase_id,
+                group_size: record.group_size,
+                status: PhaseStatus::try_from(record.status)?,
+            };
+            phases.push(phase);
+        }
+        Ok(phases)
     }
 }

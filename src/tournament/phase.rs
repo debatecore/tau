@@ -1,5 +1,6 @@
 use std::fmt;
 
+use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{query, Pool, Postgres};
@@ -7,6 +8,8 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::omni_error::OmniError;
+
+use super::round::{Round, RoundStatus};
 
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -96,8 +99,8 @@ impl Phase {
 
     pub async fn patch(
         self,
-        pool: &Pool<Postgres>,
         patch: PhasePatch,
+        pool: &Pool<Postgres>,
     ) -> Result<Phase, OmniError> {
         let new_phase = Phase {
             id: self.id,
@@ -132,6 +135,65 @@ impl Phase {
             .await
         {
             Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_rounds(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Round>, OmniError> {
+        let mut rounds = vec![];
+        match query!("SELECT * FROM rounds WHERE phase_id = $1", self.id)
+            .fetch_all(pool)
+            .await
+        {
+            Ok(rows) => {
+                for row in rows {
+                    let round = Round {
+                        id: row.id,
+                        name: row.name,
+                        phase_id: row.phase_id,
+                        planned_start_time: row.planned_start_time,
+                        planned_end_time: row.planned_end_time,
+                        motion_id: row.motion_id,
+                        previous_round_id: row.previous_round_id,
+                        status: RoundStatus::try_from(row.status)?,
+                    };
+                    rounds.push(round);
+                }
+                Ok(rounds)
+            }
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
+        if self.is_finals && self.group_size.is_some() {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "Group size cannot be defined for a finals phase".to_owned(),
+            });
+        }
+        if self.phase_name_exists_in_tournament(pool).await? {
+            return Err(OmniError::ResourceAlreadyExistsError);
+        }
+        Ok(())
+    }
+
+    pub async fn phase_name_exists_in_tournament(
+        &self,
+        connection_pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+            "SELECT EXISTS(SELECT 1 FROM phases WHERE name = $1 AND tournament_id = $2)",
+            self.name,
+            self.tournament_id
+        )
+        .fetch_one(connection_pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
             Err(e) => Err(e)?,
         }
     }
