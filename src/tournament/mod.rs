@@ -1,6 +1,7 @@
 use debate::Debate;
 use location::Location;
 use phase::{Phase, PhaseStatus};
+use round::Round;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use team::Team;
@@ -276,6 +277,21 @@ impl Tournament {
             Ok(locations) => Ok(locations),
             Err(e) => Err(e)?,
         }
+    }
+
+    pub async fn get_rounds(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Round>, OmniError> {
+        let mut retrieved_rounds: Vec<Round> = vec![];
+        let phases = self.get_phases(pool).await?;
+        for phase in phases {
+            let rounds = phase.get_rounds(pool).await?;
+            for round in rounds {
+                retrieved_rounds.push(round);
+            }
+        }
+        Ok(retrieved_rounds)
     }
 
     pub async fn get_phases(

@@ -68,11 +68,33 @@ CREATE TABLE IF NOT EXISTS attendees (
     team_id            UUID NOT NULL REFERENCES teams(id)
 );
 
+CREATE TABLE IF NOT EXISTS phases (
+    id                   UUID NOT NULL UNIQUE PRIMARY KEY,
+    name                 TEXT NOT NULL,
+    tournament_id        UUID NOT NULL REFERENCES tournaments(id),
+    is_finals            BOOLEAN NOT NULL,
+    previous_phase_id    UUID REFERENCES phases(id),
+    group_size           INTEGER,
+    status               TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rounds (
+    id                   UUID NOT NULL UNIQUE PRIMARY KEY,
+    name                 TEXT NOT NULL,
+    phase_id             UUID NOT NULL REFERENCES phases(id),
+    planned_start_time   TIMESTAMPTZ,
+    planned_end_time     TIMESTAMPTZ,
+    motion_id            UUID REFERENCES motions(id),
+    previous_round_id    UUID REFERENCES rounds(id),
+    status               TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS debates (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
     motion_id         UUID REFERENCES motions(id),
-    marshall_user_id  UUID NOT NULL REFERENCES users(id),
-    tournament_id     UUID NOT NULL REFERENCES tournaments(id)
+    marshall_user_id  UUID REFERENCES users(id),
+    tournament_id     UUID NOT NULL REFERENCES tournaments(id),
+    round_id          UUID NOT NULL REFERENCES rounds(id)
 );
 
 CREATE TABLE IF NOT EXISTS debate_teams_assignments (
@@ -117,25 +139,4 @@ CREATE TABLE IF NOT EXISTS login_tokens (
     user_id           UUID NOT NULL REFERENCES users(id),
     used              BOOLEAN NOT NULL DEFAULT FALSE,
     expiry            TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '2 days'
-);
-
-CREATE TABLE IF NOT EXISTS phases (
-    id                   UUID NOT NULL UNIQUE PRIMARY KEY,
-    name                 TEXT NOT NULL,
-    tournament_id        UUID NOT NULL REFERENCES tournaments(id),
-    is_finals            BOOLEAN NOT NULL,
-    previous_phase_id    UUID REFERENCES phases(id),
-    group_size           INTEGER,
-    status               TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS rounds (
-    id                   UUID NOT NULL UNIQUE PRIMARY KEY,
-    name                 TEXT NOT NULL,
-    phase_id             UUID NOT NULL REFERENCES phases(id),
-    planned_start_time   TIMESTAMPTZ,
-    planned_end_time     TIMESTAMPTZ,
-    motion_id            UUID REFERENCES motions(id),
-    previous_round_id    UUID REFERENCES rounds(id),
-    status               TEXT NOT NULL
 )

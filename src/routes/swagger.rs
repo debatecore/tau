@@ -11,8 +11,10 @@ use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
 use crate::routes::location_routes;
 use crate::routes::motion_routes;
+use crate::routes::phase_routes;
 use crate::routes::roles_routes;
 use crate::routes::room_routes;
+use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::tournament;
@@ -21,8 +23,10 @@ use crate::tournament::attendee;
 use crate::tournament::debate;
 use crate::tournament::location;
 use crate::tournament::motion;
+use crate::tournament::phase;
 use crate::tournament::roles;
 use crate::tournament::room;
+use crate::tournament::round;
 use crate::tournament::team;
 use crate::users;
 use crate::users::permissions;
@@ -96,6 +100,16 @@ pub fn route() -> Router<AppState> {
         affiliation_routes::get_affiliation_by_id,
         affiliation_routes::patch_affiliation_by_id,
         affiliation_routes::delete_affiliation_by_id,
+        round_routes::create_round,
+        round_routes::get_round_by_id,
+        round_routes::get_rounds,
+        round_routes::patch_round_by_id,
+        round_routes::delete_round_by_id,
+        phase_routes::create_phase,
+        phase_routes::get_phase_by_id,
+        phase_routes::get_phases,
+        phase_routes::patch_phase_by_id,
+        phase_routes::delete_phase_by_id
     ),
     components(schemas(
         version::VersionDetails,
@@ -124,6 +138,12 @@ pub fn route() -> Router<AppState> {
         photourl::PhotoUrl,
         affiliation::Affiliation,
         affiliation::AffiliationPatch,
+        phase::Phase,
+        phase::PhasePatch,
+        phase::PhaseStatus,
+        round::Round,
+        round::RoundPatch,
+        round::RoundStatus,
     ))
 )]
 

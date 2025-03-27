@@ -9,7 +9,7 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament::{phase::Phase, round::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{debate::Debate, phase::Phase, round::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within the scope of the tournament, to which the round is assigned.";
 
@@ -27,7 +27,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new round
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Round, path = "/tournament/{tournament_id}/round",
+#[utoipa::path(post, request_body=Round, path = "/tournament/{tournament_id}/phase/{phase_id}/round",
     responses
     (
         (
@@ -165,8 +165,9 @@ async fn get_round_by_id(
 
 /// Patch an existing round
 /// 
+/// Patches any debates assigned to this round, if applicable.
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/round/{id}", 
+#[utoipa::path(patch, path = "/tournament/{tournament_id}/phase/{phase_id}/round/{id}", 
     request_body=Round,
     responses(
         (
@@ -206,10 +207,16 @@ async fn patch_round_by_id(
     }
 
     let round = Round::get_by_id(id, pool).await?;
+    if round.phase_id != phase_id {
+        return Err(OmniError::BadRequestError);
+    }
     round.validate(pool).await?;
 
     match round.patch(new_round, pool).await {
-        Ok(round) => Ok(Json(round).into_response()),
+        Ok(patched_round) => {
+            patched_round.patch_children_debates(pool).await?;
+            Ok(Json(patched_round).into_response())
+        },
         Err(e) => Err(e)?,
     }
 }
@@ -249,11 +256,19 @@ async fn delete_round_by_id(
     }
 
     let round = Round::get_by_id(id, pool).await?;
+    if phase_id != round.phase_id {
+        return Err(OmniError::BadRequestError);
+    }
     match round.delete(&state.connection_pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
-            error!("Error deleting a round with id {id}: {e}");
-            Err(e)?
+            if e.is_sqlx_foreign_key_violation() {
+                return Err(OmniError::DependentResourcesError)
+            }
+            else {
+                error!("Error deleting a round with id {id}: {e}");
+                Err(e)
+            }
         }
     }
 }

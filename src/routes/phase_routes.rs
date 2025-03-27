@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{omni_error::OmniError, setup::AppState, tournament::{phase::{Phase, PhasePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
-const DUPLICATE_NAME_ERROR: &str = "Phase with this name already exists within the scope of the tournament, to which the phase is assigned.";
+const CONFLICT_MESSAGE: &str = "Conflict";
 
 pub fn route() -> Router<AppState> {
     Router::new()
@@ -183,7 +183,7 @@ async fn get_phase_by_id(
         (status=404, description = "Tournament or phase not found"),
         (
             status=409,
-            description = DUPLICATE_NAME_ERROR,
+            description = CONFLICT_MESSAGE,
         ),
         (status=500, description = "Internal server error"),
     ),
@@ -252,8 +252,13 @@ async fn delete_phase_by_id(
     match phase.delete(&state.connection_pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
-            error!("Error deleting a phase with id {id}: {e}");
-            Err(e)?
+            if e.is_sqlx_foreign_key_violation() {
+                return Err(OmniError::DependentResourcesError)
+            }
+            else {
+                error!("Error deleting a phase with id {id}: {e}");
+                Err(e)?
+            }
         }
     }
 }
@@ -261,10 +266,15 @@ async fn delete_phase_by_id(
 fn get_phase_example() -> String {
     r#"
     {
-        "address": "Poznań, Poland",
-        "name": "ZSK",
-        "remarks": "Where debatecore was born",
-        "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+        id: "0195d2e8-f9ba-7773-a5dd-65785b6396a1",
+        name: "phase 1",
+        tournament_id: "0195d2e7-b034-7700-9888-39d4b1c73ada",
+        is_finals: false,
+        previous_phase_id: "0195d2e8-f9ba-7773-a5dd-65785b6396a1",
+        group_size: 4,
+        status: "Planned"
+
     }
     "#
     .to_owned()
@@ -272,19 +282,23 @@ fn get_phase_example() -> String {
 
 fn get_phases_list_example() -> String {
     r#"
-    [
         {
-            "address": "Poznań, Poland",
-            "name": "ZSK",
-            "remarks": "Where debatecore was born",
-            "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            id: "0195d2e8-f9ba-7773-a5dd-65785b6396a1",
+            name: "phase 1",
+            tournament_id: "0195d2e7-b034-7700-9888-39d4b1c73ada",
+            is_finals: false,
+            group_size: 4,
+            status: "Ongoing"
         },
         {
-            "address": "Bydgoszcz, Poland",
-            "name": "Library of the Kazimierz Wielki University",
-            "remarks": "Where Debate Team Buster prevailed",
-            "tournament_id": "57a85f64-5784-4562-4acc-35163f66afa6"
-        },
+            id: "0195d2ea-74ab-7a82-9435-64f807042389",
+            name: "phase 2",
+            tournament_id: "0195d2e7-b034-7700-9888-39d4b1c73ada",
+            is_finals: true,
+            previous_phase_id: "0195d2e8-f9ba-7773-a5dd-65785b6396a1",
+            group_size: null,
+            status: "Planned"
+        }
     ]
     "#
     .to_owned()

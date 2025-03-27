@@ -13,9 +13,9 @@ use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/:tournament_id/debate", get(get_debates).post(create_debate))
+        .route("/tournament/:tournament_id/debate", get(get_debates).post(create_debate))
         .route(
-            "/:tournament_id/debate/:id",
+            "/tournament/:tournament_id/debate/:id",
             get(get_debate_by_id)
                 .delete(delete_debate_by_id)
                 .patch(patch_debate_by_id),

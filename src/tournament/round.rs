@@ -4,15 +4,23 @@ use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, Pool, Postgres};
+use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{omni_error::OmniError, tournament::phase::Phase};
 
+use super::{
+    debate::{Debate, DebatePatch},
+    Tournament,
+};
+
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
+/// Rounds can be used to plan multiple debates at once.
+/// Any changes to start and end times, as well as the selected motion
+/// will be applied to all debates assigned to this round.
 pub struct Round {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
@@ -22,6 +30,9 @@ pub struct Round {
     pub planned_start_time: Option<DateTime<Utc>>,
     pub planned_end_time: Option<DateTime<Utc>>,
     pub motion_id: Option<Uuid>,
+    /// ID of a round occurring directly before this one.
+    /// Must be unique, meaning a given round cannot be set as previous for multiple rounds.
+    /// Can belong to a different phase within this tournament.
     pub previous_round_id: Option<Uuid>,
     pub status: RoundStatus,
 }
@@ -141,6 +152,22 @@ impl Round {
         }
     }
 
+    pub async fn patch_children_debates(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<(), OmniError> {
+        for debate in self.get_debates(pool).await? {
+            let new_debate = DebatePatch {
+                motion_id: self.motion_id,
+                marshall_user_id: debate.marshall_user_id,
+                tournament_id: Some(debate.tournament_id),
+                round_id: Some(self.id),
+            };
+            debate.patch(new_debate, pool).await?;
+        }
+        Ok(())
+    }
+
     pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
         match query!("DELETE FROM rounds WHERE id = $1", self.id)
             .execute(pool)
@@ -149,6 +176,58 @@ impl Round {
             Ok(_) => Ok(()),
             Err(e) => Err(e)?,
         }
+    }
+
+    pub async fn get_debates(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Debate>, OmniError> {
+        match query_as!(Debate, "SELECT * FROM debates WHERE round_id = $1", self.id)
+            .fetch_all(pool)
+            .await
+        {
+            Ok(debates) => Ok(debates),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    async fn get_parent_tournament(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Tournament, OmniError> {
+        let phase = Phase::get_by_id(self.phase_id, pool).await?;
+        let tournament = Tournament::get_by_id(phase.tournament_id, pool).await?;
+        Ok(tournament)
+    }
+
+    pub async fn get_next_round(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Round, OmniError> {
+        let next_phase_record = query!(
+            "SELECT id FROM rounds WHERE previous_round_id = $1",
+            self.id
+        )
+        .fetch_one(pool)
+        .await
+        .ok();
+        if next_phase_record.is_none() {
+            return Err(OmniError::ResourceNotFoundError);
+        } else {
+            let next_round =
+                Round::get_by_id(next_phase_record.unwrap().id, pool).await?;
+            return Ok(next_round);
+        }
+    }
+
+    pub async fn get_previous_round(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Round, OmniError> {
+        if self.previous_round_id.is_none() {
+            return Err(OmniError::ResourceNotFoundError);
+        }
+        return Ok(Round::get_by_id(self.previous_round_id.unwrap(), pool).await?);
     }
 
     pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
@@ -180,6 +259,21 @@ impl Round {
                 ).to_owned()
             });
         }
+        if self.round_name_exists_in_phase(pool).await? {
+            return Err(OmniError::ResourceAlreadyExistsError);
+        }
+        if self.rounds_are_looped(pool).await? {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Performing this operation would create a round loop".to_owned(),
+            });
+        }
+        if self.first_rounds_are_doubled(pool).await? {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Only one round within a tournament can have previous_round_id set to none".to_owned(),
+            });
+        }
         Ok(())
     }
 
@@ -192,15 +286,14 @@ impl Round {
         }
         let previous_round =
             Round::get_by_id(self.previous_round_id.unwrap(), pool).await?;
-        let phase_of_previous_round_id = previous_round.phase_id;
-        if self.phase_id == phase_of_previous_round_id {
+        if self.phase_id == previous_round.phase_id {
             return Ok(false);
         }
         let phase = Phase::get_by_id(self.phase_id, pool).await?;
         if phase.previous_phase_id.is_none() {
             return Ok(false);
         }
-        if phase.previous_phase_id.unwrap() != phase_of_previous_round_id {
+        if phase.previous_phase_id.unwrap() != previous_round.phase_id {
             return Ok(true);
         } else {
             return Ok(false);
@@ -220,6 +313,69 @@ impl Round {
         {
             Ok(result) => Ok(result.exists.unwrap()),
             Err(e) => Err(e)?,
+        }
+    }
+
+    async fn round_name_exists_in_phase(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+            "SELECT EXISTS (SELECT 1 FROM rounds WHERE name = $1 AND id != $2)",
+            self.name,
+            self.id
+        )
+        .fetch_one(pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    async fn rounds_are_looped(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
+        let mut round_ids: Vec<Uuid> = vec![];
+        let mut previous_round = self.get_previous_round(pool).await;
+        while previous_round.is_ok() {
+            let found_round = previous_round.unwrap();
+            if round_ids.contains(&found_round.id) {
+                return Ok(true);
+            }
+            round_ids.push(found_round.id);
+            previous_round = found_round.get_previous_round(pool).await;
+        }
+
+        if round_ids.contains(&self.id) {
+            return Ok(true);
+        }
+        round_ids.push(self.id);
+
+        let mut next_round = self.get_next_round(pool).await;
+        while next_round.is_ok() {
+            let found_round = next_round.unwrap();
+            if round_ids.contains(&found_round.id) {
+                return Ok(true);
+            }
+            round_ids.push(found_round.id);
+            next_round = found_round.get_previous_round(pool).await;
+        }
+        Ok(false)
+    }
+
+    async fn first_rounds_are_doubled(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        if self.previous_round_id.is_some() {
+            return Ok(false);
+        } else {
+            let tournament = self.get_parent_tournament(pool).await?;
+            for round in tournament.get_rounds(pool).await? {
+                if round.previous_round_id.is_none() {
+                    return Ok(true);
+                }
+            }
+            return Ok(false);
         }
     }
 }

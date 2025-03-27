@@ -12,7 +12,7 @@ use crate::omni_error::OmniError;
 use super::round::{Round, RoundStatus};
 
 #[serde_inline_default]
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Phase {
     #[serde(skip_deserializing)]
@@ -36,7 +36,7 @@ pub struct PhasePatch {
     pub status: Option<PhaseStatus>,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub enum PhaseStatus {
     Planned,
     Ongoing,
@@ -178,7 +178,70 @@ impl Phase {
         if self.phase_name_exists_in_tournament(pool).await? {
             return Err(OmniError::ResourceAlreadyExistsError);
         }
+        if self
+            .previous_phase_is_from_different_tournament(pool)
+            .await?
+        {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Previous phase must be from the same tournament".to_owned(),
+            });
+        }
+        if self
+            .previous_phase_is_already_declared_as_previous_round_elsewhere(pool)
+            .await?
+        {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: format!(
+                    "Phase {} is already assigned as a previous phase elsewhere and therefore cannot be declared as a previous phase again",
+                    self.previous_phase_id.unwrap()
+                ).to_owned(),
+            });
+        }
+        if self.phases_are_looped(pool).await? {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Performing this operation would create a phase loop".to_owned(),
+            });
+        }
+        if self.first_phases_are_doubled(pool).await? {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Only one phase within a tournament can have previous_phase_id set to none".to_owned(),
+            });
+        }
         Ok(())
+    }
+
+    pub async fn get_next_phase(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Phase, OmniError> {
+        let next_phase_record = query!(
+            "SELECT id FROM phases WHERE previous_phase_id = $1",
+            self.id
+        )
+        .fetch_one(pool)
+        .await
+        .ok();
+        if next_phase_record.is_none() {
+            return Err(OmniError::ResourceNotFoundError);
+        } else {
+            let next_phase =
+                Phase::get_by_id(next_phase_record.unwrap().id, pool).await?;
+            return Ok(next_phase);
+        }
+    }
+
+    pub async fn get_previous_phase(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Phase, OmniError> {
+        if self.previous_phase_id.is_none() {
+            return Err(OmniError::ResourceNotFoundError);
+        }
+        return Ok(Phase::get_by_id(self.previous_phase_id.unwrap(), pool).await?);
     }
 
     pub async fn phase_name_exists_in_tournament(
@@ -186,15 +249,90 @@ impl Phase {
         connection_pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         match query!(
-            "SELECT EXISTS(SELECT 1 FROM phases WHERE name = $1 AND tournament_id = $2)",
+            "SELECT EXISTS(SELECT 1 FROM phases WHERE name = $1 AND tournament_id = $2 AND id != $3)",
             self.name,
-            self.tournament_id
+            self.tournament_id,
+            self.id
         )
         .fetch_one(connection_pool)
         .await
         {
             Ok(result) => Ok(result.exists.unwrap()),
             Err(e) => Err(e)?,
+        }
+    }
+
+    async fn previous_phase_is_from_different_tournament(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        if self.previous_phase_id.is_none() {
+            return Ok(false);
+        }
+        let previous_phase =
+            Phase::get_by_id(self.previous_phase_id.unwrap(), pool).await?;
+        if previous_phase.tournament_id != self.tournament_id {
+            return Ok(true);
+        }
+        return Ok(false);
+    }
+
+    async fn previous_phase_is_already_declared_as_previous_round_elsewhere(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+            "SELECT EXISTS (SELECT 1 FROM phases WHERE previous_phase_id = $1)",
+            self.previous_phase_id
+        )
+        .fetch_one(pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    async fn phases_are_looped(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
+        let mut phase_ids: Vec<Uuid> = vec![];
+        let mut previous_phase = self.get_previous_phase(pool).await;
+        while previous_phase.is_ok() {
+            let found_phase = previous_phase.unwrap();
+            if phase_ids.contains(&found_phase.id) {
+                return Ok(true);
+            }
+            phase_ids.push(found_phase.id);
+            previous_phase = found_phase.get_previous_phase(pool).await;
+        }
+
+        if phase_ids.contains(&self.id) {
+            return Ok(true);
+        }
+        phase_ids.push(self.id);
+
+        let mut next_phase = self.get_next_phase(pool).await;
+        while next_phase.is_ok() {
+            let found_phase = next_phase.unwrap();
+            if phase_ids.contains(&found_phase.id) {
+                return Ok(true);
+            }
+            phase_ids.push(found_phase.id);
+            next_phase = found_phase.get_previous_phase(pool).await;
+        }
+        Ok(false)
+    }
+
+    async fn first_phases_are_doubled(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        if self.previous_phase_id.is_some() {
+            return Ok(false);
+        } else {
+            match query!("SELECT EXISTS (SELECT 1 FROM phases WHERE previous_phase_id is NULL AND tournament_id = $1)", self.tournament_id).fetch_one(pool).await {
+                Ok(result) => Ok(result.exists.unwrap()),
+                Err(e) => Err(e)?
+            }
         }
     }
 }

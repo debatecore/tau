@@ -40,5 +40,5 @@ pub fn routes() -> Router<AppState> {
         .merge(roles_routes::route())
         .merge(affiliation_routes::route())
         .merge(phase_routes::route())
-        .merge(phase_routes::route())
+        .merge(round_routes::route())
 }
