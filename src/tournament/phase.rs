@@ -14,15 +14,25 @@ use super::round::{Round, RoundStatus};
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
+/// Phases have their
 pub struct Phase {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
+    /// Phase name. Must be unique within a tournament it belongs to.
     pub name: String,
     pub tournament_id: Uuid,
+    /// Indicates whether it's a finals phase (true) or group phase (false).
     pub is_finals: bool,
+    /// ID of a phase occurring directly before this one.
+    /// Must be unique, meaning a given phase cannot be set as previous for multiple phases.
+    /// If this is the first phase of the tournament,
+    /// previous_phase_id should be left empty. Otherwise, it must be defined.
     pub previous_phase_id: Option<Uuid>,
+    /// Defines how many teams should be
     pub group_size: Option<i32>,
+    /// Indicates whether the phase is Planned, Ongoing, or Finished.
+    /// Can only be changed to Finished, if all children rounds are Finished.
     pub status: PhaseStatus,
 }
 

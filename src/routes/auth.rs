@@ -24,7 +24,6 @@ use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use utoipa::ToSchema;
-use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
     Router::new()

@@ -14,7 +14,7 @@ use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournament::{
-        affiliation::{self, Affiliation, AffiliationPatch},
+        affiliation::{Affiliation, AffiliationPatch},
         roles::Role,
         Tournament,
     },
@@ -53,7 +53,8 @@ pub fn route() -> Router<AppState> {
         ),
         (status=404, description = "Tournament or affiliation not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="affiliation"
 )]
 async fn create_affiliation(
     State(state): State<AppState>,
@@ -111,7 +112,8 @@ fn params_and_affiliation_fields_match(
         ),
         (status=404, description = "Tournament or affiliation not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="affiliation"
 )]
 /// Get a list of all user affiliations.
 ///
@@ -174,6 +176,7 @@ async fn get_affiliations(
         (status=404, description = "Tournament or affiliation not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="affiliation"
 )]
 async fn get_affiliation_by_id(
     State(state): State<AppState>,
@@ -218,7 +221,8 @@ async fn get_affiliation_by_id(
             description = "This affiliation already exists",
         ),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="affiliation"
 )]
 #[axum::debug_handler]
 async fn patch_affiliation_by_id(
@@ -272,6 +276,7 @@ async fn patch_affiliation_by_id(
         ),
         (status=404, description = "Tournament or affiliation not found"),
     ),
+    tag="affiliation"
 )]
 async fn delete_affiliation_by_id(
     State(state): State<AppState>,

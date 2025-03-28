@@ -9,7 +9,6 @@ use axum::{
 use sqlx::query;
 use tower_cookies::Cookies;
 use tracing::error;
-use tracing_subscriber::fmt::format;
 use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
@@ -81,7 +80,8 @@ async fn get_users(
         (status=404, description = "User not found"),
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
-    )
+    ),
+    tag="user"
 )]
 async fn create_user(
     State(state): State<AppState>,
@@ -124,6 +124,7 @@ async fn create_user(
         (status=404, description = "User not found"),
         (status=500, description = "Internal server error")
     ),
+    tag="user"
 )]
 async fn get_user_by_id(
     Path(id): Path<Uuid>,
@@ -163,7 +164,8 @@ async fn get_user_by_id(
         (status=409, description = "A user with this name already exists"),
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
-    )
+    ),
+    tag="user"
 )]
 async fn patch_user_by_id(
     Path(id): Path<Uuid>,
@@ -208,6 +210,7 @@ async fn patch_user_by_id(
         (status=404, description = "User not found"),
         (status=409, description = "Other resources reference this user. They must be deleted first")
     ),
+    tag="user"
 )]
 async fn delete_user_by_id(
     Path(id): Path<Uuid>,

@@ -21,11 +21,12 @@ use super::{
 #[serde(deny_unknown_fields)]
 /// Rounds can be used to plan multiple debates at once.
 /// Any changes to start and end times, as well as the selected motion
-/// will be applied to all debates assigned to this round.
+/// will be applied to all debates assigned to a given round.
 pub struct Round {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
+    /// Round name. Must be unique within a phase it belongs to.
     pub name: String,
     pub phase_id: Uuid,
     pub planned_start_time: Option<DateTime<Utc>>,
@@ -34,7 +35,11 @@ pub struct Round {
     /// ID of a round occurring directly before this one.
     /// Must be unique, meaning a given round cannot be set as previous for multiple rounds.
     /// Can belong to a different phase within this tournament.
+    /// If this is the first round of the entire tournament, previous_round_id
+    /// should be left empty. Otherwise, previous_round_id must be defined.
     pub previous_round_id: Option<Uuid>,
+    /// Indicates whether the Round is Planned, Ongoing, or Finished.
+    /// Can only be set to Ongoing, if the parent phase is Ongoing.
     pub status: RoundStatus,
 }
 
