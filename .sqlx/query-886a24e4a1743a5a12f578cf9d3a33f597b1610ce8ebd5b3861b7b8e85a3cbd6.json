@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE locations set name = $1, address = $2,\n            remarks = $3, tournament_id = $4\n            WHERE id = $5",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "886a24e4a1743a5a12f578cf9d3a33f597b1610ce8ebd5b3861b7b8e85a3cbd6"
+}
