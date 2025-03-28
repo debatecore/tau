@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM debates WHERE id = $1",
+  "query": "SELECT * FROM debates WHERE round_id = $1",
   "describe": {
     "columns": [
       {
@@ -42,5 +42,5 @@
       false
     ]
   },
-  "hash": "864ac7f88d9bc3eeef8d9ab3ed84113eff29e4d2bf4387e506a11984fdc8e107"
+  "hash": "6066b9733eb6fa2d3c19516081f322d994a10e90269ffdff534bb54a73635dc6"
 }

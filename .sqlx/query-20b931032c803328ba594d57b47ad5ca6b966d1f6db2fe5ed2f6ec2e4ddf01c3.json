@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "tournament_id",
         "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "round_id",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -31,6 +36,7 @@
     },
     "nullable": [
       false,
+      true,
       true,
       false,
       false

@@ -12,11 +12,12 @@ use crate::{omni_error::OmniError, tournament::phase::Phase};
 
 use super::{
     debate::{Debate, DebatePatch},
+    phase::PhaseStatus,
     Tournament,
 };
 
 #[serde_inline_default]
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
 /// Rounds can be used to plan multiple debates at once.
 /// Any changes to start and end times, as well as the selected motion
@@ -37,7 +38,7 @@ pub struct Round {
     pub status: RoundStatus,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct RoundPatch {
     pub name: Option<String>,
@@ -49,7 +50,7 @@ pub struct RoundPatch {
     pub status: Option<RoundStatus>,
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema, PartialEq, Clone)]
 pub enum RoundStatus {
     Planned,
     Ongoing,
@@ -116,19 +117,9 @@ impl Round {
 
     pub async fn patch(
         self,
-        patch: RoundPatch,
+        new_round: Round,
         pool: &Pool<Postgres>,
     ) -> Result<Round, OmniError> {
-        let new_round = Round {
-            id: self.id,
-            name: patch.name.unwrap_or(self.name),
-            phase_id: patch.phase_id.unwrap_or(self.phase_id),
-            planned_start_time: patch.planned_start_time.or(self.planned_start_time),
-            planned_end_time: patch.planned_end_time.or(self.planned_end_time),
-            motion_id: patch.motion_id.or(self.motion_id),
-            previous_round_id: patch.previous_round_id.or(self.previous_round_id),
-            status: patch.status.unwrap_or(self.status),
-        };
         match query!(
             r#"
                 UPDATE rounds SET name = $1, phase_id = $2, planned_start_time = $3,
@@ -193,10 +184,10 @@ impl Round {
 
     async fn get_parent_tournament(
         &self,
+        parent_phase: &Phase,
         pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
-        let phase = Phase::get_by_id(self.phase_id, pool).await?;
-        let tournament = Tournament::get_by_id(phase.tournament_id, pool).await?;
+        let tournament = Tournament::get_by_id(parent_phase.tournament_id, pool).await?;
         Ok(tournament)
     }
 
@@ -238,16 +229,6 @@ impl Round {
             });
         }
         if self
-            .previous_round_is_not_from_the_same_or_previous_phase(pool)
-            .await?
-        {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::CONFLICT,
-                message: "Previous round can only be from the same or previous phase"
-                    .to_owned(),
-            });
-        }
-        if self
             .previous_round_is_already_declared_as_previous_round_elsewhere(pool)
             .await?
         {
@@ -268,17 +249,36 @@ impl Round {
                 message: "Performing this operation would create a round loop".to_owned(),
             });
         }
-        if self.first_rounds_are_doubled(pool).await? {
+
+        let parent_phase = Phase::get_by_id(self.phase_id, pool).await?;
+
+        if self
+            .previous_round_is_not_from_the_same_or_previous_phase(&parent_phase, pool)
+            .await?
+        {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Previous round can only be from the same or previous phase"
+                    .to_owned(),
+            });
+        }
+        if self.first_rounds_are_doubled(&parent_phase, pool).await? {
             return Err(OmniError::ExplicitError {
                 status: StatusCode::CONFLICT,
                 message: "Only one round within a tournament can have previous_round_id set to none".to_owned(),
             });
+        }
+        if self.status == RoundStatus::Ongoing
+            && parent_phase.status != PhaseStatus::Ongoing
+        {
+            return Err(OmniError::ExplicitError { status: StatusCode::CONFLICT, message: "A round status can only be set to ongoing, if the parent phase is ongoing".to_owned() });
         }
         Ok(())
     }
 
     async fn previous_round_is_not_from_the_same_or_previous_phase(
         &self,
+        parent_phase: &Phase,
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         if self.previous_round_id.is_none() {
@@ -289,11 +289,10 @@ impl Round {
         if self.phase_id == previous_round.phase_id {
             return Ok(false);
         }
-        let phase = Phase::get_by_id(self.phase_id, pool).await?;
-        if phase.previous_phase_id.is_none() {
+        if parent_phase.previous_phase_id.is_none() {
             return Ok(false);
         }
-        if phase.previous_phase_id.unwrap() != previous_round.phase_id {
+        if parent_phase.previous_phase_id.unwrap() != previous_round.phase_id {
             return Ok(true);
         } else {
             return Ok(false);
@@ -321,8 +320,9 @@ impl Round {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         match query!(
-            "SELECT EXISTS (SELECT 1 FROM rounds WHERE name = $1 AND id != $2)",
+            "SELECT EXISTS (SELECT 1 FROM rounds WHERE name = $1 AND phase_id = $2 AND id != $3)",
             self.name,
+            self.phase_id,
             self.id
         )
         .fetch_one(pool)
@@ -364,19 +364,35 @@ impl Round {
 
     async fn first_rounds_are_doubled(
         &self,
+        parent_phase: &Phase,
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         if self.previous_round_id.is_some() {
             return Ok(false);
         } else {
-            let tournament = self.get_parent_tournament(pool).await?;
+            let tournament = self.get_parent_tournament(parent_phase, pool).await?;
             for round in tournament.get_rounds(pool).await? {
-                if round.previous_round_id.is_none() {
+                if round.previous_round_id.is_none() && round.id != self.id {
                     return Ok(true);
                 }
             }
             return Ok(false);
         }
+    }
+}
+
+impl RoundPatch {
+    pub fn create_round_with(self, round: Round) -> Round {
+        return Round {
+            id: round.id,
+            name: self.name.unwrap_or(round.name),
+            phase_id: self.phase_id.unwrap_or(round.phase_id),
+            planned_start_time: self.planned_start_time.or(round.planned_start_time),
+            planned_end_time: self.planned_end_time.or(round.planned_end_time),
+            motion_id: self.motion_id.or(self.motion_id),
+            previous_round_id: self.previous_round_id.or(round.previous_round_id),
+            status: self.status.unwrap_or(round.status),
+        };
     }
 }
 

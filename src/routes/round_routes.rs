@@ -195,7 +195,7 @@ async fn patch_round_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Json(new_round): Json<RoundPatch>,
+    Json(patch): Json<RoundPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -210,7 +210,9 @@ async fn patch_round_by_id(
     if round.phase_id != phase_id {
         return Err(OmniError::BadRequestError);
     }
-    round.validate(pool).await?;
+
+    let new_round = patch.create_round_with(round.clone());
+    new_round.validate(pool).await?;
 
     match round.patch(new_round, pool).await {
         Ok(patched_round) => {

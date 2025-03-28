@@ -26,7 +26,7 @@ pub struct Phase {
     pub status: PhaseStatus,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, Clone)]
 pub struct PhasePatch {
     pub name: Option<String>,
     pub tournament_id: Option<Uuid>,
@@ -36,7 +36,7 @@ pub struct PhasePatch {
     pub status: Option<PhaseStatus>,
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, ToSchema, Clone, PartialEq)]
 pub enum PhaseStatus {
     Planned,
     Ongoing,
@@ -99,18 +99,9 @@ impl Phase {
 
     pub async fn patch(
         self,
-        patch: PhasePatch,
+        new_phase: Phase,
         pool: &Pool<Postgres>,
     ) -> Result<Phase, OmniError> {
-        let new_phase = Phase {
-            id: self.id,
-            name: patch.name.unwrap_or(self.name),
-            tournament_id: patch.tournament_id.unwrap_or(self.tournament_id),
-            is_finals: patch.is_finals.unwrap_or(self.is_finals),
-            previous_phase_id: patch.previous_phase_id.or(self.previous_phase_id),
-            group_size: patch.group_size.or(self.group_size),
-            status: patch.status.unwrap_or(self.status),
-        };
         match query!(
             "UPDATE phases SET name = $1, tournament_id = $2, is_finals = $3, previous_phase_id = $4, group_size = $5, status = $6 WHERE id = $7",
             new_phase.name,
@@ -209,6 +200,14 @@ impl Phase {
             return Err(OmniError::ExplicitError {
                 status: StatusCode::CONFLICT,
                 message: "Only one phase within a tournament can have previous_phase_id set to none".to_owned(),
+            });
+        }
+        if self.status == PhaseStatus::Finished
+            && self.some_rounds_are_not_finished(pool).await?
+        {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::CONFLICT,
+                message: "Some rounds are not finished. To finish this phase of the tournament, finish all the phases".to_owned(),
             });
         }
         Ok(())
@@ -334,6 +333,32 @@ impl Phase {
                 Err(e) => Err(e)?
             }
         }
+    }
+
+    async fn some_rounds_are_not_finished(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        for round in self.get_rounds(pool).await? {
+            if round.status != RoundStatus::Finished {
+                return Ok(true);
+            }
+        }
+        return Ok(false);
+    }
+}
+
+impl PhasePatch {
+    pub fn create_phase_with(self, phase: Phase) -> Phase {
+        return Phase {
+            id: phase.id,
+            name: self.name.unwrap_or(phase.name),
+            tournament_id: self.tournament_id.unwrap_or(phase.tournament_id),
+            is_finals: self.is_finals.unwrap_or(phase.is_finals),
+            previous_phase_id: self.previous_phase_id.or(phase.previous_phase_id),
+            group_size: self.group_size.or(phase.group_size),
+            status: self.status.unwrap_or(phase.status),
+        };
     }
 }
 

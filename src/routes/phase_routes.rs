@@ -194,7 +194,7 @@ async fn patch_phase_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Json(new_phase): Json<PhasePatch>,
+    Json(patch): Json<PhasePatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -206,7 +206,8 @@ async fn patch_phase_by_id(
     }
 
     let phase = Phase::get_by_id(id, pool).await?;
-    phase.validate(pool).await?;
+    let new_phase = patch.create_phase_with(phase.clone());
+    new_phase.validate(pool).await?;
 
     match phase.patch(new_phase, pool).await {
         Ok(phase) => Ok(Json(phase).into_response()),
