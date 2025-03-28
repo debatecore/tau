@@ -65,6 +65,7 @@ pub fn route() -> Router<AppState> {
         attendee_routes::patch_attendee_by_id,
         attendee_routes::delete_attendee_by_id,
         auth::auth_login,
+        auth::auth_me,
         location_routes::create_location,
         location_routes::get_locations,
         location_routes::get_location_by_id,
