@@ -17,12 +17,66 @@
         "ordinal": 2,
         "name": "shortened_name",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "speech_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "end_protected_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "start_protected_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "ad_vocem_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "debate_time_slot",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "debate_preparation_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "beep_on_speech_end",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "beep_on_protected_time",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 11,
+        "name": "visualize_protected_time",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
       "Left": []
     },
     "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
       false,
       false,
       false

@@ -15,14 +15,16 @@ pub struct Debate {
     pub motion_id: Option<Uuid>,
     pub marshall_user_id: Option<Uuid>,
     pub tournament_id: Uuid,
+    pub round_id: Uuid,
 }
 
 #[serde_inline_default]
 #[derive(Deserialize, ToSchema)]
 pub struct DebatePatch {
-    motion_id: Option<Uuid>,
-    marshall_user_id: Option<Uuid>,
-    tournament_id: Option<Uuid>,
+    pub motion_id: Option<Uuid>,
+    pub marshall_user_id: Option<Uuid>,
+    pub tournament_id: Option<Uuid>,
+    pub round_id: Option<Uuid>,
 }
 
 impl Debate {
@@ -32,12 +34,13 @@ impl Debate {
     ) -> Result<Debate, OmniError> {
         match query_as!(
             Debate,
-            r#"INSERT INTO debates(id, motion_id, marshall_user_id, tournament_id)
-            VALUES ($1, $2, $3, $4) RETURNING id, motion_id, marshall_user_id, tournament_id"#,
+            r#"INSERT INTO debates(id, motion_id, marshall_user_id, tournament_id, round_id)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id, motion_id, marshall_user_id, tournament_id, round_id"#,
             debate.id,
             debate.motion_id,
             debate.marshall_user_id,
-            debate.tournament_id
+            debate.tournament_id,
+            debate.round_id
         )
         .fetch_one(connection_pool)
         .await
@@ -70,11 +73,13 @@ impl Debate {
             motion_id: patch.motion_id,
             marshall_user_id: patch.marshall_user_id,
             tournament_id: patch.tournament_id.unwrap_or(self.tournament_id),
+            round_id: patch.round_id.unwrap_or(self.round_id),
         };
         match query!(
-            "UPDATE debates SET motion_id = $1, marshall_user_id = $2 WHERE id = $3",
+            "UPDATE debates SET motion_id = $1, marshall_user_id = $2, round_id = $3 WHERE id = $4",
             debate.motion_id,
             debate.marshall_user_id,
+            debate.round_id,
             debate.id,
         )
         .execute(connection_pool)

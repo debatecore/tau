@@ -5,7 +5,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -46,9 +46,10 @@ pub fn route() -> Router<AppState> {
             body=Attendee,
             example=json!(get_attendee_example())
         ),
-        (status=400, description = "Bad request",),
+        (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -58,7 +59,8 @@ pub fn route() -> Router<AppState> {
         (
             status=500, description = "Internal server error",
         ),
-    )
+    ),
+    tag="attendee"
 )]
 #[axum::debug_handler]
 async fn create_attendee(
@@ -74,7 +76,7 @@ async fn create_attendee(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if !attendee.position.is_none() {
@@ -109,15 +111,17 @@ async fn create_attendee(
             example=json!(get_attendees_list_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not get to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
         (
             status=500, description = "Internal server error",
         ),
-    )
+    ),
+    tag="attendee"
 )]
 /// Get a list of all attendees
 async fn get_attendees(
@@ -132,7 +136,7 @@ async fn get_attendees(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Attendee::get_all(pool).await {
@@ -152,8 +156,9 @@ async fn get_attendees(
             example=json!(get_attendee_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to get attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -161,6 +166,7 @@ async fn get_attendees(
             status=500, description = "Internal server error",
         ),
     ),
+    tag="attendee"
 )]
 async fn get_attendee_by_id(
     Path(id): Path<Uuid>,
@@ -175,7 +181,7 @@ async fn get_attendee_by_id(
 
     match tournament_user.has_permission(Permission::ReadAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Attendee::get_by_id(id, &state.connection_pool).await {
@@ -197,15 +203,17 @@ async fn get_attendee_by_id(
             example=json!(get_attendee_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to patch attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
         (status=409, description = "Attendee position is duplicated"),
         (status=422, description = "Attendee position out of range [1-4]"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="attendee"
 )]
 async fn patch_attendee_by_id(
     Path((id, tournament_id)): Path<(Uuid, Uuid)>,
@@ -220,7 +228,7 @@ async fn patch_attendee_by_id(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if !new_attendee.position.is_none() {
@@ -249,8 +257,9 @@ async fn patch_attendee_by_id(
     (
         (status=204, description = "Attendee deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to delete attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -258,6 +267,7 @@ async fn patch_attendee_by_id(
             status=500, description = "Internal server error",
         ),
     ),
+    tag="attendee"
 )]
 async fn delete_attendee_by_id(
     Path(id): Path<Uuid>,
@@ -272,7 +282,7 @@ async fn delete_attendee_by_id(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let attendee = Attendee::get_by_id(id, pool).await?;

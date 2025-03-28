@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE rounds SET name = $1, phase_id = $2, planned_start_time = $3,\n                planned_end_time = $4, motion_id = $5, previous_round_id = $6,\n                status = $7 WHERE id = $8\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4120c9f99304686888d9109ffb74a1cd4e54fc90db0468fd8c430863b73a9c89"
+}

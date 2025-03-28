@@ -1,0 +1,99 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tournaments\n            (\n                id,\n                full_name,\n                shortened_name,\n                speech_time,\n                end_protected_time,\n                start_protected_time,\n                ad_vocem_time,\n                debate_time_slot,\n                debate_preparation_time,\n                beep_on_speech_end,\n                beep_on_protected_time,\n                visualize_protected_time\n            )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING\n                id,\n                full_name,\n                shortened_name,\n                speech_time,\n                end_protected_time,\n                start_protected_time,\n                ad_vocem_time,\n                debate_time_slot,\n                debate_preparation_time,\n                beep_on_speech_end,\n                beep_on_protected_time,\n                visualize_protected_time",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "full_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "shortened_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "speech_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "end_protected_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "start_protected_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "ad_vocem_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "debate_time_slot",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "debate_preparation_time",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "beep_on_speech_end",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "beep_on_protected_time",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 11,
+        "name": "visualize_protected_time",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2349f0288bb7dd8a98b1fedd6d016c08a8129700621f2ceb70b7b9906f422d2b"
+}
