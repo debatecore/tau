@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO motions(id, motion, adinfo)\n        VALUES ($1, $2, $3) RETURNING id, motion, adinfo",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "motion",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "adinfo",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a30a9624db711cdf8981eb089df2a7605142ff98f01185862eeb2acff2e349e7"
+}
