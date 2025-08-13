@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament::{motion::{Motion, MotionPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::motion::{Motion, MotionPatch}, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -6,7 +6,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -29,7 +28,9 @@ pub fn route() -> Router<AppState> {
     status=200, description = "Ok",
     body=Vec<Motion>,
     example=json!(get_motions_list_example())
-)))]
+    )),
+    tag="motion"
+)]
 /// Get a list of all motions
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
@@ -78,8 +79,8 @@ async fn get_motions(
         ),
         (status=404, description = "Tournament or motion not found"),
         (status=409, description = DUPLICATE_MOTION_ERROR)
-    
-    )
+    ),
+    tag="motion"
 )]
 async fn create_motion(
 State(state): State<AppState>,
@@ -108,10 +109,11 @@ State(state): State<AppState>,
 /// Get details of an existing motion
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/motion/{id}", 
+#[utoipa::path(get, path = "/tournament/{tournament_id}/motion/{id}", 
     responses((status=200, description = "Ok", body=Motion,
     example=json!(get_motion_example())
     )),
+    tag="motion"
 )]
 async fn get_motion_by_id(
     Path(id): Path<Uuid>,
@@ -152,7 +154,8 @@ async fn get_motion_by_id(
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")
-    )
+    ),
+    tag="motion"
 )]
 async fn patch_motion_by_id(
     Path(id): Path<Uuid>,
@@ -192,6 +195,7 @@ async fn patch_motion_by_id(
         ),
         (status=404, description = "Tournament or motion not found")
     ),
+    tag="motion"
     
 )]
 async fn delete_motion_by_id(

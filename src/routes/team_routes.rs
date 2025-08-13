@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::{query, query_as, Error, Pool, Postgres};
+use sqlx::{query, Error, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -46,7 +46,8 @@ pub fn route() -> Router<AppState> {
         ),
         (status=404, description = "Tournament or team not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="team"
 )]
 async fn create_team(
     State(state): State<AppState>,
@@ -94,7 +95,8 @@ async fn create_team(
         ),
         (status=404, description = "Tournament or team not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="team"
 )]
 /// Get a list of all teams
 /// 
@@ -143,6 +145,7 @@ async fn get_teams(
         (status=404, description = "Tournament or team not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="team"
 )]
 async fn get_team_by_id(
     State(state): State<AppState>,
@@ -192,7 +195,8 @@ async fn get_team_by_id(
             description = DUPLICATE_NAME_ERROR,
         ),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="team"
 )]
 async fn patch_team_by_id(
     Path(id): Path<Uuid>,
@@ -226,7 +230,7 @@ async fn patch_team_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this team. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/team/{id}", 
+#[utoipa::path(delete, path = "/tournament/{tournament_id}/team/{id}", 
     responses
     (
         (status=204, description = "Team deleted successfully"),
@@ -238,6 +242,7 @@ async fn patch_team_by_id(
         ),
         (status=404, description = "Tournament or team not found"),
     ),
+    tag="team"
 )]
 async fn delete_team_by_id(
     Path(id): Path<Uuid>,
