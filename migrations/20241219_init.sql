@@ -92,4 +92,4 @@ CREATE TABLE IF NOT EXISTS rooms (
     name              TEXT NOT NULL,
     location_id       UUID NOT NULL REFERENCES locations(id),
     remarks           TEXT
-)
+);
