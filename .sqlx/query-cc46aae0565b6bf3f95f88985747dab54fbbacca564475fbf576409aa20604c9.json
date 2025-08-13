@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE roles SET roles = $1 WHERE user_id = $2 AND tournament_id = $3\n            RETURNING roles",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "roles",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "cc46aae0565b6bf3f95f88985747dab54fbbacca564475fbf576409aa20604c9"
+}
