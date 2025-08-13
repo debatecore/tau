@@ -8,15 +8,19 @@ use crate::setup::AppState;
 
 use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
+use crate::routes::location_routes;
 use crate::routes::motion_routes;
 use crate::routes::roles_routes;
+use crate::routes::room_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::tournament;
 use crate::tournament::attendee;
 use crate::tournament::debate;
+use crate::tournament::location;
 use crate::tournament::motion;
 use crate::tournament::roles;
+use crate::tournament::room;
 use crate::tournament::team;
 use crate::users::permissions;
 use crate::users::photourl;
@@ -64,6 +68,17 @@ pub fn route() -> Router<AppState> {
         attendee_routes::patch_attendee_by_id,
         attendee_routes::delete_attendee_by_id,
         auth::auth_login,
+        auth::auth_me,
+        location_routes::create_location,
+        location_routes::get_locations,
+        location_routes::get_location_by_id,
+        location_routes::patch_location_by_id,
+        location_routes::delete_location_by_id,
+        room_routes::create_room,
+        room_routes::get_rooms,
+        room_routes::get_room_by_id,
+        room_routes::patch_room_by_id,
+        room_routes::delete_room_by_id,
         auth::auth_clear,
         user::get_users,
         user::create_user,
@@ -92,6 +107,10 @@ pub fn route() -> Router<AppState> {
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
+        location::Location,
+        location::LocationPatch,
+        room::Room,
+        room::RoomPatch,
         user::UserWithPassword,
         user::UserPatch,
         crate::users::User,

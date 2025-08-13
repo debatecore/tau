@@ -31,4 +31,10 @@ pub enum Permission {
     SubmitVerdict,
 
     WriteRoles,
+
+    ReadLocations,
+    WriteLocations,
+
+    ReadRooms,
+    WriteRooms,
 }
