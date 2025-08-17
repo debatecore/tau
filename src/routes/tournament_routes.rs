@@ -26,6 +26,7 @@ pub fn route() -> Router<AppState> {
 /// 
 /// This request only returns the tournaments the user is permitted to see.
 /// The user must be given any role within a tournament to see it.
+/// The infrastructure admin can see all tournaments
 #[utoipa::path(get, path = "/tournament", 
     responses(
         (
@@ -51,6 +52,9 @@ async fn get_tournaments(
     let user = User::authenticate(&headers, cookies, pool).await?;
 
     let tournaments = Tournament::get_all(pool).await?;
+    if user.is_infrastructure_admin() {
+        return Ok(Json(tournaments).into_response());
+    }
     let mut visible_tournaments: Vec<Tournament> = vec![];
     for tournament in tournaments {
         let tournament_id = tournament.id;
