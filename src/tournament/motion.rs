@@ -76,7 +76,7 @@ impl Motion {
         let motion = Motion {
             id: self.id,
             motion: patch.motion.unwrap_or(self.motion),
-            adinfo: patch.adinfo,
+            adinfo: patch.adinfo.or(self.adinfo),
         };
         match query!(
             "UPDATE motions SET motion = $1, adinfo = $2 WHERE id = $3",

@@ -1,5 +1,5 @@
 use debate::Debate;
-use motion::Motion;
+use location::Location;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use team::Team;
@@ -12,7 +12,9 @@ use crate::users;
 
 pub(crate) mod attendee;
 pub(crate) mod debate;
+pub(crate) mod location;
 pub(crate) mod motion;
+pub(crate) mod room;
 pub(crate) mod team;
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -140,6 +142,23 @@ impl Tournament {
         .await
         {
             Ok(debates) => Ok(debates),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_locations(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Vec<Location>, OmniError> {
+        match query_as!(
+            Location,
+            "SELECT * FROM locations WHERE tournament_id = $1",
+            self.id
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(locations) => Ok(locations),
             Err(e) => Err(e)?,
         }
     }
