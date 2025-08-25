@@ -63,6 +63,8 @@ async fn auth_me(
 /// Providing the token either by including it in the
 /// request header or sending the cookie is required
 /// to perform any further operations.
+/// By default, the only existing account is the infrastructure admin
+/// with username and password "admin".
 #[utoipa::path(post, path = "/auth/login", request_body=LoginRequest,
     responses
         (
@@ -78,7 +80,7 @@ async fn auth_me(
         )
     )
 ]
-pub async fn auth_login(
+async fn auth_login(
     cookies: Cookies,
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,

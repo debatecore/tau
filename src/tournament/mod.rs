@@ -8,6 +8,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::omni_error::OmniError;
+use crate::users;
 
 pub(crate) mod attendee;
 pub(crate) mod debate;
