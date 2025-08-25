@@ -52,9 +52,6 @@ async fn get_tournaments(
     let user = User::authenticate(&headers, cookies, pool).await?;
 
     let tournaments = Tournament::get_all(pool).await?;
-    if user.is_infrastructure_admin() {
-        return Ok(Json(tournaments).into_response());
-    }
     let mut visible_tournaments: Vec<Tournament> = vec![];
     for tournament in tournaments {
         let tournament_id = tournament.id;
