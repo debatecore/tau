@@ -2,7 +2,7 @@ use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
 use roles::Role;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use utoipa::ToSchema;
@@ -14,6 +14,7 @@ pub mod auth;
 pub mod infradmin;
 pub mod permissions;
 pub mod photourl;
+pub mod queries;
 pub mod roles;
 
 #[derive(Serialize, Clone, ToSchema)]
@@ -24,6 +25,13 @@ pub struct User {
     pub handle: String,
     /// A link to a profile picture. Accepted extensions are: png, jpg, jpeg, and webp.
     pub picture_link: Option<PhotoUrl>,
+}
+
+#[derive(Deserialize, ToSchema, Clone)]
+pub struct UserPatch {
+    pub handle: Option<String>,
+    pub picture_link: Option<PhotoUrl>,
+    pub password: Option<String>,
 }
 
 pub struct TournamentUser {
