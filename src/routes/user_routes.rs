@@ -119,7 +119,7 @@ async fn create_user(
     }
 
     let user_without_password = User::from(json.clone());
-    match User::create_user(user_without_password, json.password, pool).await {
+    match User::create(user_without_password, json.password, pool).await {
         Ok(user) => Ok(Json(user).into_response()),
         Err(e) => {
             error!("Error creating a new user: {e}");

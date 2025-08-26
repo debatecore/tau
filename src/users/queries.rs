@@ -70,7 +70,7 @@ impl User {
         Ok(users)
     }
 
-    pub async fn create_user(
+    pub async fn create(
         user: User,
         password: String,
         pool: &Pool<Postgres>,
@@ -111,13 +111,13 @@ impl User {
         };
         if patch.password.is_some() {
             let new_password = patch.clone().password.unwrap();
-            self.change_user_password(&new_password, pool).await?;
+            self.change_password(&new_password, pool).await?;
         }
-        self.patch_user_data(&patch, pool).await?;
+        self.update_data(&patch, pool).await?;
         Ok(updated_user)
     }
 
-    async fn change_user_password(
+    async fn change_password(
         &self,
         new_password: &str,
         pool: &Pool<Postgres>,
@@ -148,7 +148,7 @@ impl User {
         Ok(hash)
     }
 
-    async fn patch_user_data(
+    async fn update_data(
         &self,
         patch: &UserPatch,
         pool: &Pool<Postgres>,
