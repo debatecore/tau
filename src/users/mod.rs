@@ -28,10 +28,10 @@ pub struct User {
 }
 
 #[derive(Deserialize, ToSchema, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct UserPatch {
     pub handle: Option<String>,
     pub picture_link: Option<PhotoUrl>,
-    pub password: Option<String>,
 }
 
 pub struct TournamentUser {

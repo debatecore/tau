@@ -3,7 +3,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, patch},
     Json, Router,
 };
 use serde::Deserialize;
@@ -11,11 +11,11 @@ use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use serde_json::Error as JsonError;
 
 
 
 #[derive(Clone, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct UserWithPassword {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
@@ -35,6 +35,12 @@ impl From<UserWithPassword> for User {
     }
 }
 
+#[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct UserPasswordPatch {
+    pub new_password: String,
+}
+
 pub fn route() -> Router<AppState> {
     Router::new()
         .route("/user", get(get_users).post(create_user))
@@ -44,6 +50,7 @@ pub fn route() -> Router<AppState> {
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
         )
+        .route("/user/:id/password", patch(change_user_password))
 }
 
 /// Get a list of all users
@@ -63,7 +70,9 @@ pub fn route() -> Router<AppState> {
             description = "Authentication error"
         ),
         (status=500, description = "Internal server error")
-))]
+    ),
+    tag = "user"
+)]
 async fn get_users(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -104,7 +113,8 @@ async fn get_users(
         (status=404, description = "User not found"),
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
-    )
+    ),
+    tag = "user"
 )]
 async fn create_user(
     State(state): State<AppState>,
@@ -147,6 +157,7 @@ async fn create_user(
         (status=404, description = "User not found"),
         (status=500, description = "Internal server error")
     ),
+    tag = "user"
 )]
 async fn get_user_by_id(
     Path(id): Path<Uuid>,
@@ -168,7 +179,9 @@ async fn get_user_by_id(
 
 /// Patch an existing user
 /// 
+/// Allows to modify user data not related to security.
 /// Available to the infrastructure admin and the user modifying their own account.
+/// In order to change user password, use the /user/{id}/password endpoint.
 #[utoipa::path(patch, path = "/user/{id}", 
     request_body=UserPatch,
     responses(
@@ -186,7 +199,8 @@ async fn get_user_by_id(
         (status=409, description = "A user with this name already exists"),
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
-    )
+    ),
+    tag = "user"
 )]
 async fn patch_user_by_id(
     Path(id): Path<Uuid>,
@@ -215,6 +229,52 @@ async fn patch_user_by_id(
     }
 }
 
+/// Change user password
+/// 
+/// Available to the infrastructure admin and the user modifying their own account.
+#[utoipa::path(patch, path = "/user/{id}/password", 
+    request_body=UserPasswordPatch,
+    responses(
+        (
+            status=200, description = "User password changed successfully",
+        ),
+        (status=400, description = "Bad request"),
+        (
+            status=401, 
+            description = "The user is not permitted to modify this user"
+        ),
+        (status=404, description = "User not found"),
+        (status=500, description = "Internal server error")
+    ),
+    tag = "user"
+)]
+async fn change_user_password(
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Json(password_patch): Json<UserPasswordPatch>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let requesting_user =
+        User::authenticate(&headers, cookies, &pool).await?;
+
+    let user_to_be_patched = User::get_by_id(id, pool).await?;
+    
+    match requesting_user.is_infrastructure_admin() || requesting_user.id == user_to_be_patched.id {
+        true => (),
+        false => return Err(OmniError::UnauthorizedError),
+    }
+
+    match user_to_be_patched.change_password(&password_patch.new_password, pool).await {
+        Ok(()) => Ok(StatusCode::OK.into_response()),
+        Err(e) => {
+            error!("Error changing password of a user with id {}: {e}", id);
+            Err(e)?
+        }
+    }
+}
+
 
 /// Delete an existing user.
 /// 
@@ -231,6 +291,7 @@ async fn patch_user_by_id(
         (status=404, description = "User not found"),
         (status=409, description = "Other resources reference this user. They must be deleted first")
     ),
+    tag = "user"
 )]
 async fn delete_user_by_id(
     Path(id): Path<Uuid>,

@@ -109,15 +109,11 @@ impl User {
             handle: patch.handle.clone().unwrap_or(self.handle.clone()),
             picture_link,
         };
-        if patch.password.is_some() {
-            let new_password = patch.clone().password.unwrap();
-            self.change_password(&new_password, pool).await?;
-        }
         self.update_data(&patch, pool).await?;
         Ok(updated_user)
     }
 
-    async fn change_password(
+    pub async fn change_password(
         &self,
         new_password: &str,
         pool: &Pool<Postgres>,
@@ -227,6 +223,7 @@ impl User {
         return Ok(false);
     }
 
+    /// Invalidates all sessions; implementations must promptly log the user out.
     pub async fn invalidate_all_sessions(
         &self,
         pool: &Pool<Postgres>,

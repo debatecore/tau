@@ -85,6 +85,7 @@ pub fn route() -> Router<AppState> {
         user_routes::get_user_by_id,
         user_routes::patch_user_by_id,
         user_routes::delete_user_by_id,
+        user_routes::change_user_password,
     ),
     components(schemas(
         version::VersionDetails,
@@ -108,6 +109,7 @@ pub fn route() -> Router<AppState> {
         room::Room,
         room::RoomPatch,
         user_routes::UserWithPassword,
+        user_routes::UserPasswordPatch,
         crate::users::UserPatch,
         crate::users::User,
         photourl::PhotoUrl
