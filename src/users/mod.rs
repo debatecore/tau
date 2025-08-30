@@ -1,11 +1,12 @@
 use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use utoipa::ToSchema;
 use uuid::Uuid;
+mod queries;
 
 use crate::{omni_error::OmniError, tournament::roles::Role};
 
@@ -21,6 +22,13 @@ pub struct User {
     /// Must be unique.
     pub handle: String,
     /// A link to a profile picture. Accepted extensions are: png, jpg, jpeg, and webp.
+    pub picture_link: Option<PhotoUrl>,
+}
+
+#[derive(Deserialize, ToSchema, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct UserPatch {
+    pub handle: Option<String>,
     pub picture_link: Option<PhotoUrl>,
 }
 

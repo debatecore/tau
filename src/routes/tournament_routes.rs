@@ -26,6 +26,7 @@ pub fn route() -> Router<AppState> {
 /// 
 /// This request only returns the tournaments the user is permitted to see.
 /// The user must be given any role within a tournament to see it.
+/// The infrastructure admin can see all tournaments
 #[utoipa::path(get, path = "/tournament", 
     responses(
         (

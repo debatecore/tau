@@ -3,7 +3,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::routes::auth;
-use crate::routes::user;
+use crate::routes::user_routes;
 use crate::setup::AppState;
 
 use crate::routes::attendee_routes;
@@ -22,6 +22,7 @@ use crate::tournament::motion;
 use crate::tournament::roles;
 use crate::tournament::room;
 use crate::tournament::team;
+use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
 
@@ -69,6 +70,7 @@ pub fn route() -> Router<AppState> {
         attendee_routes::delete_attendee_by_id,
         auth::auth_login,
         auth::auth_me,
+        auth::auth_clear,
         location_routes::create_location,
         location_routes::get_locations,
         location_routes::get_location_by_id,
@@ -80,15 +82,16 @@ pub fn route() -> Router<AppState> {
         room_routes::patch_room_by_id,
         room_routes::delete_room_by_id,
         auth::auth_clear,
-        user::get_users,
-        user::create_user,
-        user::get_user_by_id,
-        user::patch_user_by_id,
-        user::delete_user_by_id,
         roles_routes::create_user_roles,
         roles_routes::get_user_roles,
         roles_routes::patch_user_roles,
         roles_routes::delete_user_roles,
+        user_routes::get_users,
+        user_routes::create_user,
+        user_routes::get_user_by_id,
+        user_routes::patch_user_by_id,
+        user_routes::delete_user_by_id,
+        user_routes::change_user_password,
     ),
     components(schemas(
         version::VersionDetails,
@@ -111,8 +114,11 @@ pub fn route() -> Router<AppState> {
         location::LocationPatch,
         room::Room,
         room::RoomPatch,
-        user::UserWithPassword,
-        user::UserPatch,
+        user_routes::UserWithPassword,
+        users::UserPatch,
+        user_routes::UserWithPassword,
+        user_routes::UserPasswordPatch,
+        crate::users::UserPatch,
         crate::users::User,
         photourl::PhotoUrl
     ))

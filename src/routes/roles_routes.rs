@@ -118,7 +118,7 @@ async fn get_user_roles(
 
     let requested_user = User::get_by_id(user_id, pool).await?;
     match requested_user.get_roles(tournament_id, pool).await {
-        Ok(roles) => Ok(Json(roles).into_response()),
+        Ok(roles) => Ok(Json(roles as Vec<Role>).into_response()),
         Err(e) => {
             error!(
                 "Error getting roles of user {} within tournament {}: {e}",
