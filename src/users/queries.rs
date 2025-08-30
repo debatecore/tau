@@ -1,12 +1,17 @@
-use super::{photourl::PhotoUrl, roles::Role, TournamentUser, User};
-use crate::omni_error::OmniError;
-use argon2::{
-    password_hash::{rand_core::OsRng, SaltString},
-    Argon2, PasswordHasher,
-};
+use crate::users::{permissions::Permission as P, UserPatch};
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use rand::rngs::OsRng;
+use serde::Deserialize;
 use serde_json::Error as JsonError;
-use sqlx::{Pool, Postgres};
+use sqlx::{query, Pool, Postgres};
+use utoipa::ToSchema;
 use uuid::Uuid;
+
+use crate::{
+    omni_error::OmniError,
+    tournament::Tournament,
+    users::{photourl::PhotoUrl, roles::Role, TournamentUser, User},
+};
 
 impl User {
     pub async fn get_by_id(id: Uuid, pool: &Pool<Postgres>) -> Result<User, OmniError> {
@@ -18,12 +23,13 @@ impl User {
         Ok(User {
             id,
             handle: user.handle,
-            profile_picture: match user.picture_link {
+            picture_link: match user.picture_link {
                 Some(url) => Some(PhotoUrl::new(&url)?),
                 None => None,
             },
         })
     }
+
     pub async fn get_by_handle(
         handle: &str,
         pool: &Pool<Postgres>,
@@ -38,12 +44,13 @@ impl User {
         Ok(User {
             id: user.id,
             handle: handle.to_string(),
-            profile_picture: match user.picture_link {
+            picture_link: match user.picture_link {
                 Some(url) => Some(PhotoUrl::new(&url)?),
                 None => None,
             },
         })
     }
+
     pub async fn get_all(pool: &Pool<Postgres>) -> Result<Vec<User>, OmniError> {
         let users = sqlx::query!("SELECT id, handle, picture_link FROM users")
             .fetch_all(pool)
@@ -53,7 +60,7 @@ impl User {
                 Ok(User {
                     id: u.id,
                     handle: u.handle.clone(),
-                    profile_picture: match u.picture_link.clone() {
+                    picture_link: match u.picture_link.clone() {
                         Some(url) => Some(PhotoUrl::new(&url)?),
                         None => None,
                     },
@@ -62,23 +69,17 @@ impl User {
             .collect::<Result<Vec<User>, OmniError>>()?;
         Ok(users)
     }
+
     pub async fn create(
         user: User,
-        pass: String,
+        password: String,
         pool: &Pool<Postgres>,
     ) -> Result<User, OmniError> {
-        let pic = match &user.profile_picture {
-            Some(url) => Some(url.as_url().to_string()),
+        let pic = match &user.picture_link {
+            Some(url) => Some(url.as_str()),
             None => None,
         };
-        let hash = {
-            let argon = Argon2::default();
-            let salt = SaltString::generate(&mut OsRng);
-            match argon.hash_password(pass.as_bytes(), &salt) {
-                Ok(hash) => hash.to_string(),
-                Err(e) => return Err(e)?,
-            }
-        };
+        let hash = User::generate_password_hash(&password).unwrap();
         match sqlx::query!(
             "INSERT INTO users VALUES ($1, $2, $3, $4)",
             &user.id,
@@ -93,6 +94,89 @@ impl User {
             Err(e) => Err(e)?,
         }
     }
+
+    pub async fn patch(
+        self,
+        patch: UserPatch,
+        pool: &Pool<Postgres>,
+    ) -> Result<User, OmniError> {
+        let picture_link = match &patch.picture_link {
+            Some(url) => Some(url.clone()),
+            None => self.picture_link.clone(),
+        };
+        let updated_user = User {
+            id: self.id,
+            handle: patch.handle.clone().unwrap_or(self.handle.clone()),
+            picture_link,
+        };
+        self.update_data(&patch, pool).await?;
+        Ok(updated_user)
+    }
+
+    pub async fn change_password(
+        &self,
+        new_password: &str,
+        pool: &Pool<Postgres>,
+    ) -> Result<(), OmniError> {
+        let password_hash = User::generate_password_hash(new_password).unwrap().clone();
+        match query!(
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
+            password_hash,
+            self.id
+        )
+        .execute(pool)
+        .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    fn generate_password_hash(password: &str) -> Result<String, OmniError> {
+        let hash = {
+            let argon = Argon2::default();
+            let salt = SaltString::generate(&mut OsRng);
+            match argon.hash_password(password.as_bytes(), &salt) {
+                Ok(hash) => hash.to_string(),
+                Err(e) => return Err(e)?,
+            }
+        };
+        Ok(hash)
+    }
+
+    async fn update_data(
+        &self,
+        patch: &UserPatch,
+        pool: &Pool<Postgres>,
+    ) -> Result<(), OmniError> {
+        let picture_link = match &patch.picture_link {
+            Some(url) => Some(url.as_url().to_string()),
+            None => Some(self.picture_link.as_ref().unwrap().as_str().to_owned()),
+        };
+        match query!(
+            "UPDATE users SET handle = $1, picture_link = $2 WHERE id = $3",
+            patch.handle,
+            picture_link,
+            self.id
+        )
+        .execute(pool)
+        .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
+        match query!("DELETE FROM users WHERE id = $1", self.id)
+            .execute(connection_pool)
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
     // ---------- DATABASE HELPERS ----------
     pub async fn get_roles(
         &self,
@@ -119,28 +203,37 @@ impl User {
                 .collect::<Result<Vec<Role>, JsonError>>()?,
             None => vec![],
         };
-
         Ok(vec)
     }
-}
 
-impl TournamentUser {
-    pub async fn get_by_id(
-        user: Uuid,
-        tournament: Uuid,
+    pub async fn can_create_users_within_any_tournament(
+        &self,
         pool: &Pool<Postgres>,
-    ) -> Result<TournamentUser, OmniError> {
-        let user = User::get_by_id(user, pool).await?;
-        let roles = user.get_roles(tournament, pool).await?;
-        Ok(TournamentUser { user, roles })
+    ) -> Result<bool, OmniError> {
+        let tournaments = Tournament::get_all(pool).await?;
+        for tournament in tournaments {
+            let tournament_user =
+                TournamentUser::get_by_id(self.id, tournament.id, &pool).await?;
+            if tournament_user.has_permission(P::CreateUsersManually)
+                || tournament_user.has_permission(P::CreateUsersWithLink)
+            {
+                return Ok(true);
+            }
+        }
+        return Ok(false);
     }
-    pub async fn get_by_handle(
-        handle: &str,
-        tournament: Uuid,
+
+    /// Invalidates all sessions; implementations must promptly log the user out.
+    pub async fn invalidate_all_sessions(
+        &self,
         pool: &Pool<Postgres>,
-    ) -> Result<TournamentUser, OmniError> {
-        let user = User::get_by_handle(handle, pool).await?;
-        let roles = user.get_roles(tournament, pool).await?;
-        Ok(TournamentUser { user, roles })
+    ) -> Result<(), OmniError> {
+        match query!("DELETE FROM sessions WHERE user_id = $1", self.id)
+            .execute(pool)
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
     }
 }

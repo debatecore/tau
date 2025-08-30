@@ -17,7 +17,7 @@ impl User {
         User {
             id: Uuid::max(),
             handle: String::from("admin"),
-            profile_picture: None,
+            picture_link: None,
         }
     }
 }
