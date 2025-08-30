@@ -1,4 +1,7 @@
-use crate::users::{permissions::Permission as P, UserPatch};
+use crate::{
+    tournament::roles::Role,
+    users::{permissions::Permission as P, UserPatch},
+};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use rand::rngs::OsRng;
 use serde::Deserialize;
@@ -10,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     tournament::Tournament,
-    users::{photourl::PhotoUrl, roles::Role, TournamentUser, User},
+    users::{photourl::PhotoUrl, TournamentUser, User},
 };
 
 impl User {
