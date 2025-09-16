@@ -202,8 +202,8 @@ impl User {
         let vec = match roles {
             Some(vec) => vec
                 .iter()
-                .map(|role| serde_json::from_str(role.as_str()))
-                .collect::<Result<Vec<Role>, JsonError>>()?,
+                .map(|role| role.parse())
+                .collect::<Result<Vec<Role>, OmniError>>()?,
             None => vec![],
         };
         Ok(vec)

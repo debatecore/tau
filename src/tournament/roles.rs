@@ -1,14 +1,16 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use sqlx::{query, Pool, Postgres};
 use strum::VariantArray;
+use tracing::info;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{omni_error::OmniError, users::permissions::Permission};
 
 #[derive(Debug, PartialEq, Deserialize, ToSchema, VariantArray, Clone, Serialize)]
+#[serde(deny_unknown_fields)]
 /// Within a tournament, users must be granted roles for their
 /// permissions to be defined. Each role comes with a predefined
 /// set of permissions to perform certain operations.
@@ -57,7 +59,8 @@ impl Role {
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
         let _ = tournament_id;
-        let roles_as_strings = Role::roles_vec_to_string_array(&roles);
+        let roles_as_strings = Role::roles_vec_to_string_vec(&roles);
+        roles_as_strings.iter().for_each(|r| info!(r));
         match query!(
             r#"INSERT INTO roles(id, user_id, tournament_id, roles)
             VALUES ($1, $2, $3, $4) RETURNING roles"#,
@@ -73,7 +76,7 @@ impl Role {
                 let string_vec = record.roles.unwrap();
                 let mut created_roles: Vec<Role> = vec![];
                 for role_string in string_vec {
-                    created_roles.push(Role::try_from(role_string)?);
+                    created_roles.push(serde_json::from_str(&role_string).unwrap());
                 }
                 return Ok(created_roles);
             }
@@ -81,11 +84,11 @@ impl Role {
         }
     }
 
-    pub fn roles_vec_to_string_array(roles: &Vec<Role>) -> Vec<String> {
-        let mut string_vec = vec![];
-        for role in roles {
-            string_vec.push(role.to_string());
-        }
+    pub fn roles_vec_to_string_vec(roles: &Vec<Role>) -> Vec<String> {
+        let mut string_vec: Vec<String> = vec![];
+        roles
+            .iter()
+            .for_each(|role| string_vec.push(role.to_string()));
         return string_vec;
     }
 
@@ -95,7 +98,7 @@ impl Role {
         roles: Vec<Role>,
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
-        let roles_as_strings = Role::roles_vec_to_string_array(&roles);
+        let roles_as_strings = Role::roles_vec_to_string_vec(&roles);
         match query!(
             r#"UPDATE roles SET roles = $1 WHERE user_id = $2 AND tournament_id = $3
             RETURNING roles"#,
@@ -107,11 +110,12 @@ impl Role {
         .await
         {
             Ok(record) => {
-                let string_vec = record.roles.unwrap();
-                let mut created_roles: Vec<Role> = vec![];
-                for role_string in string_vec {
-                    created_roles.push(Role::try_from(role_string)?);
-                }
+                let created_roles = record
+                    .roles
+                    .unwrap()
+                    .into_iter()
+                    .map(|string| string.parse().unwrap())
+                    .collect();
                 return Ok(created_roles);
             }
             Err(e) => Err(e)?,
@@ -137,38 +141,25 @@ impl Role {
     }
 }
 
-impl TryFrom<&str> for Role {
-    type Error = OmniError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "Organizer" => Ok(Role::Organizer),
-            "Marshall" => Ok(Role::Marshall),
-            "Judge" => Ok(Role::Judge),
-            _ => Err(OmniError::RolesParsingError),
-        }
-    }
-}
-
-impl TryFrom<String> for Role {
-    type Error = OmniError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "Organizer" => Ok(Role::Organizer),
-            "Marshall" => Ok(Role::Marshall),
-            "Judge" => Ok(Role::Judge),
-            _ => Err(OmniError::RolesParsingError),
-        }
-    }
-}
-
 impl fmt::Display for Role {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Role::Organizer => write!(f, "Organizer"),
             Role::Judge => write!(f, "Judge"),
             Role::Marshall => write!(f, "Marshall"),
+        }
+    }
+}
+
+impl FromStr for Role {
+    type Err = OmniError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Marshall" => Ok(Role::Marshall),
+            "Judge" => Ok(Role::Judge),
+            "Organizer" => Ok(Role::Organizer),
+            _ => Err(OmniError::RolesParsingError),
         }
     }
 }
