@@ -22,10 +22,11 @@ Compile and run the project with `cargo`.
 For deploying via docker, set the following environment variables:
 - `DOCKER_DB_PASSWORD` which will be used as the password for the backend's database access user.
 - `DOCKER_DB_ROOT_PASSWORD` will be used as the password for the database root user.
-- `SECRET` will be used as high entropy data used for generating tokens.
+- `FRONTEND_ORIGIN` will be used as an allowed [origin](https://developer.mozilla.org/en-US/docs/Glossary/Origin) for the purpose of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Must be a valid URL.
 Then, run `docker compose --profile prod`.
 
 ### Optional configuration
+- `SECRET` will be used as high entropy data used for generating tokens.
 - `PORT` will be used as the port the server listens on. The default is 2023.
 
 The following example `.env` file is geared for both scenarios:
@@ -34,6 +35,7 @@ DATABASE_URL=postgres://tau:tau@localhost:5432/tau
 SECRET=CENTRUMRWLYSONOSTARPOZNANCDNSBCD4L52SPM
 DOCKER_DB_ROOT_PASSWORD=superdoopersecretpasswordthatcannotbeleaked
 DOCKER_DB_PASSWORD=wedoingsecurityinhere
+FRONTEND_ORIGIN=https://example.com
 PORT=2019
 ```
 
