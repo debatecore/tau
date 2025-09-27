@@ -11,7 +11,7 @@ You may also venture on your own, adapting the following instructions to your ne
 Set the following environment variables, via `.env` or your shell:
 - `DOCKER_DB_ROOT_PASSWORD` will be used as the password for the database root user.
 - `DATABASE_URL` is used for db connection. During development, this is `postgres://tau:tau@localhost:5432/tau`.
-- `SECRET` will be used as high entropy data used for generating tokens.
+- `FRONTEND_ORIGIN` will be used as an allowed [origin](https://developer.mozilla.org/en-US/docs/Glossary/Origin) for the purpose of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Must be a valid URL.
 
 Start the database with `docker compose --profile dev (up -d/down)`.
 Run the migrations via sqlx-cli with `sqlx run migrate` or by other means.
@@ -22,11 +22,11 @@ Compile and run the project with `cargo`.
 For deploying via docker, set the following environment variables:
 - `DOCKER_DB_PASSWORD` which will be used as the password for the backend's database access user.
 - `DOCKER_DB_ROOT_PASSWORD` will be used as the password for the database root user.
-- `FRONTEND_ORIGIN` will be used as an allowed [origin](https://developer.mozilla.org/en-US/docs/Glossary/Origin) for the purpose of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Must be a valid URL.
+- `FRONTEND_ORIGIN` will be used as an allowed [origin](https://developer.mozilla.org/en-US/docs/Glossary/Origin) for the purpose of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Must be a valid URL (`http://localhost:3000` by default).
 Then, run `docker compose --profile prod`.
 
 ### Optional configuration
-- `SECRET` will be used as high entropy data used for generating tokens.
+- `SECRET` will be used as additional high entropy data used for generating tokens. By default, tau uses system entropy and the current UNIX timestamp.
 - `PORT` will be used as the port the server listens on. The default is 2023.
 
 The following example `.env` file is geared for both scenarios:

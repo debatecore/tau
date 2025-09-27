@@ -99,21 +99,29 @@ pub fn check_secret_env_var() {
 }
 
 pub fn configure_cors() -> CorsLayer {
+    let default_origin = "http://localhost:3000".to_owned();
     let result = std::env::var("FRONTEND_ORIGIN");
 
+    #[cfg(not(debug_assertions))]
     if result.is_err() {
         error!("{}", FRONTEND_ORIGIN_NOT_SET);
         panic!();
     }
 
-    let frontend_origin = result.unwrap();
+    let frontend_origin = result.unwrap_or(default_origin);
     info!(
-        "FRONTEND_ORIGIN set to {}. Requests made from any other origins will be blocked",
+        "FRONTEND_ORIGIN set to {}. Requests made from any other origins will be disallowed at browser level",
         &frontend_origin
     );
     let layer = CorsLayer::new()
         .allow_origin(frontend_origin.parse::<HeaderValue>().unwrap())
-        .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::PATCH])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::DELETE,
+            Method::PATCH,
+            Method::PUT,
+        ])
         .allow_headers([CONTENT_TYPE])
         .allow_credentials(true);
 
