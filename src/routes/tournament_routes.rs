@@ -39,6 +39,7 @@ pub fn route() -> Router<AppState> {
             example=json!(get_tournaments_list_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Unauthorized; user auth not present or invalid"),
         (status=500, description = "Internal server error")
     ),
     tag="tournament"
