@@ -45,3 +45,39 @@ async fn main() {
         }
     };
 }
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use reqwest::{Client, StatusCode};
+    use std::future::IntoFuture;
+
+    #[tokio::test]
+    async fn test_teapot() {
+        setup::read_environmental_variables();
+        setup::check_secret_env_var();
+
+        let state = setup::create_app_state().await;
+        database::perform_migrations(&state.connection_pool).await;
+        guarantee_infrastructure_admin_exists(&state.connection_pool).await;
+
+        let app = Router::new()
+            .merge(routes::routes())
+            .with_state(state)
+            .layer(setup::configure_cors())
+            .layer(CookieManagerLayer::new());
+
+        let addr = setup::get_socket_addr();
+        let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+        let server = axum::serve(listener, app).into_future();
+        tokio::spawn(server);
+
+        let client = Client::new();
+        let res = client
+            .get("http://localhost:2023/brew-coffee")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::IM_A_TEAPOT);
+    }
+}
