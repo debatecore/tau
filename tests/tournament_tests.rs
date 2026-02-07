@@ -5,8 +5,10 @@ use serial_test::serial;
 use tau::setup::{self, get_socket_addr};
 
 use crate::common::{
-    auth_utils::get_session_token_for_infrastructure_admin, create_app, create_listener,
-    prepare_empty_database, tournament_utils::create_tournament,
+    auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
+    create_app, create_listener, prepare_empty_database,
+    tournament_utils::create_tournament,
+    user_utils::create_user,
 };
 mod common;
 
@@ -22,13 +24,13 @@ async fn tournament_creation_should_require_login() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
-
-    // WHEN
     let socket_address = get_socket_addr();
+
     let mut request_body = HashMap::new();
     request_body.insert("full_name", "Wrocławska Liga Debat");
     request_body.insert("shortened_name", "WrLD");
 
+    // WHEN
     let client = Client::new();
     let res = client
         .post(format!("http://{}/tournament", socket_address))
@@ -62,6 +64,32 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
 
     // THEN
     assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+#[serial]
+async fn tournament_creation_should_impossible_for_other_users() {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+    let handle = "normal_user";
+    let password = "cannot_create_tournaments";
+
+    // WHEN
+    let admin_token = get_session_token_for_infrastructure_admin().await.unwrap();
+    create_user(handle, password, &admin_token).await;
+    let user_token = get_session_token_for(handle, password).await.unwrap();
+    let res =
+        create_tournament("illegal tournament", "will not be created", &user_token).await;
+
+    // THEN
+    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]
