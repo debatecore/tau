@@ -1,14 +1,13 @@
-use std::future::IntoFuture;
-
 use axum::{routing::IntoMakeService, Router};
-use reqwest::{Client, StatusCode};
 use sqlx::{Pool, Postgres};
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
+pub mod auth_utils;
+pub mod tournament_utils;
 
 use tau::{
     database, routes,
-    setup::{self, get_socket_addr, AppState},
+    setup::{self, AppState},
     users::infradmin::guarantee_infrastructure_admin_exists,
 };
 

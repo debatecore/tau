@@ -1,5 +1,5 @@
 pub mod database;
-mod omni_error;
+pub mod omni_error;
 pub mod routes;
 pub mod setup;
 mod tournament;
