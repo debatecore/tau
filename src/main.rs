@@ -4,11 +4,10 @@ use tower_cookies::CookieManagerLayer;
 use tracing::error;
 use users::infradmin::guarantee_infrastructure_admin_exists;
 
-mod database;
+use tau::database;
+use tau::setup;
 mod omni_error;
-mod routes;
-mod setup;
-mod test;
+use tau::routes;
 mod tournament;
 mod users;
 
