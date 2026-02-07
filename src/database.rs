@@ -1,6 +1,6 @@
-use sqlx::{migrate, postgres::PgConnectOptions, Pool, Postgres};
+use sqlx::{migrate, postgres::PgConnectOptions, query, Pool, Postgres};
 use std::{env, str::FromStr};
-use tracing::{error, info};
+use tracing::{error, info, span::Record};
 
 pub async fn get_connection_pool() -> Pool<Postgres> {
     info!("Attempting to connect to a database...");
@@ -32,6 +32,25 @@ pub async fn perform_migrations(pool: &Pool<Postgres>) {
         Err(e) => {
             error!("Error performing database migrations: {e}");
             panic!();
+        }
+    }
+}
+
+pub async fn clear_database(pool: &Pool<Postgres>) {
+    let result = query!(
+        "SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public';
+"
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap();
+    for table in result {
+        let table_name = table.table_name.unwrap();
+        let drop = format!("DROP TABLE IF EXISTS {} CASCADE", table_name);
+        if query(&drop).execute(pool).await.is_err() {
+            panic!("Failed to drop table {}", table_name)
         }
     }
 }
