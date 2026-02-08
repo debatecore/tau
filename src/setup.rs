@@ -1,6 +1,8 @@
+use axum::http::{header::CONTENT_TYPE, HeaderValue, Method};
 use sqlx::{Pool, Postgres};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -9,6 +11,7 @@ use crate::database;
 const CRYPTO_SECRET_CORRECT: &str = "Cryptographic SECRET is set.";
 const CRYPTO_SECRET_NOT_SET: &str = "Cryptographic SECRET is not set. This may lead to increased predictability in token generation.";
 const CRYPTO_SECRET_ERROR: &str = "Could not read SECRET. Is it valid UTF-8?";
+const FRONTEND_ORIGIN_NOT_SET: &str = "FRONTEND_ORIGIN is not set. Please provide a valid URL leading to an accepted origin.";
 
 pub fn initialise_logging() {
     let subscriber = FmtSubscriber::builder()
@@ -93,4 +96,34 @@ pub fn check_secret_env_var() {
             }
         },
     }
+}
+
+pub fn configure_cors() -> CorsLayer {
+    let default_origin = "http://localhost:3000".to_owned();
+    let result = std::env::var("FRONTEND_ORIGIN");
+
+    #[cfg(not(debug_assertions))]
+    if result.is_err() {
+        error!("{}", FRONTEND_ORIGIN_NOT_SET);
+        panic!();
+    }
+
+    let frontend_origin = result.unwrap_or(default_origin);
+    info!(
+        "FRONTEND_ORIGIN set to {}. Requests made from any other origins will be disallowed at browser level",
+        &frontend_origin
+    );
+    let layer = CorsLayer::new()
+        .allow_origin(frontend_origin.parse::<HeaderValue>().unwrap())
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::DELETE,
+            Method::PATCH,
+            Method::PUT,
+        ])
+        .allow_headers([CONTENT_TYPE])
+        .allow_credentials(true);
+
+    return layer;
 }
