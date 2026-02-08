@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::roles::Role,
+    tournament::roles::{Role, RoleVecExt},
     users::{permissions::Permission, TournamentUser, User},
 };
 
@@ -80,7 +80,7 @@ async fn create_user_roles(
                 "Error creating roles for user {} within tournament {}: {e}",
                 user_id, tournament_id
             );
-            Err(e)?
+            Err(e)
         }
     }
 }
@@ -110,9 +110,8 @@ async fn get_user_roles(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match tournament_user.roles.is_empty() {
-        true => (),
-        false => return Err(OmniError::UnauthorizedError),
+    if tournament_user.roles.is_empty() {
+        return Err(OmniError::UnauthorizedError);
     }
 
     let requested_user = User::get_by_id(user_id, pool).await?;
@@ -123,7 +122,7 @@ async fn get_user_roles(
                 "Error getting roles of user {} within tournament {}: {e}",
                 user_id, tournament_id
             );
-            Err(e)?
+            Err(e)
         }
     }
 }
@@ -221,7 +220,7 @@ async fn delete_user_roles(
                 "Error deleting roles of user {} within tournament {}: {e}",
                 user_id, tournament_id
             );
-            Err(e)?
+            Err(e)
         }
     }
 }
@@ -248,7 +247,7 @@ fn role_to_string() {
 fn role_vecs_to_string() {
     let roles = Role::VARIANTS.to_vec();
     let roles_count = roles.len();
-    let roles_as_strings = Role::roles_vec_to_string_vec(&roles);
+    let roles_as_strings = roles.to_string_vec();
     for i in 0..roles_count {
         assert!(roles_as_strings[i] == roles[i].to_string())
     }

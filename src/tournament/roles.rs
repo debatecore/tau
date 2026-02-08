@@ -3,7 +3,6 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, Pool, Postgres};
 use strum::VariantArray;
-use tracing::info;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -59,8 +58,7 @@ impl Role {
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
         let _ = tournament_id;
-        let roles_as_strings = Role::roles_vec_to_string_vec(&roles);
-        roles_as_strings.iter().for_each(|r| info!(r));
+        let roles_as_strings = roles.to_string_vec();
         match query!(
             r#"INSERT INTO roles(id, user_id, tournament_id, roles)
             VALUES ($1, $2, $3, $4) RETURNING roles"#,
@@ -84,21 +82,13 @@ impl Role {
         }
     }
 
-    pub fn roles_vec_to_string_vec(roles: &Vec<Role>) -> Vec<String> {
-        let mut string_vec: Vec<String> = vec![];
-        roles
-            .iter()
-            .for_each(|role| string_vec.push(role.to_string()));
-        return string_vec;
-    }
-
     pub async fn patch(
         user_id: Uuid,
         tournament_id: Uuid,
         roles: Vec<Role>,
         pool: &Pool<Postgres>,
     ) -> Result<Vec<Role>, OmniError> {
-        let roles_as_strings = Role::roles_vec_to_string_vec(&roles);
+        let roles_as_strings = roles.to_string_vec();
         match query!(
             r#"UPDATE roles SET roles = $1 WHERE user_id = $2 AND tournament_id = $3
             RETURNING roles"#,
@@ -161,5 +151,15 @@ impl FromStr for Role {
             "Organizer" => Ok(Role::Organizer),
             _ => Err(OmniError::RolesParsingError),
         }
+    }
+}
+
+pub trait RoleVecExt {
+    fn to_string_vec(&self) -> Vec<String>;
+}
+
+impl RoleVecExt for Vec<Role> {
+    fn to_string_vec(&self) -> Vec<String> {
+        self.iter().map(|role| role.to_string()).collect()
     }
 }

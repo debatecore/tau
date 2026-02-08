@@ -50,9 +50,9 @@ pub enum OmniError {
     BadRequestError,
     #[error("{INSUFFICIENT_PERMISSIONS_MESSAGE}")]
     InsufficientPermissionsError,
-    #[error("ROLES_PARSING_MESSAGE")]
+    #[error("{ROLES_PARSING_MESSAGE}")]
     RolesParsingError,
-    #[error("REFERRING_TO_A_NONEXISTENT_RESOURCE")]
+    #[error("{REFERRING_TO_A_NONEXISTENT_RESOURCE}")]
     ReferringToNonexistentResourceError,
 }
 

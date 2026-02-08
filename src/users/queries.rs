@@ -4,10 +4,7 @@ use crate::{
 };
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use rand::rngs::OsRng;
-use serde::Deserialize;
-use serde_json::Error as JsonError;
 use sqlx::{query, Pool, Postgres};
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{

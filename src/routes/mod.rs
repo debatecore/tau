@@ -1,7 +1,6 @@
 use axum::Router;
 
 use crate::setup::AppState;
-use crate::tournament;
 
 mod attendee_routes;
 mod auth;

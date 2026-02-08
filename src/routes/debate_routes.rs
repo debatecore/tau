@@ -6,7 +6,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
