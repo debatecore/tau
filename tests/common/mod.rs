@@ -4,6 +4,7 @@ use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 pub mod auth_utils;
 pub mod roles_utils;
+pub mod teams_utils;
 pub mod tournament_utils;
 pub mod user_utils;
 

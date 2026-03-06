@@ -5,14 +5,14 @@ use tau::setup::{self, get_socket_addr};
 
 use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin, create_app, create_listener,
-    prepare_empty_database,
+    prepare_empty_database, tournament_utils::create_tournament,
 };
 
 mod common;
 
 #[tokio::test]
 #[serial]
-async fn admin_should_be_able_to_assigning_roles() {
+async fn description_of_what_should_happen() {
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
@@ -24,5 +24,8 @@ async fn admin_should_be_able_to_assigning_roles() {
     tokio::spawn(server);
     let socket_address = get_socket_addr();
 
-    let token = get_session_token_for_infrastructure_admin().await;
+    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+
+    // WHEN
+    let tournament_id = create_tournament("Fancy Tournament", "FT", &token).await;
 }
