@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::{room::Room, utils::get_optional_value_to_be_patched};
+use super::room::Room;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -82,8 +82,8 @@ impl Location {
         let patch = Location {
             id: self.id,
             name: new_location.name.unwrap_or(self.name),
-            address: get_optional_value_to_be_patched(self.address, new_location.address),
-            remarks: get_optional_value_to_be_patched(self.remarks, new_location.remarks),
+            address: new_location.address.or(self.address),
+            remarks: new_location.remarks.or(self.remarks),
             tournament_id: new_location.tournament_id.unwrap_or(self.tournament_id),
         };
         match query!(
@@ -124,6 +124,24 @@ impl Location {
                 error!("Error getting rooms of location {}: {e}", self.id);
                 Err(e)?
             }
+        }
+    }
+
+    pub async fn location_with_name_exists_in_tournament(
+        name: &String,
+        tournament_id: &Uuid,
+        connection_pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+        "SELECT EXISTS(SELECT 1 FROM locations WHERE name = $1 AND tournament_id = $2)",
+        name,
+        tournament_id
+    )
+        .fetch_one(connection_pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(e) => Err(e)?,
         }
     }
 }

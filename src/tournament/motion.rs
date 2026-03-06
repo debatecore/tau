@@ -7,8 +7,6 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::utils::get_optional_value_to_be_patched;
-
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Motion {
@@ -78,7 +76,7 @@ impl Motion {
         let motion = Motion {
             id: self.id,
             motion: patch.motion.unwrap_or(self.motion),
-            adinfo: get_optional_value_to_be_patched(patch.adinfo, self.adinfo),
+            adinfo: patch.adinfo.or(self.adinfo),
         };
         match query!(
             "UPDATE motions SET motion = $1, adinfo = $2 WHERE id = $3",

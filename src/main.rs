@@ -1,14 +1,13 @@
 use axum::Router;
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::{Any, CorsLayer};
 use tracing::error;
 use users::infradmin::guarantee_infrastructure_admin_exists;
 
-mod database;
+use tau::database;
+use tau::setup;
 mod omni_error;
-mod routes;
-mod setup;
+use tau::routes;
 mod tournament;
 mod users;
 
@@ -25,7 +24,7 @@ async fn main() {
     let app = Router::new()
         .merge(routes::routes())
         .with_state(state)
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any))
+        .layer(setup::configure_cors())
         .layer(CookieManagerLayer::new());
 
     let addr = setup::get_socket_addr();

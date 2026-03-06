@@ -117,7 +117,7 @@ async fn get_teams(
     }
 
     let tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match tournament.get_debates(pool).await
+    match tournament.get_teams(pool).await
     {
         Ok(teams) => Ok(Json(teams).into_response()),
         Err(e) => {
