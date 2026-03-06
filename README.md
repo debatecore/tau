@@ -14,7 +14,7 @@ Set the following environment variables, via `.env` or your shell:
 - `FRONTEND_ORIGIN` will be used as an allowed [origin](https://developer.mozilla.org/en-US/docs/Glossary/Origin) for the purpose of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS). Must be a valid URL.
 
 Start the database with `docker compose --profile dev (up -d/down)`.
-Run the migrations via sqlx-cli with `sqlx run migrate` or by other means.
+Run the migrations via sqlx-cli with `sqlx migrate run` or by other means.
 
 Compile and run the project with `cargo`.
 
