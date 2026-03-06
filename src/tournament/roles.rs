@@ -72,10 +72,10 @@ impl Role {
         {
             Ok(record) => {
                 let string_vec = record.roles.unwrap();
-                let mut created_roles: Vec<Role> = vec![];
-                for role_string in string_vec {
-                    created_roles.push(serde_json::from_str(&role_string).unwrap());
-                }
+                let created_roles: Vec<Role> = string_vec
+                    .into_iter()
+                    .map(|role| Role::from_str(&role).unwrap())
+                    .collect();
                 return Ok(created_roles);
             }
             Err(e) => Err(e)?,
