@@ -16,6 +16,7 @@ use crate::{
     tournament::{
         affiliation::{self, Affiliation, AffiliationPatch},
         roles::Role,
+        team::Team,
         Tournament,
     },
     users::{permissions::Permission, TournamentUser, User},
@@ -24,11 +25,11 @@ use crate::{
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/user/:user_id/tournament/:tournament_id/affiliation",
+            "/user/:user_id/affiliations",
             get(get_affiliations).post(create_affiliation),
         )
         .route(
-            "/user/:user_id/tournament/:tournament_id/affiliation/:id",
+            "/user/:user_id/affiliations/:id",
             get(get_affiliation_by_id)
                 .patch(patch_affiliation_by_id)
                 .delete(delete_affiliation_by_id),
@@ -59,14 +60,16 @@ async fn create_affiliation(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((user_id, tournament_id)): Path<(Uuid, Uuid)>,
+    Path(user_id): Path<Uuid>,
     Json(affiliation): Json<Affiliation>,
 ) -> Result<Response, OmniError> {
-    if !params_and_affiliation_fields_match(&affiliation, &user_id, &tournament_id) {
+    if !params_and_affiliation_fields_match(&affiliation, &user_id) {
         return Err(OmniError::BadRequestError);
     }
 
     let pool = &state.connection_pool;
+    let team = Team::get_by_id(affiliation.team_id, pool).await?;
+    let tournament_id = team.tournament_id;
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
@@ -88,12 +91,8 @@ async fn create_affiliation(
 fn params_and_affiliation_fields_match(
     affiliation: &Affiliation,
     user_id: &Uuid,
-    tournament_id: &Uuid,
 ) -> bool {
     if !(&affiliation.judge_user_id == user_id) {
-        return false;
-    }
-    if !(&affiliation.tournament_id == tournament_id) {
         return false;
     }
     return true;

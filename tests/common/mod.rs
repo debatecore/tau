@@ -2,6 +2,7 @@ use axum::{routing::IntoMakeService, Router};
 use sqlx::{Pool, Postgres};
 use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
+pub mod affiliations_utils;
 pub mod auth_utils;
 pub mod roles_utils;
 pub mod teams_utils;
