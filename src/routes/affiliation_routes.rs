@@ -14,7 +14,7 @@ use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournament::{
-        affiliation::{self, Affiliation, AffiliationPatch},
+        affiliation::{Affiliation, AffiliationPatch},
         roles::Role,
         team::Team,
         Tournament,
@@ -39,22 +39,15 @@ pub fn route() -> Router<AppState> {
 /// Create a new affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(post, request_body=Affiliation, path = "/user/{user_id}/tournament/{tournament_id}/affiliation",
-    responses
-    (
-        (
-            status=200, description = "Affiliation created successfully",
-            body=Affiliation,
-        ),
+#[utoipa::path(post, request_body=Affiliation, path = "/user/{user_id}/affiliations",
+    responses(
+        (status=200, description = "Ok", body=Affiliation),
         (status=400, description = "Bad request"),
-        (status=401, description = "Authentication error"),
-        (
-            status=403,
-            description = "The user is not permitted to modify affiliations within this tournament"
-        ),
-        (status=404, description = "Tournament or affiliation not found"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="affiliations"
 )]
 async fn create_affiliation(
     State(state): State<AppState>,
@@ -78,7 +71,7 @@ async fn create_affiliation(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    affiliation.validate(pool).await?;
+    affiliation.validate(tournament_id, pool).await?;
     match Affiliation::post(affiliation, pool).await {
         Ok(affiliation) => Ok(Json(affiliation).into_response()),
         Err(e) => {
@@ -98,19 +91,16 @@ fn params_and_affiliation_fields_match(
     return true;
 }
 
-#[utoipa::path(get, path = "/user/{user_id}/tournament/{tournament_id}/affiliation",
+#[utoipa::path(get, path = "/user/{user_id}/affiliations",
     responses
     (
         (status=200, description = "Ok", body=Vec<Affiliation>),
         (status=400, description = "Bad request"),
-        (status=401, description = "Authentication error"),
-        (
-            status=403,
-            description = "The user is not permitted to read affiliations within this tournament"
-        ),
-        (status=404, description = "Tournament or affiliation not found"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="affiliations"
 )]
 /// Get a list of all user affiliations.
 ///
@@ -139,20 +129,13 @@ async fn get_affiliations(
     }
 
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match query_as!(
-        Affiliation,
-        "SELECT * FROM judge_team_assignments WHERE tournament_id = $1",
-        tournament_id
-    )
-    .fetch_all(&state.connection_pool)
-    .await
+    match query_as!(Affiliation, "SELECT * FROM judge_team_assignments")
+        .fetch_all(&state.connection_pool)
+        .await
     {
         Ok(affiliations) => Ok(Json(affiliations).into_response()),
         Err(e) => {
-            error!(
-                "Error getting affiliations of user {} within tournament {}: {e}",
-                user_id, tournament_id
-            );
+            error!("Error getting affiliations of user {}: {e}", user_id);
             Err(e)?
         }
     }
@@ -161,18 +144,15 @@ async fn get_affiliations(
 /// Get details of an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(get, path = "/user/{user_id}/tournament/{tournament_id}/affiliation/{id}",
+#[utoipa::path(get, path = "/user/{user_id}/affiliations/{id}",
     responses(
         (status=200, description = "Ok", body=Affiliation),
         (status=400, description = "Bad request"),
-        (status=401, description = "Authentication error"),
-        (
-            status=403,
-            description = "The user is not permitted to read affiliations within this tournament"
-        ),
-        (status=404, description = "Tournament or affiliation not found"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
         (status=500, description = "Internal server error"),
     ),
+    tag="affiliations"
 )]
 async fn get_affiliation_by_id(
     State(state): State<AppState>,
@@ -201,33 +181,30 @@ async fn get_affiliation_by_id(
 /// Patch an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/user/{user_id}/tournament/{tournament_id}/affiliation/{id}",
+#[utoipa::path(patch, path = "/user/{user_id}/affiliations/{id}",
     request_body=Affiliation,
     responses(
-        (status=200, description = "Affiliation patched successfully", body=Affiliation),
+        (status=200, description = "Ok", body=Affiliation),
         (status=400, description = "Bad request"),
-        (status=401, description = "Authentication error"),
-        (
-            status=403,
-            description = "The user is not permitted to modify affiliations within this tournament"
-        ),
-        (status=404, description = "Tournament or affiliation not found"),
-        (
-            status=409,
-            description = "This affiliation already exists",
-        ),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
         (status=500, description = "Internal server error"),
-    )
+    ),
+    tag="affiliations"
 )]
 #[axum::debug_handler]
 async fn patch_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((_user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((_user_id, id)): Path<(Uuid, Uuid)>,
     Json(new_affiliation): Json<AffiliationPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
+
+    let affiliation = Affiliation::get_by_id(id, pool).await?;
+    let team = Team::get_by_id(affiliation.team_id, pool).await?;
+    let tournament_id = Tournament::get_by_id(team.tournament_id, pool).await?.id;
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
@@ -243,12 +220,9 @@ async fn patch_affiliation_by_id(
         judge_user_id: new_affiliation
             .judge_user_id
             .unwrap_or(old_affiliation.judge_user_id),
-        tournament_id: new_affiliation
-            .tournament_id
-            .unwrap_or(old_affiliation.tournament_id),
         team_id: new_affiliation.team_id.unwrap_or(old_affiliation.team_id),
     };
-    new_affiliation.validate(pool).await?;
+    new_affiliation.validate(tournament_id, pool).await?;
 
     match old_affiliation.patch(new_affiliation, pool).await {
         Ok(affiliation) => Ok(Json(affiliation).into_response()),
@@ -259,18 +233,15 @@ async fn patch_affiliation_by_id(
 /// Delete an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/user/{user_id}/tournament/{tournament_id}/affiliation/{id}",
-    responses
-    (
-        (status=204, description = "Affiliation deleted successfully"),
+#[utoipa::path(delete, path = "/user/{user_id}/affiliations/{id}",
+    responses(
+        (status=204, description = "No content"),
         (status=400, description = "Bad request"),
-        (status=401, description = "Authentication error"),
-        (
-            status=403,
-            description = "The user is not permitted to modify affiliations within this tournament"
-        ),
-        (status=404, description = "Tournament or affiliation not found"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
+        (status=500, description = "Internal server error"),
     ),
+    tag="affiliations"
 )]
 async fn delete_affiliation_by_id(
     State(state): State<AppState>,

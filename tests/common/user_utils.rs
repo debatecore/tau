@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use reqwest::{Client, Response};
-use tau::{setup::get_socket_addr, tournament::roles::Role};
+use reqwest::{Client, Response, StatusCode};
+use tau::{omni_error::OmniError, setup::get_socket_addr, tournament::roles::Role};
+use uuid::Uuid;
 
 use crate::common::{
     auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
@@ -40,32 +41,48 @@ pub async fn get_judge_token(tournament_id: &str) -> String {
 }
 
 pub async fn get_token_for_user_with_no_roles() -> String {
-    let handle = "organizer";
+    let handle = Uuid::now_v7().to_string();
     let password = "password";
 
     let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = get_id_of_a_new_user(handle, password).await;
-    get_session_token_for(handle, password).await.unwrap()
+    let user_id = get_id_of_a_new_user(&handle, password).await;
+    get_session_token_for(&handle, password).await.unwrap()
 }
 
 pub async fn get_token_for_user_with_roles(
     roles: Vec<Role>,
     tournament_id: &str,
 ) -> String {
-    let handle = "organizer";
+    let handle = Uuid::now_v7().to_string();
     let password = "password";
 
     let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = get_id_of_a_new_user(handle, password).await;
+    let user_id = get_id_of_a_new_user(&handle, password).await;
     create_roles(&user_id, tournament_id, roles, &token).await;
-    get_session_token_for(handle, password).await.unwrap()
+    get_session_token_for(&handle, password).await.unwrap()
 }
 
 pub async fn get_id_of_a_new_user(handle: &str, password: &str) -> String {
     let token = get_session_token_for_infrastructure_admin().await;
     let response = create_user(handle, password, &token).await;
+    match response.status() == StatusCode::OK {
+        true => (),
+        false => {
+            println!("{:?}", response.status());
+            println!("{:?}", response.text().await);
+            panic!();
+        }
+    }
     response.json::<serde_json::Value>().await.unwrap()["id"]
         .as_str()
         .unwrap()
         .to_owned()
+}
+
+pub async fn get_id_of_a_new_judge(tournament_id: &str) -> Result<String, OmniError> {
+    let token = get_session_token_for_infrastructure_admin().await;
+    let judge_id =
+        get_id_of_a_new_user(&Uuid::now_v7().to_string(), "some password").await;
+    create_roles(&judge_id, &tournament_id, vec![Role::Judge], &token).await;
+    Ok(judge_id)
 }
