@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response};
-use tau::setup::get_socket_addr;
+use tau::{setup::get_socket_addr, tournament::roles::Role};
 
-use crate::common::auth_utils::{
-    get_session_token_for, get_session_token_for_infrastructure_admin,
+use crate::common::{
+    auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
+    roles_utils::create_roles,
 };
 
 pub async fn create_user(handle: &str, password: &str, token: &str) -> Response {
@@ -26,11 +27,45 @@ pub async fn create_user(handle: &str, password: &str, token: &str) -> Response 
         .unwrap()
 }
 
-pub async fn get_organizer_token() -> String {
+pub async fn get_organizer_token(tournament_id: &str) -> String {
+    get_token_for_user_with_roles(vec![Role::Organizer], tournament_id).await
+}
+
+pub async fn get_marshall_token(tournament_id: &str) -> String {
+    get_token_for_user_with_roles(vec![Role::Marshall], tournament_id).await
+}
+
+pub async fn get_judge_token(tournament_id: &str) -> String {
+    get_token_for_user_with_roles(vec![Role::Judge], tournament_id).await
+}
+
+pub async fn get_token_for_user_with_no_roles() -> String {
     let handle = "organizer";
     let password = "password";
 
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
-    create_user(handle, password, &token).await;
+    let token = get_session_token_for_infrastructure_admin().await;
+    let user_id = get_id_of_a_new_user(handle, password).await;
     get_session_token_for(handle, password).await.unwrap()
+}
+
+pub async fn get_token_for_user_with_roles(
+    roles: Vec<Role>,
+    tournament_id: &str,
+) -> String {
+    let handle = "organizer";
+    let password = "password";
+
+    let token = get_session_token_for_infrastructure_admin().await;
+    let user_id = get_id_of_a_new_user(handle, password).await;
+    create_roles(&user_id, tournament_id, roles, &token).await;
+    get_session_token_for(handle, password).await.unwrap()
+}
+
+pub async fn get_id_of_a_new_user(handle: &str, password: &str) -> String {
+    let token = get_session_token_for_infrastructure_admin().await;
+    let response = create_user(handle, password, &token).await;
+    response.json::<serde_json::Value>().await.unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
 }

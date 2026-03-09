@@ -24,7 +24,7 @@ async fn description_of_what_should_happen() {
     tokio::spawn(server);
     let socket_address = get_socket_addr();
 
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
 
     // WHEN
     let tournament_id = create_tournament("Fancy Tournament", "FT", &token).await;

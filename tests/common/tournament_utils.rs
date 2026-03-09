@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use reqwest::{Client, Response};
 use tau::setup::get_socket_addr;
 
+use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
+
 pub async fn create_tournament(
     full_name: &str,
     shortened_name: &str,
@@ -23,4 +25,14 @@ pub async fn create_tournament(
         .send()
         .await
         .unwrap()
+}
+
+pub async fn get_id_of_a_new_tournament(full_name: &str) -> String {
+    let token = get_session_token_for_infrastructure_admin().await;
+    let response =
+        create_tournament(full_name, &full_name[0..full_name.len() / 5], &token).await;
+    response.json::<serde_json::Value>().await.unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
 }

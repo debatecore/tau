@@ -31,7 +31,7 @@ async fn admin_should_be_able_to_assign_roles() {
     tokio::spawn(server);
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let user_id = create_user("some marshall", "some password", &token)
         .await
         .json::<serde_json::Value>()
@@ -82,7 +82,7 @@ async fn organizers_should_be_able_to_assign_roles() {
     let organizer_password = "some password";
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let organizer_id = create_user(organizer_handle, organizer_password, &token)
         .await
         .json::<serde_json::Value>()
@@ -141,7 +141,7 @@ async fn granting_duplicate_roles_should_cause_conflicts() {
     tokio::spawn(server);
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let user_id = create_user("some marshall", "some other password", &token)
         .await
         .json::<serde_json::Value>()
@@ -185,7 +185,7 @@ async fn roles_should_be_visible_to_other_tournament_users() {
     let alice_password = "some password";
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let alice_id = create_user(alice_handle, alice_password, &token)
         .await
         .json::<serde_json::Value>()
@@ -243,7 +243,7 @@ async fn roles_should_not_be_visible_to_other_users_from_outside_tournament() {
     let mallory_password = "some password";
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let alice_id = create_user("a nice", "set of credentials", &token)
         .await
         .json::<serde_json::Value>()
@@ -286,7 +286,7 @@ async fn roles_should_be_modifiable() {
     tokio::spawn(server);
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let user_id = create_user("some marshall", "some password", &token)
         .await
         .json::<serde_json::Value>()
@@ -336,7 +336,7 @@ async fn roles_should_be_deletable() {
     tokio::spawn(server);
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let user_id = create_user("some marshall", "some password", &token)
         .await
         .json::<serde_json::Value>()

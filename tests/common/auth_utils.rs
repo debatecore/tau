@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use reqwest::{Client, Response, StatusCode};
 use tau::{omni_error::OmniError, setup::get_socket_addr};
 
-pub async fn get_session_token_for_infrastructure_admin() -> Result<String, OmniError> {
-    get_session_token_for("admin", "admin").await
+pub async fn get_session_token_for_infrastructure_admin() -> String {
+    get_session_token_for("admin", "admin").await.unwrap()
 }
 
 pub async fn get_session_token_for(

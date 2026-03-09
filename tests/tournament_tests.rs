@@ -59,7 +59,7 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
     tokio::spawn(server);
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let res = create_tournament("Wrocławska Liga Debat", "WrLD", &token).await;
 
     // THEN
@@ -82,7 +82,7 @@ async fn tournament_creation_should_impossible_for_other_users() {
     let password = "cannot_create_tournaments";
 
     // WHEN
-    let admin_token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let admin_token = get_session_token_for_infrastructure_admin().await;
     create_user(handle, password, &admin_token).await;
     let user_token = get_session_token_for(handle, password).await.unwrap();
     let res =
@@ -109,7 +109,7 @@ async fn tournament_names_should_not_allow_duplicates() {
     let shortened_name = "WrLD";
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await.unwrap();
+    let token = get_session_token_for_infrastructure_admin().await;
     let first_response = create_tournament(full_name, shortened_name, &token).await;
     let second_response = create_tournament(full_name, shortened_name, &token).await;
 
