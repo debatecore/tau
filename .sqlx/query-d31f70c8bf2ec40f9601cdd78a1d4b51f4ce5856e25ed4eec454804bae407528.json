@@ -17,11 +17,6 @@
         "ordinal": 2,
         "name": "team_id",
         "type_info": "Uuid"
-      },
-      {
-        "ordinal": 3,
-        "name": "tournament_id",
-        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -30,7 +25,6 @@
       ]
     },
     "nullable": [
-      false,
       false,
       false,
       false
