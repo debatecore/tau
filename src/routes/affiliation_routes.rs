@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
 use sqlx::query_as;
@@ -24,9 +24,10 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new()
+        .route("/user/:user_id/affiliations", post(create_affiliation))
         .route(
-            "/user/:user_id/affiliations",
-            get(get_affiliations).post(create_affiliation),
+            "/user/:user_id/affiliations/tournament/:tournament_id",
+            get(get_affiliations),
         )
         .route(
             "/user/:user_id/affiliations/:id",
@@ -91,7 +92,7 @@ fn params_and_affiliation_fields_match(
     return true;
 }
 
-#[utoipa::path(get, path = "/user/{user_id}/affiliations",
+#[utoipa::path(get, path = "/user/{user_id}/affiliations/tournament/{tournament_id}",
     responses
     (
         (status=200, description = "Ok", body=Vec<Affiliation>),
@@ -102,7 +103,7 @@ fn params_and_affiliation_fields_match(
     ),
     tag="affiliations"
 )]
-/// Get a list of all user affiliations.
+/// Get a list of all user affiliations within a given tournament.
 ///
 /// Available only to Organizers and the infrastructure admin.
 async fn get_affiliations(
@@ -158,9 +159,11 @@ async fn get_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((_user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((_user_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
+    let affiliation = Affiliation::get_by_id(id, pool).await?;
+    let tournament_id = affiliation.infer_tournament_id(pool).await?;
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
@@ -169,13 +172,7 @@ async fn get_affiliation_by_id(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Affiliation::get_by_id(id, pool).await {
-        Ok(affiliation) => Ok(Json(affiliation).into_response()),
-        Err(e) => {
-            error!("Error getting a affiliation with id {id}: {e}");
-            Err(e)?
-        }
-    }
+    Ok(Json(affiliation).into_response())
 }
 
 /// Patch an existing affiliation
@@ -247,9 +244,12 @@ async fn delete_affiliation_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((_user_id, tournament_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((_user_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
+
+    let affiliation = Affiliation::get_by_id(id, pool).await?;
+    let tournament_id = affiliation.infer_tournament_id(pool).await?;
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
@@ -258,7 +258,6 @@ async fn delete_affiliation_by_id(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    let affiliation = Affiliation::get_by_id(id, pool).await?;
     match affiliation.delete(&state.connection_pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {

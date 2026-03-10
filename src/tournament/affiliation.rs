@@ -3,7 +3,7 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, users::User};
+use crate::{omni_error::OmniError, tournament::team::Team, users::User};
 
 use super::{roles::Role, Tournament};
 
@@ -62,7 +62,10 @@ impl Affiliation {
         .await
         {
             Ok(affiliation) => Ok(affiliation),
-            Err(e) => Err(e)?,
+            Err(e) => match e {
+                sqlx::Error::RowNotFound => Err(OmniError::ResourceNotFoundError),
+                _ => Err(OmniError::InternalServerError),
+            },
         }
     }
 
@@ -120,6 +123,14 @@ impl Affiliation {
         }
 
         Ok(())
+    }
+
+    pub async fn infer_tournament_id(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Uuid, OmniError> {
+        let team = Team::get_by_id(self.team_id, pool).await?;
+        Ok(team.tournament_id)
     }
 
     async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {

@@ -65,14 +65,6 @@ pub async fn get_token_for_user_with_roles(
 pub async fn get_id_of_a_new_user(handle: &str, password: &str) -> String {
     let token = get_session_token_for_infrastructure_admin().await;
     let response = create_user(handle, password, &token).await;
-    match response.status() == StatusCode::OK {
-        true => (),
-        false => {
-            println!("{:?}", response.status());
-            println!("{:?}", response.text().await);
-            panic!();
-        }
-    }
     response.json::<serde_json::Value>().await.unwrap()["id"]
         .as_str()
         .unwrap()
