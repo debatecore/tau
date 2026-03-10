@@ -132,7 +132,7 @@ impl User {
         }
     }
 
-    fn generate_password_hash(password: &str) -> Result<String, OmniError> {
+    pub fn generate_password_hash(password: &str) -> Result<String, OmniError> {
         let hash = {
             let argon = Argon2::default();
             let salt = SaltString::generate(&mut OsRng);
