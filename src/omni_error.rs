@@ -131,7 +131,6 @@ impl OmniError {
                 }
                 _ => (ISE, "SQLx Error").into_response(),
             },
-
             E::PhotoUrlError(_)
             | E::SerdeJsonError(_)
             | E::Base64DecodeError(_)
@@ -154,7 +153,7 @@ impl OmniError {
             }
             E::BadRequestError => (StatusCode::BAD_REQUEST, self.clerr()).into_response(),
             E::InsufficientPermissionsError => {
-                (StatusCode::FORBIDDEN, self.clerr()).into_response()
+                (StatusCode::UNAUTHORIZED, self.clerr()).into_response()
             }
             E::ReferringToNonexistentResourceError => {
                 (StatusCode::NOT_FOUND, self.clerr()).into_response()

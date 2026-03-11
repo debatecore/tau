@@ -5,13 +5,10 @@ use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-use super::utils::get_optional_value_to_be_patched;
-
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 /// A debate must be held in a particular place (or Room).
 /// A room must be assigned to a preexisting Location.
-/// While a debate
 pub struct Room {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
@@ -44,7 +41,7 @@ impl Room {
             room.name,
             room.remarks,
             room.location_id,
-            room.is_occupied
+            room.is_occupied,
         )
         .fetch_one(connection_pool)
         .await
@@ -75,17 +72,19 @@ impl Room {
         let patch = Room {
             id: self.id,
             name: new_room.name.unwrap_or(self.name),
-            remarks: get_optional_value_to_be_patched(self.remarks, new_room.remarks),
+            remarks: new_room.remarks.or(self.remarks),
             location_id: new_room.location_id.unwrap_or(self.location_id),
             is_occupied: new_room.is_occupied.unwrap_or(self.is_occupied),
         };
         match query!(
             r#"UPDATE rooms set name = $1,
-            remarks = $2, location_id = $3
-            WHERE id = $4"#,
+            remarks = $2, location_id = $3,
+            is_occupied = $4
+            WHERE id = $5"#,
             patch.name,
             patch.remarks,
             patch.location_id,
+            patch.is_occupied,
             self.id,
         )
         .execute(connection_pool)
@@ -102,6 +101,24 @@ impl Room {
             .await
         {
             Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn room_with_name_exists_in_location(
+        name: &String,
+        location_id: &Uuid,
+        connection_pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!(
+            "SELECT EXISTS(SELECT 1 FROM rooms WHERE name = $1 AND location_id = $2)",
+            name,
+            location_id
+        )
+        .fetch_one(connection_pool)
+        .await
+        {
+            Ok(result) => Ok(result.exists.unwrap()),
             Err(e) => Err(e)?,
         }
     }

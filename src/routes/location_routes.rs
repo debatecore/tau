@@ -5,7 +5,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::{query, query_as, Error, Pool, Postgres};
+use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -63,7 +63,7 @@ async fn create_location(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    if location_with_name_exists_in_tournament(&json.name, &tournament_id, pool).await? {
+    if Location::location_with_name_exists_in_tournament(&json.name, &tournament_id, pool).await? {
         return Err(OmniError::ResourceAlreadyExistsError);
     }
 
@@ -217,7 +217,7 @@ async fn patch_location_by_id(
     
     let name = new_location.name.clone();
     if name.is_some() {
-        if location_with_name_exists_in_tournament(&name.unwrap(), &location.tournament_id, pool).await? {
+        if Location::location_with_name_exists_in_tournament(&name.unwrap(), &location.tournament_id, pool).await? {
             return Err(OmniError::ResourceAlreadyExistsError);
         }
     }
@@ -269,24 +269,6 @@ async fn delete_location_by_id(
             error!("Error deleting a location with id {id}: {e}");
             Err(e)?
         }
-    }
-}
-
-async fn location_with_name_exists_in_tournament(
-    name: &String,
-    tournament_id: &Uuid,
-    connection_pool: &Pool<Postgres>,
-) -> Result<bool, Error> {
-    match query!(
-        "SELECT EXISTS(SELECT 1 FROM locations WHERE name = $1 AND tournament_id = $2)",
-        name,
-        tournament_id
-    )
-    .fetch_one(connection_pool)
-    .await
-    {
-        Ok(result) => Ok(result.exists.unwrap()),
-        Err(e) => Err(e),
     }
 }
 
