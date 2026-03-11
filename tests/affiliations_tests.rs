@@ -39,7 +39,7 @@ async fn organizers_should_be_able_to_create_affiliations() -> Result<(), OmniEr
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let tournament_id = get_id_of_a_new_tournament("test").await;
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
     let token = get_organizer_token(&tournament_id).await;
     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
     let team_id = get_id_of_a_new_team(&tournament_id, "aff").await;
@@ -75,7 +75,7 @@ async fn organizers_should_be_able_to_get_affiliations() -> Result<(), OmniError
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let tournament_id = get_id_of_a_new_tournament("test").await;
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
     let token = get_organizer_token(&tournament_id).await;
     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
     let team_id = get_id_of_a_new_team(&tournament_id, "aff").await;
@@ -104,7 +104,7 @@ async fn organizers_should_be_able_to_list_affiliations() -> Result<(), OmniErro
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let tournament_id = get_id_of_a_new_tournament("test").await;
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
     let token = get_organizer_token(&tournament_id).await;
     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
     let team_id = get_id_of_a_new_team(&tournament_id, "aff").await;
@@ -138,7 +138,7 @@ async fn organizers_should_be_able_to_patch_affiliations() -> Result<(), OmniErr
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let tournament_id = get_id_of_a_new_tournament("test").await;
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
     let token = get_organizer_token(&tournament_id).await;
     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
 
@@ -171,7 +171,7 @@ async fn organizers_should_be_able_to_delete_affiliations() -> Result<(), OmniEr
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let tournament_id = get_id_of_a_new_tournament("some").await;
+    let tournament_id = get_id_of_a_new_tournament("some").await?;
     let token = get_organizer_token(&tournament_id).await;
     let team_id = get_id_of_a_new_team(&tournament_id, "team").await;
     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
@@ -201,7 +201,7 @@ async fn affiliations_should_not_be_visible_to_judges_and_marshalls(
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let tournament_id = get_id_of_a_new_tournament("some").await;
+    let tournament_id = get_id_of_a_new_tournament("some").await?;
     let team_id = get_id_of_a_new_team(&tournament_id, "team").await;
     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
     let affiliation_id = get_id_of_a_new_affiliation(&judge_id, &team_id).await?;
