@@ -14,10 +14,9 @@ pub(crate) mod attendee;
 pub(crate) mod debate;
 pub(crate) mod location;
 pub(crate) mod motion;
-pub(crate) mod roles;
+pub mod roles;
 pub(crate) mod room;
 pub(crate) mod team;
-pub(crate) mod utils;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
