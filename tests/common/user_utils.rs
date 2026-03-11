@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use reqwest::{Client, Response, StatusCode};
+use reqwest::{Client, Response};
 use tau::{omni_error::OmniError, setup::get_socket_addr, tournament::roles::Role};
 use uuid::Uuid;
 

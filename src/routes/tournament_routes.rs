@@ -155,7 +155,7 @@ async fn get_tournament_by_id(
 
 /// Patch an existing tournament
 ///
-/// Requires either the Organizer or Admin role.
+/// Available to the tournament Organizers and the infrastructure admin.
 #[utoipa::path(patch, path = "/tournament/{id}",
     request_body=TournamentPatch,
     responses(
@@ -205,7 +205,7 @@ async fn patch_tournament_by_id(
 
 /// Delete an existing tournament.
 ///
-/// Available only to the tournament Organizers.
+/// Available only to the tournament Organizers and the infrastructure admin.
 /// This operation is only allowed when there are no resources
 /// referencing this tournament.
 #[utoipa::path(delete, path = "/tournament/{id}",
@@ -252,9 +252,18 @@ async fn delete_tournament_by_id(
 fn get_tournament_example_with_id() -> String {
     r#"
     {
-        "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
-        "full_name": "Kórnik Debate League",
-        "shortened_name": "KDL"
+    "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
+    "full_name": "Poznań Debate Night",
+    "shortened_name": "PDN",
+    "speech_time": 300,
+    "end_protected_time": 30,
+    "start_protected_time": 0,
+    "ad_vocem_time": 60,
+    "debate_time_slot": 120,
+    "debate_preparation_time": 15,
+    "beep_on_speech_end": true,
+    "beep_on_protected_time": true,
+    "visualize_protected_time": false
     }
     "#
     .to_owned()
@@ -263,16 +272,34 @@ fn get_tournament_example_with_id() -> String {
 fn get_tournaments_list_example() -> String {
     r#"
         [
-        {
-        "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
-        "full_name": "Kórnik Debate League",
-        "shortened_name": "KDL"
-        },
-        {
-        "id": "01941265-507e-7987-b1ed-5c0f63ff6c6d",
-        "full_name": "Poznań Debate Night",
-        "shortened_name": "PND"
-        }
+    {
+    "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
+    "full_name": "Poznań Debate Night",
+    "shortened_name": "PDN",
+    "speech_time": 300,
+    "end_protected_time": 30,
+    "start_protected_time": 0,
+    "ad_vocem_time": 60,
+    "debate_time_slot": 120,
+    "debate_preparation_time": 15,
+    "beep_on_speech_end": true,
+    "beep_on_protected_time": true,
+    "visualize_protected_time": false
+    },
+    {
+    "id": "019cddac-ab1e-72e0-8486-6e6a93930628",
+    "full_name": "Musketeers of Words 2023",
+    "shortened_name": "MoW 2023",
+    "speech_time": 240,
+    "end_protected_time": 30,
+    "start_protected_time": 30,
+    "ad_vocem_time": 60,
+    "debate_time_slot": 150,
+    "debate_preparation_time": 15,
+    "beep_on_speech_end": true,
+    "beep_on_protected_time": true,
+    "visualize_protected_time": true
+    }
         ]
     "#
     .to_owned()

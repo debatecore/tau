@@ -2,13 +2,13 @@ use std::{collections::HashMap, future::IntoFuture};
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
+use strum::VariantArray;
 use tau::setup::{self, get_socket_addr};
 
 use crate::common::{
-    auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
-    create_app, create_listener, prepare_empty_database,
-    tournament_utils::create_tournament,
-    user_utils::create_user,
+    auth_utils::get_session_token_for_infrastructure_admin, create_app, create_listener,
+    prepare_empty_database, tournament_utils::create_tournament,
+    user_utils::get_token_for_user_with_no_roles,
 };
 mod common;
 
@@ -78,18 +78,14 @@ async fn tournament_creation_should_impossible_for_other_users() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
-    let handle = "normal_user";
-    let password = "cannot_create_tournaments";
+    let user_token = get_token_for_user_with_no_roles().await;
 
     // WHEN
-    let admin_token = get_session_token_for_infrastructure_admin().await;
-    create_user(handle, password, &admin_token).await;
-    let user_token = get_session_token_for(handle, password).await.unwrap();
-    let res =
+    let response =
         create_tournament("illegal tournament", "will not be created", &user_token).await;
 
     // THEN
-    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]
@@ -107,9 +103,9 @@ async fn tournament_names_should_not_allow_duplicates() {
 
     let full_name = "Wrocławska Liga Debat";
     let shortened_name = "WrLD";
+    let token = get_session_token_for_infrastructure_admin().await;
 
     // WHEN
-    let token = get_session_token_for_infrastructure_admin().await;
     let first_response = create_tournament(full_name, shortened_name, &token).await;
     let second_response = create_tournament(full_name, shortened_name, &token).await;
 
