@@ -1,6 +1,6 @@
 use sqlx::{migrate, postgres::PgConnectOptions, query, Pool, Postgres};
 use std::{env, str::FromStr};
-use tracing::{error, info, span::Record};
+use tracing::{error, info};
 
 pub async fn get_connection_pool() -> Pool<Postgres> {
     info!("Attempting to connect to a database...");

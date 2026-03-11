@@ -5,8 +5,6 @@ use axum::{
     routing::post,
     Json, Router,
 };
-use serde_json::Error;
-use strum::VariantArray;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -14,7 +12,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::roles::{Role, RoleVecExt},
+    tournament::roles::Role,
     users::{permissions::Permission, TournamentUser, User},
 };
 
@@ -232,38 +230,46 @@ fn get_roles_example() -> String {
     .to_owned()
 }
 
-#[test]
-fn role_to_string() {
-    let judge = Role::Judge;
-    let marshall = Role::Marshall;
-    let organizer = Role::Organizer;
+#[cfg(test)]
+mod tests {
+    use serde_json::Error;
+    use strum::VariantArray;
 
-    assert!(serde_json::to_string(&judge).unwrap() == "\"Judge\"");
-    assert!(serde_json::to_string(&marshall).unwrap() == "\"Marshall\"");
-    assert!(serde_json::to_string(&organizer).unwrap() == "\"Organizer\"");
-}
+    use crate::tournament::roles::{Role, RoleVecExt};
 
-#[test]
-fn role_vecs_to_string() {
-    let roles = Role::VARIANTS.to_vec();
-    let roles_count = roles.len();
-    let roles_as_strings = roles.to_string_vec();
-    for i in 0..roles_count {
-        assert!(roles_as_strings[i] == roles[i].to_string())
-    }
-}
+    #[test]
+    fn role_to_string() {
+        let judge = Role::Judge;
+        let marshall = Role::Marshall;
+        let organizer = Role::Organizer;
 
-#[test]
-fn string_to_roles() {
-    let valid_roles = Role::VARIANTS.to_vec();
-    let fake_role = "\"Gżdacz\"";
-
-    for role in valid_roles {
-        let serialized_role = serde_json::to_string(&role).unwrap();
-        let deserialized_role: Role = serde_json::from_str(&serialized_role).unwrap();
-        assert!(role == deserialized_role);
+        assert!(serde_json::to_string(&judge).unwrap() == "\"Judge\"");
+        assert!(serde_json::to_string(&marshall).unwrap() == "\"Marshall\"");
+        assert!(serde_json::to_string(&organizer).unwrap() == "\"Organizer\"");
     }
 
-    let deserialized_fake_role: Result<Role, Error> = serde_json::from_str(fake_role);
-    assert!(deserialized_fake_role.is_err());
+    #[test]
+    fn role_vecs_to_string() {
+        let roles = Role::VARIANTS.to_vec();
+        let roles_count = roles.len();
+        let roles_as_strings = roles.to_string_vec();
+        for i in 0..roles_count {
+            assert!(roles_as_strings[i] == roles[i].to_string())
+        }
+    }
+
+    #[test]
+    fn string_to_roles() {
+        let valid_roles = Role::VARIANTS.to_vec();
+        let fake_role = "\"Gżdacz\"";
+
+        for role in valid_roles {
+            let serialized_role = serde_json::to_string(&role).unwrap();
+            let deserialized_role: Role = serde_json::from_str(&serialized_role).unwrap();
+            assert!(role == deserialized_role);
+        }
+
+        let deserialized_fake_role: Result<Role, Error> = serde_json::from_str(fake_role);
+        assert!(deserialized_fake_role.is_err());
+    }
 }

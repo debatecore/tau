@@ -9,7 +9,7 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament::{debate::Debate, phase::Phase, round::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournament::{phase::Phase, round::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within the scope of the tournament, to which the round is assigned.";
 
@@ -50,7 +50,7 @@ async fn create_round(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((tournament_id, phase_id)): Path<(Uuid, Uuid)>,
+    Path((tournament_id, _phase_id)): Path<(Uuid, Uuid)>,
     Json(json): Json<Round>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
