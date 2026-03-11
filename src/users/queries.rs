@@ -246,4 +246,14 @@ impl User {
             Err(e) => Err(e)?,
         }
     }
+
+    pub async fn is_organizer_of_any_tournament(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!("SELECT EXISTS(SELECT 1 FROM users u JOIN roles r ON u.id = r.user_id WHERE 'Organizer' = ANY(r.roles))").fetch_one(pool).await         {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(_) => Err(OmniError::InternalServerError),
+        }
+    }
 }

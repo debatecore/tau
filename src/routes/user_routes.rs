@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, users::{auth::crypto::{generate_token, hash_token}, User, UserPatch, UserWithPassword}};
+use crate::{omni_error::OmniError, setup::AppState, users::{auth::crypto::{generate_token, hash_token}, User, UserPatch}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -11,10 +11,9 @@ use sqlx::query;
 use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
-use tracing_subscriber::fmt::format;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, users::{User, UserPatch, photourl::PhotoUrl}};
+use crate::{users::{photourl::PhotoUrl}};
 
 
 
@@ -128,8 +127,9 @@ async fn create_user(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let user = User::authenticate(&headers, cookies, &pool).await?;
-    if !user.is_infrastructure_admin() && !user.is_organizer_of_any_tournament(pool).await? {
-        return Err(OmniError::InsufficientPermissionsError);
+    match user.is_infrastructure_admin() || user.is_organizer_of_any_tournament(pool).await? {
+            true => (),
+            false => return Err(OmniError::InsufficientPermissionsError)
     }
 
     let user_without_password = User::from(json.clone());
