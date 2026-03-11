@@ -29,8 +29,8 @@ pub fn route() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(auth_login))
         .route("/auth/clear", get(auth_clear))
-        .route("/auth/login/:token", post(single_use_login))
         .route("/auth/me", get(auth_me))
+        .route("/auth/login/:token", post(single_use_login))
 }
 
 #[derive(Deserialize, ToSchema)]

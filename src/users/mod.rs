@@ -6,6 +6,7 @@ use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use utoipa::ToSchema;
 use uuid::Uuid;
+mod queries;
 
 use crate::{omni_error::OmniError, tournament::roles::Role};
 
@@ -13,7 +14,6 @@ pub mod auth;
 pub mod infradmin;
 pub mod permissions;
 pub mod photourl;
-pub mod queries;
 
 #[derive(Serialize, Clone, ToSchema)]
 pub struct User {
@@ -25,36 +25,16 @@ pub struct User {
     pub picture_link: Option<PhotoUrl>,
 }
 
-pub struct TournamentUser {
-    pub user: User,
-    pub roles: Vec<Role>,
-}
-
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct UserPatch {
     pub handle: Option<String>,
     pub picture_link: Option<PhotoUrl>,
-    pub password: Option<String>,
 }
 
-#[derive(Clone, Deserialize, ToSchema)]
-pub struct UserWithPassword {
-    #[serde(skip_deserializing)]
-    #[serde(default = "Uuid::now_v7")]
-    pub id: Uuid,
-    pub handle: String,
-    pub picture_link: Option<PhotoUrl>,
-    pub password: String,
-}
-
-impl From<UserWithPassword> for User {
-    fn from(value: UserWithPassword) -> Self {
-        User {
-            id: value.id,
-            handle: value.handle,
-            picture_link: value.picture_link,
-        }
-    }
+pub struct TournamentUser {
+    pub user: User,
+    pub roles: Vec<Role>,
 }
 
 impl TournamentUser {
@@ -83,6 +63,26 @@ impl TournamentUser {
                 .iter()
                 .any(|role| role.get_role_permissions().contains(&permission))
         }
+    }
+
+    pub async fn get_by_id(
+        user: Uuid,
+        tournament: Uuid,
+        pool: &Pool<Postgres>,
+    ) -> Result<TournamentUser, OmniError> {
+        let user = User::get_by_id(user, pool).await?;
+        let roles = user.get_roles(tournament, pool).await?;
+        Ok(TournamentUser { user, roles })
+    }
+
+    pub async fn get_by_handle(
+        handle: &str,
+        tournament: Uuid,
+        pool: &Pool<Postgres>,
+    ) -> Result<TournamentUser, OmniError> {
+        let user = User::get_by_handle(handle, pool).await?;
+        let roles = user.get_roles(tournament, pool).await?;
+        Ok(TournamentUser { user, roles })
     }
 }
 

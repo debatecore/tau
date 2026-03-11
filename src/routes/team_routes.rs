@@ -117,7 +117,7 @@ async fn get_teams(
     }
 
     let tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match tournament.get_debates(pool).await
+    match tournament.get_teams(pool).await
     {
         Ok(teams) => Ok(Json(teams).into_response()),
         Err(e) => {
@@ -151,8 +151,7 @@ async fn get_team_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
-    Path(id): Path<Uuid>
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -199,11 +198,10 @@ async fn get_team_by_id(
     tag="team"
 )]
 async fn patch_team_by_id(
-    Path(id): Path<Uuid>,
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
     Json(new_team): Json<TeamPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
@@ -216,8 +214,13 @@ async fn patch_team_by_id(
     }
 
     let team = Team::get_by_id(id, pool).await?;
-    if team_with_name_exists_in_tournament(&team.full_name, &team.tournament_id, pool).await? {
-        return Err(OmniError::ResourceAlreadyExistsError)
+
+
+    if new_team.full_name.is_some()  {
+        let new_name = new_team.full_name.clone().unwrap();
+        if new_name != team.full_name && team_with_name_exists_in_tournament(&new_name, &tournament_id, pool).await? {
+        return Err(OmniError::ResourceAlreadyExistsError);
+        }
     }
 
     match team.patch(new_team, pool).await {
@@ -245,11 +248,10 @@ async fn patch_team_by_id(
     tag="team"
 )]
 async fn delete_team_by_id(
-    Path(id): Path<Uuid>,
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =

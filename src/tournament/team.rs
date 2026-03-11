@@ -20,8 +20,8 @@ pub struct Team {
 
 #[derive(Deserialize, ToSchema)]
 pub struct TeamPatch {
-    full_name: Option<String>,
-    shortened_name: Option<String>,
+    pub full_name: Option<String>,
+    pub shortened_name: Option<String>,
 }
 
 impl Team {

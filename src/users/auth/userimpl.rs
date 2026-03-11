@@ -12,6 +12,8 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use sqlx::{types::chrono::Utc, Pool, Postgres};
 use tower_cookies::Cookies;
 
+const MOCK_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$vIgdgnSmGt7/do39njKQyQ$zkw1WQJoEd1bstFFXtozUyv5gA//Rhe4R+takjZCioE";
+
 impl User {
     pub async fn authenticate(
         headers: &HeaderMap,
@@ -65,7 +67,7 @@ impl User {
         password: &str,
         pool: &Pool<Postgres>,
     ) -> Result<User, OmniError> {
-        let hash = match sqlx::query!(
+        let saved_hash = match sqlx::query!(
             "SELECT password_hash FROM users WHERE handle = $1",
             login
         )
@@ -74,12 +76,13 @@ impl User {
         {
             Ok(hash) => hash.password_hash,
             Err(e) => match e {
-                sqlx::Error::RowNotFound => return Err(AuthError::InvalidCredentials)?,
+                // Hashes must always be compared to even out response times
+                sqlx::Error::RowNotFound => MOCK_HASH.to_owned(),
                 _ => return Err(OmniError::SqlxError(e))?,
             },
         };
         let argon = Argon2::default();
-        let hash = match PasswordHash::new(&hash) {
+        let hash = match PasswordHash::new(&saved_hash) {
             Ok(hash) => hash,
             Err(e) => return Err(e)?,
         };
@@ -89,6 +92,7 @@ impl User {
             false => Err(AuthError::InvalidCredentials)?,
         }
     }
+
     pub async fn auth_via_session(
         token: &str,
         cookies: Cookies,

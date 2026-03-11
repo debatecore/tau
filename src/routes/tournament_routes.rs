@@ -1,4 +1,9 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament::{Tournament, TournamentPatch}, users::{permissions::Permission, TournamentUser, User}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournament::{Tournament, TournamentPatch},
+    users::{permissions::Permission, TournamentUser, User},
+};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -9,7 +14,6 @@ use axum::{
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
-
 
 pub fn route() -> Router<AppState> {
     Router::new()
@@ -23,10 +27,11 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Get a list of all tournaments
-/// 
+///
 /// This request only returns the tournaments the user is permitted to see.
 /// The user must be given any role within a tournament to see it.
-#[utoipa::path(get, path = "/tournament", 
+/// The infrastructure admin can see all tournaments
+#[utoipa::path(get, path = "/tournament",
     responses(
         (
             status=200, description = "Ok",
@@ -34,11 +39,7 @@ pub fn route() -> Router<AppState> {
             example=json!(get_tournaments_list_example())
         ),
         (status=400, description = "Bad request"),
-        (status=401, description = "Authentication error"),
-        (
-            status=403, 
-            description = "The user is not permitted to list any tournaments, meaning they do not have any roles within any tournament."
-        ),
+        (status=401, description = "Unauthorized; user auth not present or invalid"),
         (status=500, description = "Internal server error")
     ),
     tag="tournament"
@@ -58,20 +59,17 @@ async fn get_tournaments(
         let roles = user.get_roles(tournament_id, pool).await?;
         let tournament_user = TournamentUser {
             user: user.clone(),
-            roles
+            roles,
         };
         if tournament_user.has_permission(Permission::ReadTournament) {
             visible_tournaments.push(tournament);
         }
     }
-    if visible_tournaments.is_empty() {
-        return Ok(vec![].into_response());
-    }
     Ok(Json(visible_tournaments).into_response())
 }
 
 /// Create a new tournament
-/// 
+///
 /// Available only to the infrastructure admin.
 #[utoipa::path(
     post,
@@ -80,7 +78,7 @@ async fn get_tournaments(
     responses
     (
         (
-            status=200, 
+            status=200,
             description = "Tournament created successfully",
             body=Tournament,
             example=json!(get_tournament_example_with_id())
@@ -88,7 +86,7 @@ async fn get_tournaments(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=401,
             description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -113,9 +111,9 @@ async fn create_tournament(
 }
 
 /// Get details of an existing tournament
-/// 
+///
 /// The user must be given any role within the tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{id}", 
+#[utoipa::path(get, path = "/tournament/{id}",
     responses
     (
         (
@@ -126,7 +124,7 @@ async fn create_tournament(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=401,
             description = "The user is not permitted to read this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -156,9 +154,9 @@ async fn get_tournament_by_id(
 }
 
 /// Patch an existing tournament
-/// 
-/// Requires either the Organizer or Admin role.
-#[utoipa::path(patch, path = "/tournament/{id}", 
+///
+/// Available to the tournament Organizers and the infrastructure admin.
+#[utoipa::path(patch, path = "/tournament/{id}",
     request_body=TournamentPatch,
     responses(
         (
@@ -169,7 +167,7 @@ async fn get_tournament_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=401,
             description = "The user is not permitted to modify this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -205,13 +203,12 @@ async fn patch_tournament_by_id(
     }
 }
 
-
 /// Delete an existing tournament.
-/// 
-/// Available only to the tournament Organizers.
+///
+/// Available only to the tournament Organizers and the infrastructure admin.
 /// This operation is only allowed when there are no resources
 /// referencing this tournament.
-#[utoipa::path(delete, path = "/tournament/{id}", 
+#[utoipa::path(delete, path = "/tournament/{id}",
     responses(
         (status=204, description = "Tournament deleted successfully"),
         (status=400, description = "Bad request"),
@@ -241,25 +238,32 @@ async fn delete_tournament_by_id(
     let tournament = Tournament::get_by_id(id, pool).await?;
     match tournament.delete(pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
-        Err(e) =>
-        {
+        Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError)
-            }
-            else {
+                return Err(OmniError::DependentResourcesError);
+            } else {
                 error!("Error deleting a tournament with id {id}: {e}");
                 return Err(e)?;
             }
-        },
+        }
     }
 }
 
 fn get_tournament_example_with_id() -> String {
     r#"
     {
-        "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
-        "full_name": "Kórnik Debate League",
-        "shortened_name": "KDL"
+    "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
+    "full_name": "Poznań Debate Night",
+    "shortened_name": "PDN",
+    "speech_time": 300,
+    "end_protected_time": 30,
+    "start_protected_time": 0,
+    "ad_vocem_time": 60,
+    "debate_time_slot": 120,
+    "debate_preparation_time": 15,
+    "beep_on_speech_end": true,
+    "beep_on_protected_time": true,
+    "visualize_protected_time": false
     }
     "#
     .to_owned()
@@ -268,16 +272,35 @@ fn get_tournament_example_with_id() -> String {
 fn get_tournaments_list_example() -> String {
     r#"
         [
-        {
-        "id": "01941265-8b3c-733f-a6ae-075c079f2f81",
-        "full_name": "Kórnik Debate League",
-        "shortened_name": "KDL"
-        },
-        {
-        "id": "01941265-507e-7987-b1ed-5c0f63ff6c6d",
-        "full_name": "Poznań Debate Night",
-        "shortened_name": "PND"
-        }
+    {
+    "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
+    "full_name": "Poznań Debate Night",
+    "shortened_name": "PDN",
+    "speech_time": 300,
+    "end_protected_time": 30,
+    "start_protected_time": 0,
+    "ad_vocem_time": 60,
+    "debate_time_slot": 120,
+    "debate_preparation_time": 15,
+    "beep_on_speech_end": true,
+    "beep_on_protected_time": true,
+    "visualize_protected_time": false
+    },
+    {
+    "id": "019cddac-ab1e-72e0-8486-6e6a93930628",
+    "full_name": "Musketeers of Words 2023",
+    "shortened_name": "MoW 2023",
+    "speech_time": 240,
+    "end_protected_time": 30,
+    "start_protected_time": 30,
+    "ad_vocem_time": 60,
+    "debate_time_slot": 150,
+    "debate_preparation_time": 15,
+    "beep_on_speech_end": true,
+    "beep_on_protected_time": true,
+    "visualize_protected_time": true
+    }
         ]
-    "#.to_owned()
+    "#
+    .to_owned()
 }

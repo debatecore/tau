@@ -3,7 +3,7 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, users::User};
+use crate::{omni_error::OmniError, tournament::team::Team, users::User};
 
 use super::{roles::Role, Tournament};
 
@@ -18,14 +18,12 @@ pub struct Affiliation {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
-    pub tournament_id: Uuid,
     pub team_id: Uuid,
     pub judge_user_id: Uuid,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct AffiliationPatch {
-    pub tournament_id: Option<Uuid>,
     pub team_id: Option<Uuid>,
     pub judge_user_id: Option<Uuid>,
 }
@@ -37,12 +35,11 @@ impl Affiliation {
     ) -> Result<Affiliation, OmniError> {
         match query_as!(
             Affiliation,
-            r#"INSERT INTO judge_team_assignments(id, judge_user_id, team_id, tournament_id)
-            VALUES ($1, $2, $3, $4) RETURNING id, judge_user_id, team_id, tournament_id"#,
+            r#"INSERT INTO judge_team_assignments(id, judge_user_id, team_id)
+            VALUES ($1, $2, $3) RETURNING id, judge_user_id, team_id"#,
             affiliation.id,
             affiliation.judge_user_id,
             affiliation.team_id,
-            affiliation.tournament_id
         )
         .fetch_one(connection_pool)
         .await
@@ -65,7 +62,10 @@ impl Affiliation {
         .await
         {
             Ok(affiliation) => Ok(affiliation),
-            Err(e) => Err(e)?,
+            Err(e) => match e {
+                sqlx::Error::RowNotFound => Err(OmniError::ResourceNotFoundError),
+                _ => Err(OmniError::InternalServerError),
+            },
         }
     }
 
@@ -75,9 +75,8 @@ impl Affiliation {
         connection_pool: &Pool<Postgres>,
     ) -> Result<Affiliation, OmniError> {
         match query!(
-            "UPDATE judge_team_assignments SET judge_user_id = $1, tournament_id = $2, team_id = $3 WHERE id = $4",
+            "UPDATE judge_team_assignments SET judge_user_id = $1, team_id = $2 WHERE id = $3",
             patch.judge_user_id,
-            patch.tournament_id,
             patch.team_id,
             self.id,
         )
@@ -99,13 +98,25 @@ impl Affiliation {
         }
     }
 
-    pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
+    pub async fn validate(
+        &self,
+        tournament_id: Uuid,
+        pool: &Pool<Postgres>,
+    ) -> Result<(), OmniError> {
         let user = User::get_by_id(self.judge_user_id, pool).await?;
-        if !user.has_role(Role::Judge, self.tournament_id, pool).await? {
+        if !user.has_role(Role::Judge, tournament_id, pool).await? {
             return Err(OmniError::NotAJudgeAffiliationError);
         }
 
-        let _tournament = Tournament::get_by_id(self.tournament_id, pool).await?;
+        match Tournament::get_by_id(tournament_id, pool).await {
+            Ok(_) => (),
+            Err(e) => match e {
+                OmniError::SqlxError(sqlx::Error::RowNotFound) => {
+                    return Err(OmniError::ResourceNotFoundError)
+                }
+                _ => return Err(OmniError::InternalServerError),
+            },
+        }
 
         if self.already_exists(pool).await? {
             return Err(OmniError::ResourceAlreadyExistsError);
@@ -114,11 +125,18 @@ impl Affiliation {
         Ok(())
     }
 
+    pub async fn infer_tournament_id(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<Uuid, OmniError> {
+        let team = Team::get_by_id(self.team_id, pool).await?;
+        Ok(team.tournament_id)
+    }
+
     async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
         match query_as!(Affiliation,
-            "SELECT * FROM judge_team_assignments WHERE judge_user_id = $1 AND tournament_id = $2 AND team_id = $3",
+            "SELECT * FROM judge_team_assignments WHERE judge_user_id = $1 AND team_id = $2",
             self.judge_user_id,
-            self.tournament_id,
             self.team_id
         ).fetch_optional(pool).await {
             Ok(result) => {

@@ -5,6 +5,7 @@ use axum::{
     routing::post,
     Json, Router,
 };
+use serde_json::Error;
 use strum::VariantArray;
 use tower_cookies::Cookies;
 use tracing::error;
@@ -13,7 +14,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::roles::Role,
+    tournament::roles::{Role, RoleVecExt},
     users::{permissions::Permission, TournamentUser, User},
 };
 
@@ -66,10 +67,8 @@ async fn create_user_roles(
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    let user_to_be_granted_roles = User::get_by_id(user_id, pool).await?;
-    let roles = user_to_be_granted_roles
-        .get_roles(tournament_id, pool)
-        .await?;
+    let target_user = User::get_by_id(user_id, pool).await?;
+    let roles = target_user.get_roles(tournament_id, pool).await?;
     if !roles.is_empty() {
         return Err(OmniError::ResourceAlreadyExistsError);
     }
@@ -81,7 +80,7 @@ async fn create_user_roles(
                 "Error creating roles for user {} within tournament {}: {e}",
                 user_id, tournament_id
             );
-            Err(e)?
+            Err(e)
         }
     }
 }
@@ -111,20 +110,19 @@ async fn get_user_roles(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    match tournament_user.roles.is_empty() {
-        true => (),
-        false => return Err(OmniError::UnauthorizedError),
+    if tournament_user.roles.is_empty() {
+        return Err(OmniError::UnauthorizedError);
     }
 
     let requested_user = User::get_by_id(user_id, pool).await?;
     match requested_user.get_roles(tournament_id, pool).await {
-        Ok(roles) => Ok(Json(roles).into_response()),
+        Ok(roles) => Ok(Json(roles as Vec<Role>).into_response()),
         Err(e) => {
             error!(
                 "Error getting roles of user {} within tournament {}: {e}",
                 user_id, tournament_id
             );
-            Err(e)?
+            Err(e)
         }
     }
 }
@@ -222,7 +220,7 @@ async fn delete_user_roles(
                 "Error deleting roles of user {} within tournament {}: {e}",
                 user_id, tournament_id
             );
-            Err(e)?
+            Err(e)
         }
     }
 }
@@ -240,16 +238,16 @@ fn role_to_string() {
     let marshall = Role::Marshall;
     let organizer = Role::Organizer;
 
-    assert!(judge.to_string() == "Judge");
-    assert!(marshall.to_string() == "Marshall");
-    assert!(organizer.to_string() == "Organizer")
+    assert!(serde_json::to_string(&judge).unwrap() == "\"Judge\"");
+    assert!(serde_json::to_string(&marshall).unwrap() == "\"Marshall\"");
+    assert!(serde_json::to_string(&organizer).unwrap() == "\"Organizer\"");
 }
 
 #[test]
 fn role_vecs_to_string() {
     let roles = Role::VARIANTS.to_vec();
     let roles_count = roles.len();
-    let roles_as_strings = Role::roles_vec_to_string_array(&roles);
+    let roles_as_strings = roles.to_string_vec();
     for i in 0..roles_count {
         assert!(roles_as_strings[i] == roles[i].to_string())
     }
@@ -257,15 +255,15 @@ fn role_vecs_to_string() {
 
 #[test]
 fn string_to_roles() {
-    let role_strings = vec!["Marshall", "Judge", "Organizer", "Gżdacz"];
+    let valid_roles = Role::VARIANTS.to_vec();
+    let fake_role = "\"Gżdacz\"";
 
-    let marshall_role = Role::try_from(role_strings[0]).unwrap();
-    let judge_role = Role::try_from(role_strings[1]).unwrap();
-    let organizer_role = Role::try_from(role_strings[2]).unwrap();
-    let fake_role = Role::try_from(role_strings[3]);
+    for role in valid_roles {
+        let serialized_role = serde_json::to_string(&role).unwrap();
+        let deserialized_role: Role = serde_json::from_str(&serialized_role).unwrap();
+        assert!(role == deserialized_role);
+    }
 
-    assert!(marshall_role == Role::Marshall);
-    assert!(judge_role == Role::Judge);
-    assert!(organizer_role == Role::Organizer);
-    assert!(fake_role.is_err());
+    let deserialized_fake_role: Result<Role, Error> = serde_json::from_str(fake_role);
+    assert!(deserialized_fake_role.is_err());
 }
