@@ -15,7 +15,7 @@
       },
       {
         "ordinal": 2,
-        "name": "marshall_user_id",
+        "name": "marshal_user_id",
         "type_info": "Uuid"
       },
       {

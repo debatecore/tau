@@ -18,6 +18,10 @@ Run the migrations via sqlx-cli with `sqlx migrate run` or by other means.
 
 Compile and run the project with `cargo`.
 
+#### `sqlx` preparation hook
+
+It is advisable to run `git config --local core.hooksPath .githooks/` to have the `.sqlx` directory updated before making a commit.
+
 ### Deployment
 For deploying via docker, set the following environment variables:
 - `DOCKER_DB_PASSWORD` which will be used as the password for the backend's database access user.

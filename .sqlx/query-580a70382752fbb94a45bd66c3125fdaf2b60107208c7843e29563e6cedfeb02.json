@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE debates SET motion_id = $1, marshall_user_id = $2, round_id = $3 WHERE id = $4",
+  "query": "UPDATE debates SET motion_id = $1, marshal_user_id = $2, round_id = $3 WHERE id = $4",
   "describe": {
     "columns": [],
     "parameters": {
@@ -13,5 +13,5 @@
     },
     "nullable": []
   },
-  "hash": "3068a519d83a5371a902c6508ab6834184f9824bfe219176995bdcaa23795ffe"
+  "hash": "580a70382752fbb94a45bd66c3125fdaf2b60107208c7843e29563e6cedfeb02"
 }

@@ -1,0 +1,3 @@
+# This command ensures unit tests will pass on a CI environment, even in the database is not connected
+cargo sqlx prepare
+git add .sqlx
