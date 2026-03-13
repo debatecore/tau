@@ -44,8 +44,8 @@ pub async fn get_token_for_user_with_no_roles() -> String {
     let handle = Uuid::now_v7().to_string();
     let password = "password";
 
-    let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = get_id_of_a_new_user(&handle, password).await;
+    get_session_token_for_infrastructure_admin().await;
+    get_id_of_a_new_user(&handle, password).await;
     get_session_token_for(&handle, password).await.unwrap()
 }
 

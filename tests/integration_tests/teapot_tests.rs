@@ -5,8 +5,6 @@ use tau::setup::{self, get_socket_addr};
 
 use crate::common::{create_app, create_listener, prepare_empty_database};
 
-mod common;
-
 #[tokio::test]
 async fn test_teapot() {
     // GIVEN

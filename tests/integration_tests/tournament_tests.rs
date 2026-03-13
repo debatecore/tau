@@ -2,7 +2,6 @@ use std::{collections::HashMap, future::IntoFuture};
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
-use strum::VariantArray;
 use tau::setup::{self, get_socket_addr};
 
 use crate::common::{
@@ -10,7 +9,6 @@ use crate::common::{
     prepare_empty_database, tournament_utils::create_tournament,
     user_utils::get_token_for_user_with_no_roles,
 };
-mod common;
 
 #[tokio::test]
 #[serial]

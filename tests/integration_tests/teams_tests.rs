@@ -14,8 +14,6 @@ use crate::common::{
     },
 };
 
-mod common;
-
 #[tokio::test]
 #[serial]
 async fn admin_should_be_able_to_create_teams() -> Result<(), OmniError> {

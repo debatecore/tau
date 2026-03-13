@@ -2,14 +2,7 @@ use std::{future::IntoFuture, vec};
 
 use reqwest::StatusCode;
 use serial_test::serial;
-use tau::{
-    omni_error::OmniError,
-    setup,
-    tournament::{
-        self,
-        roles::{self, Role},
-    },
-};
+use tau::{omni_error::OmniError, setup, tournament::roles::Role};
 
 use crate::common::{
     affiliations_utils::{
@@ -23,8 +16,6 @@ use crate::common::{
         get_id_of_a_new_judge, get_organizer_token, get_token_for_user_with_roles,
     },
 };
-
-mod common;
 
 #[tokio::test]
 #[serial]

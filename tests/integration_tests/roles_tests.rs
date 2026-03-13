@@ -16,8 +16,6 @@ use crate::common::{
     user_utils::{create_user, get_id_of_a_new_user, get_organizer_token},
 };
 
-mod common;
-
 #[tokio::test]
 #[serial]
 async fn admin_should_be_able_to_assign_roles() -> Result<(), OmniError> {

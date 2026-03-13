@@ -7,7 +7,6 @@ use crate::common::{
     auth_utils::login_with_credentials, create_app, create_listener,
     prepare_empty_database,
 };
-mod common;
 
 #[tokio::test]
 #[serial]
