@@ -94,7 +94,7 @@ fn construct_tournament_user() {
             handle: String::from("some_org"),
             picture_link: Some(PhotoUrl::new("https://i.imgur.com/hbrb2U0.png").unwrap()),
         },
-        roles: vec![Role::Organizer, Role::Judge, Role::Marshall],
+        roles: vec![Role::Organizer, Role::Judge, Role::Marshal],
     };
     assert!(org.has_permission(Permission::DeleteUsers));
 }

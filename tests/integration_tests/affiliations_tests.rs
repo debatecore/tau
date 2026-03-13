@@ -179,7 +179,7 @@ async fn organizers_should_be_able_to_delete_affiliations() -> Result<(), OmniEr
 
 #[tokio::test]
 #[serial]
-async fn affiliations_should_not_be_visible_to_judges_and_marshalls(
+async fn affiliations_should_not_be_visible_to_judges_and_marshals(
 ) -> Result<(), OmniError> {
     // GIVEN
     setup::read_environmental_variables();
@@ -198,7 +198,7 @@ async fn affiliations_should_not_be_visible_to_judges_and_marshalls(
     let affiliation_id = get_id_of_a_new_affiliation(&judge_id, &team_id).await?;
 
     // WHEN
-    let roles_to_check = vec![Role::Judge, Role::Marshall];
+    let roles_to_check = vec![Role::Judge, Role::Marshal];
     for role in roles_to_check {
         let token = get_token_for_user_with_roles(vec![role], &tournament_id).await;
         let response = get_affiliation(&affiliation_id, &judge_id, &token).await;

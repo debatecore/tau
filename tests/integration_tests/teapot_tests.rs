@@ -1,11 +1,13 @@
 use std::future::IntoFuture;
 
 use reqwest::{Client, StatusCode};
+use serial_test::serial;
 use tau::setup::{self, get_socket_addr};
 
 use crate::common::{create_app, create_listener, prepare_empty_database};
 
 #[tokio::test]
+#[serial]
 async fn test_teapot() {
     // GIVEN
     setup::read_environmental_variables();

@@ -34,7 +34,7 @@ static DEFAULT_VISUALIZE_PROTECTED_TIME: bool = false;
 
 /// Represents a tournament.
 ///
-/// TO-DO: Rules defined here will be applied to debates started by Marshalls.
+/// TO-DO: Rules defined here will be applied to debates started by Marshals.
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Tournament {

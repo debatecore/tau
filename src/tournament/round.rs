@@ -155,7 +155,7 @@ impl Round {
         for debate in self.get_debates(pool).await? {
             let new_debate = DebatePatch {
                 motion_id: self.motion_id,
-                marshall_user_id: debate.marshall_user_id,
+                marshal_user_id: debate.marshal_user_id,
                 tournament_id: Some(debate.tournament_id),
                 round_id: Some(self.id),
             };

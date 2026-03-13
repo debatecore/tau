@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS rounds (
 CREATE TABLE IF NOT EXISTS debates (
     id                UUID NOT NULL UNIQUE PRIMARY KEY,
     motion_id         UUID REFERENCES motions(id),
-    marshall_user_id  UUID REFERENCES users(id),
+    marshal_user_id  UUID REFERENCES users(id),
     tournament_id     UUID NOT NULL REFERENCES tournaments(id),
     round_id          UUID NOT NULL REFERENCES rounds(id)
 );

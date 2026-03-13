@@ -22,7 +22,7 @@ pub struct Phase {
     /// Phase name. Must be unique within a tournament it belongs to.
     pub name: String,
     pub tournament_id: Uuid,
-    /// Indicates whether it's a finals phase (true) or group phase (false).
+    /// Indicates whether it's a finals phase (true) or a group phase (false).
     pub is_finals: bool,
     /// ID of a phase occurring directly before this one.
     /// Must be unique, meaning a given phase cannot be set as previous for multiple phases.

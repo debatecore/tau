@@ -20,9 +20,9 @@ pub enum Role {
     Organizer,
     /// Judges can submit their verdicts regarding debates they were assigned to.
     Judge,
-    /// Marshalls are responsible for conducting debates.
+    /// Marshals are responsible for conducting debates.
     /// For pragmatic reasons, they can submit verdicts on Judges' behalf.
-    Marshall,
+    Marshal,
 }
 
 impl Role {
@@ -39,7 +39,7 @@ impl Role {
                 P::ReadPhases,
                 P::ReadRounds,
             ],
-            Role::Marshall => vec![
+            Role::Marshal => vec![
                 P::ReadDebates,
                 P::ReadAttendees,
                 P::ReadTeams,
@@ -138,7 +138,7 @@ impl fmt::Display for Role {
         match self {
             Role::Organizer => write!(f, "Organizer"),
             Role::Judge => write!(f, "Judge"),
-            Role::Marshall => write!(f, "Marshall"),
+            Role::Marshal => write!(f, "Marshal"),
         }
     }
 }
@@ -148,7 +148,7 @@ impl FromStr for Role {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Marshall" => Ok(Role::Marshall),
+            "Marshal" => Ok(Role::Marshal),
             "Judge" => Ok(Role::Judge),
             "Organizer" => Ok(Role::Organizer),
             _ => Err(OmniError::RolesParsingError),

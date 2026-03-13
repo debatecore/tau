@@ -31,7 +31,7 @@ async fn admin_should_be_able_to_assign_roles() -> Result<(), OmniError> {
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = create_user("some marshall", "some password", &token)
+    let user_id = create_user("some marshal", "some password", &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -79,7 +79,7 @@ async fn organizers_should_be_able_to_assign_roles() -> Result<(), OmniError> {
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let user_id = get_id_of_a_new_user("some marshall", "some password").await;
+    let user_id = get_id_of_a_new_user("some marshal", "some password").await;
     let tournament_id = get_id_of_a_new_tournament("some tournament").await?;
     let organizer_token = get_organizer_token(&tournament_id).await;
 
@@ -87,7 +87,7 @@ async fn organizers_should_be_able_to_assign_roles() -> Result<(), OmniError> {
     let response = create_roles(
         &user_id,
         &tournament_id,
-        vec![Role::Marshall],
+        vec![Role::Marshal],
         &organizer_token,
     )
     .await;
@@ -97,7 +97,7 @@ async fn organizers_should_be_able_to_assign_roles() -> Result<(), OmniError> {
 
     let granted_roles = response.json::<Vec<String>>().await.unwrap();
     assert_eq!(granted_roles.len(), 1);
-    assert!(granted_roles.contains(&"Marshall".to_string()));
+    assert!(granted_roles.contains(&"Marshal".to_string()));
 
     Ok(())
 }
@@ -116,7 +116,7 @@ async fn organizers_from_other_tournaments_should_not_be_able_to_assign_roles(
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let user_id = get_id_of_a_new_user("some marshall", "some password").await;
+    let user_id = get_id_of_a_new_user("some marshal", "some password").await;
     let tournament_alpha_id = get_id_of_a_new_tournament("alpha").await?;
 
     let tournament_beta_id = get_id_of_a_new_tournament("beta").await?;
@@ -126,7 +126,7 @@ async fn organizers_from_other_tournaments_should_not_be_able_to_assign_roles(
     let response = create_roles(
         &user_id,
         &tournament_alpha_id,
-        vec![Role::Marshall],
+        vec![Role::Marshal],
         &organizer_token_beta,
     )
     .await;
@@ -152,7 +152,7 @@ async fn granting_duplicate_roles_should_cause_conflicts() -> Result<(), OmniErr
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = create_user("some marshall", "some other password", &token)
+    let user_id = create_user("some marshal", "some other password", &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -171,7 +171,7 @@ async fn granting_duplicate_roles_should_cause_conflicts() -> Result<(), OmniErr
     let first_response =
         create_roles(&user_id, &tournament_id, vec![Role::Organizer], &token).await;
     let second_response =
-        create_roles(&user_id, &tournament_id, vec![Role::Marshall], &token).await;
+        create_roles(&user_id, &tournament_id, vec![Role::Marshal], &token).await;
 
     // THEN
     assert_eq!(first_response.status(), StatusCode::OK);
@@ -206,7 +206,7 @@ async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniE
         .as_str()
         .unwrap()
         .to_owned();
-    let bob_id = create_user("some marshall", "some other password", &token)
+    let bob_id = create_user("some marshal", "some other password", &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -224,7 +224,7 @@ async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniE
         .to_owned();
 
     create_roles(&alice_id, &tournament_id, vec![Role::Organizer], &token).await;
-    create_roles(&bob_id, &tournament_id, vec![Role::Marshall], &token).await;
+    create_roles(&bob_id, &tournament_id, vec![Role::Marshal], &token).await;
     let alice_token = get_session_token_for(alice_handle, alice_password)
         .await
         .unwrap();
@@ -235,7 +235,7 @@ async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniE
 
     let granted_roles = response.json::<Vec<String>>().await.unwrap();
     assert_eq!(granted_roles.len(), 1);
-    assert!(granted_roles.contains(&"Marshall".to_string()));
+    assert!(granted_roles.contains(&"Marshal".to_string()));
 
     Ok(())
 }
@@ -304,7 +304,7 @@ async fn roles_should_be_modifiable() -> Result<(), OmniError> {
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = create_user("some marshall", "some password", &token)
+    let user_id = create_user("some marshal", "some password", &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -328,7 +328,7 @@ async fn roles_should_be_modifiable() -> Result<(), OmniError> {
     )
     .await;
 
-    let new_roles = vec![Role::Marshall];
+    let new_roles = vec![Role::Marshal];
     let response = patch_roles(&user_id, &tournament_id, new_roles, &token).await;
 
     // THEN
@@ -336,7 +336,7 @@ async fn roles_should_be_modifiable() -> Result<(), OmniError> {
 
     let granted_roles = response.json::<Vec<String>>().await.unwrap();
     assert_eq!(granted_roles.len(), 1);
-    assert!(granted_roles.contains(&"Marshall".to_string()));
+    assert!(granted_roles.contains(&"Marshal".to_string()));
 
     Ok(())
 }
@@ -356,7 +356,7 @@ async fn roles_should_be_deletable() -> Result<(), OmniError> {
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin().await;
-    let user_id = create_user("some marshall", "some password", &token)
+    let user_id = create_user("some marshal", "some password", &token)
         .await
         .json::<serde_json::Value>()
         .await

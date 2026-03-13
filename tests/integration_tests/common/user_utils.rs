@@ -32,8 +32,8 @@ pub async fn get_organizer_token(tournament_id: &str) -> String {
     get_token_for_user_with_roles(vec![Role::Organizer], tournament_id).await
 }
 
-pub async fn get_marshall_token(tournament_id: &str) -> String {
-    get_token_for_user_with_roles(vec![Role::Marshall], tournament_id).await
+pub async fn get_marshal_token(tournament_id: &str) -> String {
+    get_token_for_user_with_roles(vec![Role::Marshal], tournament_id).await
 }
 
 pub async fn get_judge_token(tournament_id: &str) -> String {

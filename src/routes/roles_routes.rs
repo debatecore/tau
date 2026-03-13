@@ -225,7 +225,7 @@ async fn delete_user_roles(
 
 fn get_roles_example() -> String {
     r#"
-        ["Marshall", "Judge"]
+        ["Marshal", "Judge"]
     "#
     .to_owned()
 }
@@ -240,11 +240,11 @@ mod tests {
     #[test]
     fn role_to_string() {
         let judge = Role::Judge;
-        let marshall = Role::Marshall;
+        let marshal = Role::Marshal;
         let organizer = Role::Organizer;
 
         assert!(serde_json::to_string(&judge).unwrap() == "\"Judge\"");
-        assert!(serde_json::to_string(&marshall).unwrap() == "\"Marshall\"");
+        assert!(serde_json::to_string(&marshal).unwrap() == "\"Marshal\"");
         assert!(serde_json::to_string(&organizer).unwrap() == "\"Organizer\"");
     }
 
