@@ -2,12 +2,17 @@ use super::{
     cookie::set_session_token_cookie, crypto::hash_token, error::AuthError,
     session::Session, AUTH_SESSION_COOKIE_NAME,
 };
-use crate::{omni_error::OmniError, users::User};
+use crate::{
+    omni_error::OmniError,
+    users::{auth::login_tokens::LoginToken, User},
+};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::http::{header::AUTHORIZATION, HeaderMap};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use sqlx::{types::chrono::Utc, Pool, Postgres};
 use tower_cookies::Cookies;
+
+const MOCK_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$vIgdgnSmGt7/do39njKQyQ$zkw1WQJoEd1bstFFXtozUyv5gA//Rhe4R+takjZCioE";
 
 impl User {
     pub async fn authenticate(
@@ -62,7 +67,7 @@ impl User {
         password: &str,
         pool: &Pool<Postgres>,
     ) -> Result<User, OmniError> {
-        let hash = match sqlx::query!(
+        let saved_hash = match sqlx::query!(
             "SELECT password_hash FROM users WHERE handle = $1",
             login
         )
@@ -71,12 +76,13 @@ impl User {
         {
             Ok(hash) => hash.password_hash,
             Err(e) => match e {
-                sqlx::Error::RowNotFound => return Err(AuthError::InvalidCredentials)?,
+                // Hashes must always be compared to even out response times
+                sqlx::Error::RowNotFound => MOCK_HASH.to_owned(),
                 _ => return Err(OmniError::SqlxError(e))?,
             },
         };
         let argon = Argon2::default();
-        let hash = match PasswordHash::new(&hash) {
+        let hash = match PasswordHash::new(&saved_hash) {
             Ok(hash) => hash,
             Err(e) => return Err(e)?,
         };
@@ -86,6 +92,7 @@ impl User {
             false => Err(AuthError::InvalidCredentials)?,
         }
     }
+
     pub async fn auth_via_session(
         token: &str,
         cookies: Cookies,
@@ -116,6 +123,34 @@ impl User {
                 sqlx::Error::RowNotFound => Err(AuthError::InvalidCredentials)?,
                 _ => Err(OmniError::SqlxError(e))?,
             },
+        }
+    }
+
+    pub async fn auth_via_link(
+        token: &str,
+        pool: &Pool<Postgres>,
+    ) -> Result<User, OmniError> {
+        let hashed_token = hash_token(token);
+        let token_record = sqlx::query_as!(
+            LoginToken,
+            "SELECT * FROM login_tokens WHERE token_hash = $1",
+            hashed_token
+        )
+        .fetch_optional(pool)
+        .await?;
+        if token_record.is_none() {
+            return Err(AuthError::InvalidToken)?;
+        }
+        let token = token_record.unwrap();
+        if token.expired() {
+            return Err(AuthError::TokenExpired)?;
+        } else if token.used {
+            return Err(AuthError::TokenAlreadyUsed)?;
+        }
+        token.mark_as_used(pool).await?;
+        match User::get_by_id(token.user_id, pool).await {
+            Ok(user) => Ok(user),
+            Err(e) => Err(e),
         }
     }
 }

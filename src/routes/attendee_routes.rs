@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::attendee::{Attendee, AttendeePatch},
+    tournaments::attendees::{Attendee, AttendeePatch},
     users::{permissions::Permission, TournamentUser},
 };
 
@@ -22,11 +22,11 @@ const POSITION_OUT_OF_RANGE_MESSAGE: &str = "Attendee position must be in range 
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournament/:tournament_id/attendee",
+            "/tournaments/:tournament_id/attendee",
             post(create_attendee).get(get_attendees),
         )
         .route(
-            "/:tournament_id/attendee/:id",
+            "/:tournament_id/attendees/:id",
             get(get_attendee_by_id)
                 .patch(patch_attendee_by_id)
                 .delete(delete_attendee_by_id),
@@ -39,16 +39,17 @@ pub fn route() -> Router<AppState> {
 #[utoipa::path(
     post,
     request_body=Attendee,
-    path = "/tournament/{tournament_id}/attendee",
+    path = "/tournaments/{tournament_id}/attendee",
     responses(
         (
             status=200, description = "Attendee created successfully",
             body=Attendee,
             example=json!(get_attendee_example())
         ),
-        (status=400, description = "Bad request",),
+        (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -59,7 +60,7 @@ pub fn route() -> Router<AppState> {
             status=500, description = "Internal server error",
         ),
     ),
-    tag="attendee"
+    tag="attendees"
 )]
 #[axum::debug_handler]
 async fn create_attendee(
@@ -75,7 +76,7 @@ async fn create_attendee(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if !attendee.position.is_none() {
@@ -101,7 +102,7 @@ async fn create_attendee(
     }
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/attendee", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendee", 
     responses(
         (
             status=200,
@@ -110,8 +111,9 @@ async fn create_attendee(
             example=json!(get_attendees_list_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not get to create attendees within this tournament",
         ),
         (status=404, description = "Tournament not found"),
@@ -119,7 +121,7 @@ async fn create_attendee(
             status=500, description = "Internal server error",
         ),
     ),
-    tag="attendee"
+    tag="attendees"
 )]
 /// Get a list of all attendees
 async fn get_attendees(
@@ -134,7 +136,7 @@ async fn get_attendees(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Attendee::get_all(pool).await {
@@ -147,15 +149,16 @@ async fn get_attendees(
 }
 
 /// Get details of an existing attendee
-#[utoipa::path(get, path = "/tournament/{tournament_id}/attendee/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendees/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Attendee,
             example=json!(get_attendee_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to get attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -163,7 +166,7 @@ async fn get_attendees(
             status=500, description = "Internal server error",
         ),
     ),
-    tag="attendee"
+    tag="attendees"
 )]
 async fn get_attendee_by_id(
     Path(id): Path<Uuid>,
@@ -178,7 +181,7 @@ async fn get_attendee_by_id(
 
     match tournament_user.has_permission(Permission::ReadAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match Attendee::get_by_id(id, &state.connection_pool).await {
@@ -191,7 +194,7 @@ async fn get_attendee_by_id(
 }
 
 /// Patch an existing attendee
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/attendee/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/attendees/{id}", 
     request_body=AttendeePatch,
     responses(
         (
@@ -200,8 +203,9 @@ async fn get_attendee_by_id(
             example=json!(get_attendee_example())
         ),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to patch attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -209,7 +213,7 @@ async fn get_attendee_by_id(
         (status=422, description = "Attendee position out of range [1-4]"),
         (status=500, description = "Internal server error"),
     ),
-    tag="attendee"
+    tag="attendees"
 )]
 async fn patch_attendee_by_id(
     Path((id, tournament_id)): Path<(Uuid, Uuid)>,
@@ -224,7 +228,7 @@ async fn patch_attendee_by_id(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     if !new_attendee.position.is_none() {
@@ -248,13 +252,14 @@ async fn patch_attendee_by_id(
 }
 
 /// Delete an existing attendee
-#[utoipa::path(delete, path = "/tournament/{tournament_id}/attendee/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/attendees/{id}", 
     responses
     (
         (status=204, description = "Attendee deleted successfully"),
         (status=400, description = "Bad request"),
+        (status=401, description = "Authentication error"),
         (
-            status=401,
+            status=403,
             description = "The user is not permitted to delete attendees within this tournament",
         ),
         (status=404, description = "Tournament or attendee not found"),
@@ -262,7 +267,7 @@ async fn patch_attendee_by_id(
             status=500, description = "Internal server error",
         ),
     ),
-    tag="attendee"
+    tag="attendees"
 )]
 async fn delete_attendee_by_id(
     Path(id): Path<Uuid>,
@@ -277,7 +282,7 @@ async fn delete_attendee_by_id(
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let attendee = Attendee::get_by_id(id, pool).await?;

@@ -1,16 +1,19 @@
-use crate::{omni_error::OmniError, setup::AppState, users::{photourl::PhotoUrl, UserPatch, User}};
+use crate::{omni_error::OmniError, setup::AppState, users::{auth::crypto::{generate_token, hash_token}, User, UserPatch}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
-    routing::{get, patch},
+    routing::{{get, patch}, post},
     Json, Router,
 };
 use serde::Deserialize;
+use sqlx::query;
 use tower_cookies::Cookies;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
+
+use crate::{users::{photourl::PhotoUrl}};
 
 
 
@@ -43,21 +46,21 @@ pub struct UserPasswordPatch {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/user", get(get_users).post(create_user))
+        .route("/users", get(get_users).post(create_user))
         .route(
-            "/user/:id",
+            "/users/:id",
             get(get_user_by_id)
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
-        )
-        .route("/user/:id/password", patch(change_user_password))
+        ).route("/users/:id/login_token", post(generate_login_token))
+        .route("/users/:id/password", patch(change_user_password))
 }
 
 /// Get a list of all users
 /// 
 /// This request only returns the users the user is permitted to see.
 /// The user must be given any role within a user to see it.
-#[utoipa::path(get, path = "/user", 
+#[utoipa::path(get, path = "/users", 
     responses(
         (
             status=200, description = "Ok",
@@ -71,7 +74,7 @@ pub fn route() -> Router<AppState> {
         ),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag = "users"
 )]
 async fn get_users(
     State(state): State<AppState>,
@@ -96,7 +99,7 @@ async fn get_users(
 #[utoipa::path(
     post,
     request_body=User,
-    path = "/user",
+    path = "/users",
     responses
     (
         (
@@ -114,7 +117,7 @@ async fn get_users(
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag="users"
 )]
 async fn create_user(
     State(state): State<AppState>,
@@ -124,8 +127,9 @@ async fn create_user(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let user = User::authenticate(&headers, cookies, &pool).await?;
-    if !user.is_infrastructure_admin() && !user.can_create_users_within_any_tournament(pool).await? {
-        return Err(OmniError::UnauthorizedError);
+    match user.is_infrastructure_admin() || user.is_organizer_of_any_tournament(pool).await? {
+            true => (),
+            false => return Err(OmniError::InsufficientPermissionsError)
     }
 
     let user_without_password = User::from(json.clone());
@@ -141,7 +145,7 @@ async fn create_user(
 /// Get details of an existing user
 /// 
 /// Every user is permitted to use this endpoint.
-#[utoipa::path(get, path = "/user/{id}", 
+#[utoipa::path(get, path = "/users/{id}", 
     responses
     (
         (
@@ -157,7 +161,7 @@ async fn create_user(
         (status=404, description = "User not found"),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag="users"
 )]
 async fn get_user_by_id(
     Path(id): Path<Uuid>,
@@ -182,7 +186,7 @@ async fn get_user_by_id(
 /// Allows to modify user data not related to security.
 /// Available to the infrastructure admin and the user modifying their own account.
 /// In order to change user password, use the /user/{id}/password endpoint.
-#[utoipa::path(patch, path = "/user/{id}", 
+#[utoipa::path(patch, path = "/users/{id}", 
     request_body=UserPatch,
     responses(
         (
@@ -200,7 +204,7 @@ async fn get_user_by_id(
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag="users"
 )]
 async fn patch_user_by_id(
     Path(id): Path<Uuid>,
@@ -217,7 +221,7 @@ async fn patch_user_by_id(
     
     match requesting_user.is_infrastructure_admin() || requesting_user.id == user_to_be_patched.id {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     match user_to_be_patched.patch(new_user, pool).await {
@@ -232,7 +236,7 @@ async fn patch_user_by_id(
 /// Change user password
 /// 
 /// Available to the infrastructure admin and the user modifying their own account.
-#[utoipa::path(patch, path = "/user/{id}/password", 
+#[utoipa::path(patch, path = "/users/{id}/password", 
     request_body=UserPasswordPatch,
     responses(
         (
@@ -246,7 +250,7 @@ async fn patch_user_by_id(
         (status=404, description = "User not found"),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag = "users"
 )]
 async fn change_user_password(
     Path(id): Path<Uuid>,
@@ -283,7 +287,7 @@ async fn change_user_password(
 /// Deleted user is automatically logged out of all sessions.
 /// This operation is only allowed when there are no resources
 /// referencing this user.
-#[utoipa::path(delete, path = "/user/{id}", 
+#[utoipa::path(delete, path = "/users/{id}", 
     responses(
         (status=204, description = "User deleted successfully"),
         (status=400, description = "Bad request"),
@@ -291,7 +295,7 @@ async fn change_user_password(
         (status=404, description = "User not found"),
         (status=409, description = "Other resources reference this user. They must be deleted first")
     ),
-    tag = "user"
+    tag="users"
 )]
 async fn delete_user_by_id(
     Path(id): Path<Uuid>,
@@ -305,13 +309,13 @@ async fn delete_user_by_id(
 
     match requesting_user.is_infrastructure_admin() {
         true => (),
-        false => return Err(OmniError::UnauthorizedError),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let user_to_be_deleted = User::get_by_id(id, pool).await?;
 
     match user_to_be_deleted.is_infrastructure_admin() {
-        true => return Err(OmniError::UnauthorizedError),
+        true => return Err(OmniError::InsufficientPermissionsError),
         false => ()
     }
 
@@ -329,6 +333,42 @@ async fn delete_user_by_id(
             }
         },
     }
+}
+
+/// Generate a single-use login token.
+/// 
+/// Available only to the infrastructure admin.
+#[utoipa::path(delete, path = "/users/{id}/login_link", 
+    responses(
+        (status=200, description = "A single-use login link"),
+        (status=400, description = "Bad request"),
+        (status=401, description = "The user is not permitted to delete this user"),
+        (status=404, description = "User not found"),
+        (status=409, description = "Other resources reference this user. They must be deleted first")
+    ),
+    tag="users"
+)]
+async fn generate_login_token(
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let user = User::authenticate(&headers, cookies, pool).await?;
+    if !(user.is_infrastructure_admin()) {
+        return Err(OmniError::InsufficientPermissionsError)
+    }
+    let token = generate_token();
+    query!(r#"
+        INSERT INTO login_tokens (id, token_hash, user_id, used)
+        VALUES ($1, $2, $3, $4)"#,
+        Uuid::now_v7(),
+        hash_token(&token),
+        id,
+        false,
+    ).execute(pool).await?;
+    Ok((StatusCode::OK, token).into_response())
 }
 
 fn get_user_example_with_id() -> String {

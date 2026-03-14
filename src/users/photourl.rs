@@ -83,7 +83,7 @@ impl Error for PhotoUrlError {}
 mod tests {
     use url::Url;
 
-    use crate::users::photourl::{PhotoUrl, PhotoUrlError};
+    use crate::users::photourl::PhotoUrl;
 
     const EXPECT_FALSE: [&str; 10] = [
         "https://manczak.net",

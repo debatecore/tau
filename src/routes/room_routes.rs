@@ -5,20 +5,19 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use sqlx::{query, Error, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament::{location::Location, room::{Room, RoomPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{locations::Location, rooms::{Room, RoomPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = "Room with this name already exists within the scope of the tournament, to which the room is assigned.";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournament/:tournament_id/location/:location_id/room", get(get_rooms).post(create_room))
+        .route("/tournaments/:tournament_id/locations/:location_id/rooms", get(get_rooms).post(create_room))
         .route(
-            "/tournament/:tournament_id/location/:location_id/room/:id",
+            "/tournaments/:tournament_id/locations/:location_id/rooms/:id",
             get(get_room_by_id)
                 .patch(patch_room_by_id)
                 .delete(delete_room_by_id),
@@ -28,7 +27,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new room
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Room, path = "/tournament/{tournament_id}/location/{location_id}/room",
+#[utoipa::path(post, request_body=Room, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms",
     responses
     (
         (
@@ -45,7 +44,7 @@ pub fn route() -> Router<AppState> {
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="room"
+    tag="rooms"
 )]
 async fn create_room(
     State(state): State<AppState>,
@@ -77,7 +76,7 @@ async fn create_room(
     }
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/location/{location_id}/room", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms", 
     responses
     (
         (
@@ -94,7 +93,7 @@ async fn create_room(
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="room"
+    tag="rooms"
 )]
 /// Get a list of all rooms within a location
 /// 
@@ -128,7 +127,7 @@ async fn get_rooms(
 /// Get details of an existing room
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{tournament_id}/location/{location_id}/room/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Room,
@@ -143,7 +142,7 @@ async fn get_rooms(
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="room"
+    tag="rooms"
 )]
 async fn get_room_by_id(
     State(state): State<AppState>,
@@ -172,7 +171,7 @@ async fn get_room_by_id(
 /// Patch an existing room
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/location/{location_id}/room/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
     request_body=Room,
     responses(
         (
@@ -193,7 +192,7 @@ async fn get_room_by_id(
         ),
         (status=500, description = "Internal server error"),
     ),
-    tag="room"
+    tag="rooms"
 )]
 async fn patch_room_by_id(
     Path(( tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
@@ -229,7 +228,7 @@ async fn patch_room_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this room. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournament/{tournament_id}/location/{location_id}/room/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
     responses
     (
         (status=204, description = "Room deleted successfully"),
@@ -242,7 +241,7 @@ async fn patch_room_by_id(
         (status=404, description = "Tournament or room not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="room"
+    tag="rooms"
 )]
 async fn delete_room_by_id(
     Path((tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,

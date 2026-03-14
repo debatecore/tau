@@ -1,10 +1,6 @@
 use super::User;
-use crate::{
-    omni_error::OmniError,
-    users::{permissions::Permission, roles::Role, TournamentUser},
-};
+use crate::omni_error::OmniError;
 use sqlx::{Pool, Postgres};
-use strum::VariantArray;
 use tracing::{error, info};
 use uuid::Uuid;
 
@@ -49,17 +45,27 @@ pub async fn guarantee_infrastructure_admin_exists(pool: &Pool<Postgres>) {
     };
 }
 
-#[test]
-fn construct_infradmin() {
-    let infradmin = User::new_infrastructure_admin();
-    assert!(infradmin.is_infrastructure_admin());
-    let permissions: Vec<Permission> = Permission::VARIANTS.to_vec();
-    let roles: Vec<Role> = vec![];
-    let user = TournamentUser {
-        user: infradmin,
-        roles: roles,
+#[cfg(test)]
+mod tests {
+    use strum::VariantArray;
+
+    use crate::{
+        tournaments::roles::Role,
+        users::{permissions::Permission, TournamentUser, User},
     };
-    for permission in permissions {
-        assert!(user.has_permission(permission))
+
+    #[test]
+    fn construct_infradmin() {
+        let infradmin = User::new_infrastructure_admin();
+        assert!(infradmin.is_infrastructure_admin());
+        let permissions: Vec<Permission> = Permission::VARIANTS.to_vec();
+        let roles: Vec<Role> = vec![];
+        let user = TournamentUser {
+            user: infradmin,
+            roles: roles,
+        };
+        for permission in permissions {
+            assert!(user.has_permission(permission))
+        }
     }
 }

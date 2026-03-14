@@ -6,24 +6,31 @@ use crate::routes::auth;
 use crate::routes::user_routes;
 use crate::setup::AppState;
 
+use crate::routes::affiliation_routes;
 use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
 use crate::routes::location_routes;
 use crate::routes::motion_routes;
+use crate::routes::phase_routes;
+use crate::routes::roles_routes;
 use crate::routes::room_routes;
+use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
-use crate::tournament;
-use crate::tournament::attendee;
-use crate::tournament::debate;
-use crate::tournament::location;
-use crate::tournament::motion;
-use crate::tournament::room;
-use crate::tournament::team;
+use crate::tournaments;
+use crate::tournaments::affiliations;
+use crate::tournaments::attendees;
+use crate::tournaments::debates;
+use crate::tournaments::locations;
+use crate::tournaments::motions;
+use crate::tournaments::phases;
+use crate::tournaments::roles;
+use crate::tournaments::rooms;
+use crate::tournaments::rounds;
+use crate::tournaments::teams;
+use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
-use crate::users::roles;
-use crate::users::UserPatch;
 
 use super::health_check;
 use super::teapot;
@@ -80,39 +87,74 @@ pub fn route() -> Router<AppState> {
         room_routes::get_room_by_id,
         room_routes::patch_room_by_id,
         room_routes::delete_room_by_id,
+        auth::auth_clear,
+        user_routes::get_users,
+        user_routes::create_user,
+        user_routes::get_user_by_id,
+        user_routes::patch_user_by_id,
+        user_routes::delete_user_by_id,
+        roles_routes::create_user_roles,
+        roles_routes::get_user_roles,
+        roles_routes::patch_user_roles,
+        roles_routes::delete_user_roles,
         user_routes::get_users,
         user_routes::create_user,
         user_routes::get_user_by_id,
         user_routes::patch_user_by_id,
         user_routes::delete_user_by_id,
         user_routes::change_user_password,
+        affiliation_routes::create_affiliation,
+        affiliation_routes::get_affiliations,
+        affiliation_routes::get_affiliation_by_id,
+        affiliation_routes::patch_affiliation_by_id,
+        affiliation_routes::delete_affiliation_by_id,
+        round_routes::create_round,
+        round_routes::get_round_by_id,
+        round_routes::get_rounds,
+        round_routes::patch_round_by_id,
+        round_routes::delete_round_by_id,
+        phase_routes::create_phase,
+        phase_routes::get_phase_by_id,
+        phase_routes::get_phases,
+        phase_routes::patch_phase_by_id,
+        phase_routes::delete_phase_by_id
     ),
     components(schemas(
         version::VersionDetails,
         version::VersionBits,
         version::GitInfo,
-        tournament::Tournament,
-        tournament::TournamentPatch,
-        motion::Motion,
-        motion::MotionPatch,
-        team::Team,
-        team::TeamPatch,
-        debate::Debate,
-        debate::DebatePatch,
-        attendee::Attendee,
-        attendee::AttendeePatch,
+        tournaments::Tournament,
+        tournaments::TournamentPatch,
+        motions::Motion,
+        motions::MotionPatch,
+        teams::Team,
+        teams::TeamPatch,
+        debates::Debate,
+        debates::DebatePatch,
+        attendees::Attendee,
+        attendees::AttendeePatch,
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
-        location::Location,
-        location::LocationPatch,
-        room::Room,
-        room::RoomPatch,
+        locations::Location,
+        locations::LocationPatch,
+        rooms::Room,
+        rooms::RoomPatch,
+        user_routes::UserWithPassword,
+        users::UserPatch,
         user_routes::UserWithPassword,
         user_routes::UserPasswordPatch,
         crate::users::UserPatch,
         crate::users::User,
-        photourl::PhotoUrl
+        photourl::PhotoUrl,
+        affiliations::Affiliation,
+        affiliations::AffiliationPatch,
+        phases::Phase,
+        phases::PhasePatch,
+        phases::PhaseStatus,
+        rounds::Round,
+        rounds::RoundPatch,
+        rounds::RoundStatus,
     ))
 )]
 

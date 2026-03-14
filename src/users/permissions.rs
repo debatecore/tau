@@ -30,9 +30,22 @@ pub enum Permission {
     SubmitOwnVerdictVote,
     SubmitVerdict,
 
+    WriteRoles,
+
     ReadLocations,
     WriteLocations,
 
     ReadRooms,
+    ModifyAllRoomDetails,
+    ChangeRoomOccupationStatus,
+
+    ReadAffiliations,
+    WriteAffiliations,
     WriteRooms,
+
+    ReadPhases,
+    WritePhases,
+
+    ReadRounds,
+    WriteRounds,
 }

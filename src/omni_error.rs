@@ -12,6 +12,10 @@ const BAD_REQUEST: &str = "Bad Request";
 const INSUFFICIENT_PERMISSIONS_MESSAGE: &str =
     "You don't have permissions required to perform this operation";
 const REFERRING_TO_A_NONEXISTENT_RESOURCE: &str = "Referring to a nonexistent resource";
+const ROLES_PARSING_MESSAGE: &str = "Failed to parse user roles";
+const NOT_A_JUDGE_MESSAGE: &str =
+    "This user is not a Judge and therefore cannot have affiliations";
+const PHASE_STATUS_PARSING_MESSAGE: &str = "Failed to parse phase status";
 
 #[derive(thiserror::Error, Debug)]
 pub enum OmniError {
@@ -51,6 +55,12 @@ pub enum OmniError {
     InsufficientPermissionsError,
     #[error("REFERRING_TO_A_NONEXISTENT_RESOURCE")]
     ReferringToNonexistentResourceError,
+    #[error("ROLES_PARSING_MESSAGE")]
+    RolesParsingError,
+    #[error{"NOT_A_JUDGE_MESSAGE"}]
+    NotAJudgeAffiliationError,
+    #[error{"PHASE_STATUS_PARSING_MESSAGE"}]
+    PhaseStatusParsingError,
 }
 
 impl IntoResponse for OmniError {
@@ -124,7 +134,6 @@ impl OmniError {
                 }
                 _ => (ISE, "SQLx Error").into_response(),
             },
-
             E::PhotoUrlError(_)
             | E::SerdeJsonError(_)
             | E::Base64DecodeError(_)
@@ -134,7 +143,7 @@ impl OmniError {
                 (StatusCode::CONFLICT, self.clerr()).into_response()
             }
             E::ResourceNotFoundError => {
-                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+                (StatusCode::NOT_FOUND, self.clerr()).into_response()
             }
             E::DependentResourcesError => {
                 (StatusCode::CONFLICT, self.clerr()).into_response()
@@ -147,10 +156,19 @@ impl OmniError {
             }
             E::BadRequestError => (StatusCode::BAD_REQUEST, self.clerr()).into_response(),
             E::InsufficientPermissionsError => {
-                (StatusCode::FORBIDDEN, self.clerr()).into_response()
+                (StatusCode::UNAUTHORIZED, self.clerr()).into_response()
             }
             E::ReferringToNonexistentResourceError => {
                 (StatusCode::NOT_FOUND, self.clerr()).into_response()
+            }
+            E::RolesParsingError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
+            }
+            E::NotAJudgeAffiliationError => {
+                (StatusCode::CONFLICT, self.clerr()).into_response()
+            }
+            E::PhaseStatusParsingError => {
+                (StatusCode::BAD_REQUEST, self.clerr()).into_response()
             }
         }
     }
@@ -174,6 +192,9 @@ impl OmniError {
             E::BadRequestError => BAD_REQUEST,
             E::InsufficientPermissionsError => INSUFFICIENT_PERMISSIONS_MESSAGE,
             E::ReferringToNonexistentResourceError => REFERRING_TO_A_NONEXISTENT_RESOURCE,
+            E::RolesParsingError => ROLES_PARSING_MESSAGE,
+            E::NotAJudgeAffiliationError => NOT_A_JUDGE_MESSAGE,
+            E::PhaseStatusParsingError => PHASE_STATUS_PARSING_MESSAGE,
         }
         .to_string()
     }

@@ -15,12 +15,17 @@
       },
       {
         "ordinal": 2,
-        "name": "marshall_user_id",
+        "name": "marshal_user_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 3,
         "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "round_id",
         "type_info": "Uuid"
       }
     ],
@@ -31,6 +36,7 @@
     },
     "nullable": [
       false,
+      true,
       true,
       false,
       false

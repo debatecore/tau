@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE phases SET name = $1, tournament_id = $2, is_finals = $3, previous_phase_id = $4, group_size = $5, status = $6 WHERE id = $7",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Bool",
+        "Uuid",
+        "Int4",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "316794ed7a1f6486071fb7baea2305e865616201386ad078b752dda4a23519f1"
+}

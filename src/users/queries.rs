@@ -1,16 +1,16 @@
-use crate::users::{permissions::Permission as P, UserPatch};
+use crate::{
+    tournaments::roles::Role,
+    users::{permissions::Permission as P, UserPatch},
+};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use rand::rngs::OsRng;
-use serde::Deserialize;
-use serde_json::Error as JsonError;
 use sqlx::{query, Pool, Postgres};
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{
     omni_error::OmniError,
-    tournament::Tournament,
-    users::{photourl::PhotoUrl, roles::Role, TournamentUser, User},
+    tournaments::Tournament,
+    users::{photourl::PhotoUrl, TournamentUser, User},
 };
 
 impl User {
@@ -132,7 +132,7 @@ impl User {
         }
     }
 
-    fn generate_password_hash(password: &str) -> Result<String, OmniError> {
+    pub fn generate_password_hash(password: &str) -> Result<String, OmniError> {
         let hash = {
             let argon = Argon2::default();
             let salt = SaltString::generate(&mut OsRng);
@@ -199,11 +199,21 @@ impl User {
         let vec = match roles {
             Some(vec) => vec
                 .iter()
-                .map(|role| serde_json::from_str(role.as_str()))
-                .collect::<Result<Vec<Role>, JsonError>>()?,
+                .map(|role| role.parse())
+                .collect::<Result<Vec<Role>, OmniError>>()?,
             None => vec![],
         };
         Ok(vec)
+    }
+
+    pub async fn has_role(
+        &self,
+        role: Role,
+        tournament_id: Uuid,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        let roles = self.get_roles(tournament_id, pool).await?;
+        return Ok(roles.contains(&role));
     }
 
     pub async fn can_create_users_within_any_tournament(
@@ -234,6 +244,16 @@ impl User {
         {
             Ok(_) => Ok(()),
             Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn is_organizer_of_any_tournament(
+        &self,
+        pool: &Pool<Postgres>,
+    ) -> Result<bool, OmniError> {
+        match query!("SELECT EXISTS(SELECT 1 FROM users u JOIN roles r ON u.id = r.user_id WHERE 'Organizer' = ANY(r.roles))").fetch_one(pool).await         {
+            Ok(result) => Ok(result.exists.unwrap()),
+            Err(_) => Err(OmniError::InternalServerError),
         }
     }
 }
