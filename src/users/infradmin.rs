@@ -50,7 +50,7 @@ mod tests {
     use strum::VariantArray;
 
     use crate::{
-        tournament::roles::Role,
+        tournaments::roles::Role,
         users::{permissions::Permission, TournamentUser, User},
     };
 

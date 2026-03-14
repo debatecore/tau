@@ -31,7 +31,7 @@ async fn tournament_creation_should_require_login() {
     // WHEN
     let client = Client::new();
     let res = client
-        .post(format!("http://{}/tournament", socket_address))
+        .post(format!("http://{}/tournaments", socket_address))
         .json(&request_body)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")

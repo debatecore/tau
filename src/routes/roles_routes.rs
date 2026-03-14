@@ -12,13 +12,13 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::roles::Role,
+    tournaments::roles::Role,
     users::{permissions::Permission, TournamentUser, User},
 };
 
 pub fn route() -> Router<AppState> {
     Router::new().route(
-        "/user/:user_id/tournament/:tournament_id/roles",
+        "/users/:user_id/tournaments/:tournament_id/roles",
         post(create_user_roles)
             .get(get_user_roles)
             .patch(patch_user_roles)
@@ -32,7 +32,7 @@ pub fn route() -> Router<AppState> {
 #[utoipa::path(
     post,
     request_body=Vec<Role>,
-    path = "/user/{user_id}/tournament/{tournament_id}/roles",
+    path = "/users/{user_id}/tournaments/{tournament_id}/roles",
     responses(
         (
         status=200, description = "Roles created successfully",
@@ -86,7 +86,7 @@ async fn create_user_roles(
 /// List roles a user is given within a tournament
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/user/{user_id}/tournament/{tournament_id}/roles",
+#[utoipa::path(get, path = "/users/{user_id}/tournaments/{tournament_id}/roles",
     responses(
         (status=200, description = "Ok", body=Vec<Role>,
             example=json!(get_roles_example())
@@ -128,7 +128,7 @@ async fn get_user_roles(
 /// Overwrite roles a user is given within a tournament
 ///
 /// Available only to the tournament Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/user/{user_id}/tournament/{tournament_id}/roles",
+#[utoipa::path(patch, path = "/users/{user_id}/tournaments/{tournament_id}/roles",
     request_body=Vec<Role>,
     responses(
         (
@@ -182,7 +182,7 @@ async fn patch_user_roles(
 /// Delete user roles within a tournament
 /// This operation effectively means banning the user from a tournament.
 /// Available only to the tournament Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/user/{user_id}/tournament/{tournament_id}/roles",
+#[utoipa::path(delete, path = "/users/{user_id}/tournaments/{tournament_id}/roles",
     responses
     (
         (status=204, description = "Roles deleted successfully"),
@@ -235,7 +235,7 @@ mod tests {
     use serde_json::Error;
     use strum::VariantArray;
 
-    use crate::tournament::roles::{Role, RoleVecExt};
+    use crate::tournaments::roles::{Role, RoleVecExt};
 
     #[test]
     fn role_to_string() {

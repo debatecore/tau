@@ -8,12 +8,13 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, tournament::phase::Phase};
-
-use super::{
-    debate::{Debate, DebatePatch},
-    phase::PhaseStatus,
-    Tournament,
+use crate::{
+    omni_error::OmniError,
+    tournaments::{
+        debates::{Debate, DebatePatch},
+        phases::{Phase, PhaseStatus},
+        Tournament,
+    },
 };
 
 #[serde_inline_default]

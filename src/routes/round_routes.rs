@@ -9,15 +9,15 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament::{phase::Phase, round::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{phases::Phase, rounds::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within the scope of the tournament, to which the round is assigned.";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournament/:tournament_id/phase/:phase_id/round", get(get_rounds).post(create_round))
+        .route("/tournaments/:tournament_id/phases/:phase_id/round", get(get_rounds).post(create_round))
         .route(
-            "/tournament/:tournament_id/phase/:phase_id/round/:id",
+            "/tournaments/:tournament_id/phases/:phase_id/rounds/:id",
             get(get_round_by_id)
                 .patch(patch_round_by_id)
                 .delete(delete_round_by_id),
@@ -27,7 +27,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new round
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Round, path = "/tournament/{tournament_id}/phase/{phase_id}/round",
+#[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/round",
     responses
     (
         (
@@ -44,7 +44,7 @@ pub fn route() -> Router<AppState> {
         (status=404, description = "Tournament or round not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="round"
+    tag="rounds"
 )]
 async fn create_round(
     State(state): State<AppState>,
@@ -74,7 +74,7 @@ async fn create_round(
     }
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/phase/{phase_id}/round", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/round", 
     responses
     (
         (
@@ -91,7 +91,7 @@ async fn create_round(
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="round"
+    tag="rounds"
 )]
 /// Get a list of all rounds
 /// 
@@ -122,7 +122,7 @@ async fn get_rounds(
 /// Get details of an existing round
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{tournament_id}/round/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/rounds/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Round,
@@ -137,7 +137,7 @@ async fn get_rounds(
         (status=404, description = "Tournament or round not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="round"
+    tag="rounds"
 )]
 async fn get_round_by_id(
     State(state): State<AppState>,
@@ -167,7 +167,7 @@ async fn get_round_by_id(
 /// 
 /// Patches any debates assigned to this round, if applicable.
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/phase/{phase_id}/round/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}", 
     request_body=Round,
     responses(
         (
@@ -188,7 +188,7 @@ async fn get_round_by_id(
         ),
         (status=500, description = "Internal server error"),
     ),
-    tag="round"
+    tag="rounds"
 )]
 async fn patch_round_by_id(
     Path((tournament_id, phase_id, id)): Path<(Uuid, Uuid, Uuid)>,
@@ -227,7 +227,7 @@ async fn patch_round_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this round. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournament/{tournament_id}/round/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/rounds/{id}", 
     responses
     (
         (status=204, description = "Round deleted successfully"),
@@ -240,7 +240,7 @@ async fn patch_round_by_id(
         (status=404, description = "Tournament or round not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="round"
+    tag="rounds"
 )]
 async fn delete_round_by_id(
     Path((tournament_id, phase_id, id)): Path<(Uuid, Uuid, Uuid)>,

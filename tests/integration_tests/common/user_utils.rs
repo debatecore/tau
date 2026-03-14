@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response};
-use tau::{omni_error::OmniError, setup::get_socket_addr, tournament::roles::Role};
+use tau::{omni_error::OmniError, setup::get_socket_addr, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
@@ -18,7 +18,7 @@ pub async fn create_user(handle: &str, password: &str, token: &str) -> Response 
     request_body.insert("password", password);
 
     client
-        .post(format!("http://{}/user", socket_address))
+        .post(format!("http://{}/users", socket_address))
         .json(&request_body)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")

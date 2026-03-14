@@ -10,15 +10,15 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament::{location::{Location, LocationPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{locations::{Location, LocationPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const DUPLICATE_NAME_ERROR: &str = "Location with this name already exists within the scope of the tournament, to which the location is assigned.";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournament/:tournament_id/location", get(get_locations).post(create_location))
+        .route("/tournaments/:tournament_id/locations", get(get_locations).post(create_location))
         .route(
-            "/tournament/:tournament_id/location/:id",
+            "/tournaments/:tournament_id/locations/:id",
             get(get_location_by_id)
                 .patch(patch_location_by_id)
                 .delete(delete_location_by_id),
@@ -28,7 +28,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new location
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Location, path = "/tournament/{tournament_id}/location",
+#[utoipa::path(post, request_body=Location, path = "/tournaments/{tournament_id}/locations",
     responses
     (
         (
@@ -45,7 +45,7 @@ pub fn route() -> Router<AppState> {
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="location"
+    tag="locations"
 )]
 async fn create_location(
     State(state): State<AppState>,
@@ -77,7 +77,7 @@ async fn create_location(
     }
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/location", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations", 
     responses
     (
         (
@@ -94,7 +94,7 @@ async fn create_location(
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="location"
+    tag="locations"
 )]
 /// Get a list of all locations
 /// 
@@ -130,7 +130,7 @@ async fn get_locations(
 /// Get details of an existing location
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{tournament_id}/location/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Location,
@@ -145,7 +145,7 @@ async fn get_locations(
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="location"
+    tag="locations"
 )]
 async fn get_location_by_id(
     State(state): State<AppState>,
@@ -174,7 +174,7 @@ async fn get_location_by_id(
 /// Patch an existing location
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/location/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}", 
     request_body=Location,
     responses(
         (
@@ -195,7 +195,7 @@ async fn get_location_by_id(
         ),
         (status=500, description = "Internal server error"),
     ),
-    tag="location"
+    tag="locations"
 )]
 async fn patch_location_by_id(
     Path((_tournament_id, id)): Path<(Uuid, Uuid)>,
@@ -232,7 +232,7 @@ async fn patch_location_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this location. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournament/{tournament_id}/location/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}", 
     responses
     (
         (status=204, description = "Location deleted successfully"),
@@ -245,7 +245,7 @@ async fn patch_location_by_id(
         (status=404, description = "Tournament or location not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="location"
+    tag="locations"
 )]
 async fn delete_location_by_id(
     Path((tournament_id, id)): Path<(Uuid, Uuid)>,

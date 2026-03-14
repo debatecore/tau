@@ -17,17 +17,17 @@ use crate::routes::room_routes;
 use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
-use crate::tournament;
-use crate::tournament::affiliation;
-use crate::tournament::attendee;
-use crate::tournament::debate;
-use crate::tournament::location;
-use crate::tournament::motion;
-use crate::tournament::phase;
-use crate::tournament::roles;
-use crate::tournament::room;
-use crate::tournament::round;
-use crate::tournament::team;
+use crate::tournaments;
+use crate::tournaments::affiliations;
+use crate::tournaments::attendees;
+use crate::tournaments::debates;
+use crate::tournaments::locations;
+use crate::tournaments::motions;
+use crate::tournaments::phases;
+use crate::tournaments::roles;
+use crate::tournaments::rooms;
+use crate::tournaments::rounds;
+use crate::tournaments::teams;
 use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
@@ -123,23 +123,23 @@ pub fn route() -> Router<AppState> {
         version::VersionDetails,
         version::VersionBits,
         version::GitInfo,
-        tournament::Tournament,
-        tournament::TournamentPatch,
-        motion::Motion,
-        motion::MotionPatch,
-        team::Team,
-        team::TeamPatch,
-        debate::Debate,
-        debate::DebatePatch,
-        attendee::Attendee,
-        attendee::AttendeePatch,
+        tournaments::Tournament,
+        tournaments::TournamentPatch,
+        motions::Motion,
+        motions::MotionPatch,
+        teams::Team,
+        teams::TeamPatch,
+        debates::Debate,
+        debates::DebatePatch,
+        attendees::Attendee,
+        attendees::AttendeePatch,
         permissions::Permission,
         roles::Role,
         auth::LoginRequest,
-        location::Location,
-        location::LocationPatch,
-        room::Room,
-        room::RoomPatch,
+        locations::Location,
+        locations::LocationPatch,
+        rooms::Room,
+        rooms::RoomPatch,
         user_routes::UserWithPassword,
         users::UserPatch,
         user_routes::UserWithPassword,
@@ -147,14 +147,14 @@ pub fn route() -> Router<AppState> {
         crate::users::UserPatch,
         crate::users::User,
         photourl::PhotoUrl,
-        affiliation::Affiliation,
-        affiliation::AffiliationPatch,
-        phase::Phase,
-        phase::PhasePatch,
-        phase::PhaseStatus,
-        round::Round,
-        round::RoundPatch,
-        round::RoundStatus,
+        affiliations::Affiliation,
+        affiliations::AffiliationPatch,
+        phases::Phase,
+        phases::PhasePatch,
+        phases::PhaseStatus,
+        rounds::Round,
+        rounds::RoundPatch,
+        rounds::RoundStatus,
     ))
 )]
 

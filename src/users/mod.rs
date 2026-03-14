@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 mod queries;
 
-use crate::{omni_error::OmniError, tournament::roles::Role};
+use crate::{omni_error::OmniError, tournaments::roles::Role};
 
 pub mod auth;
 pub mod infradmin;

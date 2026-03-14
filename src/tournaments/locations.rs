@@ -4,9 +4,7 @@ use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::omni_error::OmniError;
-
-use super::room::Room;
+use crate::{omni_error::OmniError, tournaments::rooms::Room};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

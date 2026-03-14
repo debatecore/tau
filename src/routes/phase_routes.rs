@@ -9,15 +9,15 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournament::{phase::{Phase, PhasePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{phases::{Phase, PhasePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 const CONFLICT_MESSAGE: &str = "Conflict";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournament/:tournament_id/phase", get(get_phases).post(create_phase))
+        .route("/tournaments/:tournament_id/phases", get(get_phases).post(create_phase))
         .route(
-            "/tournament/:tournament_id/phase/:id",
+            "/tournaments/:tournament_id/phases/:id",
             get(get_phase_by_id)
                 .patch(patch_phase_by_id)
                 .delete(delete_phase_by_id),
@@ -27,7 +27,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new phase
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Phase, path = "/tournament/{tournament_id}/phase",
+#[utoipa::path(post, request_body=Phase, path = "/tournaments/{tournament_id}/phases",
     responses
     (
         (
@@ -44,7 +44,7 @@ pub fn route() -> Router<AppState> {
         (status=404, description = "Tournament or phase not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="phase"
+    tag="phases"
 )]
 async fn create_phase(
     State(state): State<AppState>,
@@ -74,7 +74,7 @@ async fn create_phase(
     }
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/phase", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases", 
     responses
     (
         (
@@ -91,7 +91,7 @@ async fn create_phase(
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="phase"
+    tag="phases"
 )]
 /// Get a list of all phases
 /// 
@@ -122,7 +122,7 @@ async fn get_phases(
 /// Get details of an existing phase
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{tournament_id}/phase/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Phase,
@@ -137,7 +137,7 @@ async fn get_phases(
         (status=404, description = "Tournament or phase not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="phase"
+    tag="phases"
 )]
 async fn get_phase_by_id(
     State(state): State<AppState>,
@@ -166,7 +166,7 @@ async fn get_phase_by_id(
 /// Patch an existing phase
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournament/{tournament_id}/phase/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{id}", 
     request_body=Phase,
     responses(
         (
@@ -187,7 +187,7 @@ async fn get_phase_by_id(
         ),
         (status=500, description = "Internal server error"),
     ),
-    tag="phase"
+    tag="phases"
 )]
 async fn patch_phase_by_id(
     Path((tournament_id, id)): Path<(Uuid, Uuid)>,
@@ -219,7 +219,7 @@ async fn patch_phase_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this phase. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournament/{tournament_id}/phase/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/phases/{id}", 
     responses
     (
         (status=204, description = "Phase deleted successfully"),
@@ -232,7 +232,7 @@ async fn patch_phase_by_id(
         (status=404, description = "Tournament or phase not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="phase"
+    tag="phases"
 )]
 async fn delete_phase_by_id(
     Path((tournament_id, id)): Path<(Uuid, Uuid)>,

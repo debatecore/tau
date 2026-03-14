@@ -1,5 +1,5 @@
 use crate::{
-    tournament::roles::Role,
+    tournaments::roles::Role,
     users::{permissions::Permission as P, UserPatch},
 };
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     omni_error::OmniError,
-    tournament::Tournament,
+    tournaments::Tournament,
     users::{photourl::PhotoUrl, TournamentUser, User},
 };
 

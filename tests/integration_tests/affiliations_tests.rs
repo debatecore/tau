@@ -2,7 +2,7 @@ use std::{future::IntoFuture, vec};
 
 use reqwest::StatusCode;
 use serial_test::serial;
-use tau::{omni_error::OmniError, setup, tournament::roles::Role};
+use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
 
 use crate::common::{
     affiliations_utils::{

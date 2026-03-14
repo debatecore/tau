@@ -1,7 +1,7 @@
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::{Tournament, TournamentPatch},
+    tournaments::{Tournament, TournamentPatch},
     users::{permissions::Permission, TournamentUser, User},
 };
 use axum::{
@@ -17,9 +17,9 @@ use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournament", get(get_tournaments).post(create_tournament))
+        .route("/tournaments", get(get_tournaments).post(create_tournament))
         .route(
-            "/tournament/:id",
+            "/tournaments/:id",
             get(get_tournament_by_id)
                 .delete(delete_tournament_by_id)
                 .patch(patch_tournament_by_id),
@@ -31,7 +31,7 @@ pub fn route() -> Router<AppState> {
 /// This request only returns the tournaments the user is permitted to see.
 /// The user must be given any role within a tournament to see it.
 /// The infrastructure admin can see all tournaments
-#[utoipa::path(get, path = "/tournament",
+#[utoipa::path(get, path = "/tournaments",
     responses(
         (
             status=200, description = "Ok",
@@ -42,7 +42,7 @@ pub fn route() -> Router<AppState> {
         (status=401, description = "Unauthorized; user auth not present or invalid"),
         (status=500, description = "Internal server error")
     ),
-    tag="tournament"
+    tag="tournaments"
 )]
 async fn get_tournaments(
     State(state): State<AppState>,
@@ -74,7 +74,7 @@ async fn get_tournaments(
 #[utoipa::path(
     post,
     request_body=Tournament,
-    path = "/tournament",
+    path = "/tournaments",
     responses
     (
         (
@@ -92,7 +92,7 @@ async fn get_tournaments(
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error")
     ),
-    tag="tournament"
+    tag="tournaments"
 )]
 async fn create_tournament(
     State(state): State<AppState>,
@@ -113,7 +113,7 @@ async fn create_tournament(
 /// Get details of an existing tournament
 ///
 /// The user must be given any role within the tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{id}",
+#[utoipa::path(get, path = "/tournaments/{id}",
     responses
     (
         (
@@ -130,7 +130,7 @@ async fn create_tournament(
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error")
     ),
-    tag="tournament"
+    tag="tournaments"
 )]
 async fn get_tournament_by_id(
     Path(id): Path<Uuid>,
@@ -156,7 +156,7 @@ async fn get_tournament_by_id(
 /// Patch an existing tournament
 ///
 /// Available to the tournament Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/tournament/{id}",
+#[utoipa::path(patch, path = "/tournaments/{id}",
     request_body=TournamentPatch,
     responses(
         (
@@ -174,7 +174,7 @@ async fn get_tournament_by_id(
         (status=409, description = "A tournament with this name already exists"),
         (status=500, description = "Internal server error")
     ),
-    tag="tournament"
+    tag="tournaments"
 )]
 async fn patch_tournament_by_id(
     Path(id): Path<Uuid>,
@@ -208,7 +208,7 @@ async fn patch_tournament_by_id(
 /// Available only to the tournament Organizers and the infrastructure admin.
 /// This operation is only allowed when there are no resources
 /// referencing this tournament.
-#[utoipa::path(delete, path = "/tournament/{id}",
+#[utoipa::path(delete, path = "/tournaments/{id}",
     responses(
         (status=204, description = "Tournament deleted successfully"),
         (status=400, description = "Bad request"),
@@ -217,7 +217,7 @@ async fn patch_tournament_by_id(
         (status=404, description = "Tournament not found"),
         (status=409, description = "Other resources reference this tournament. They must be deleted first")
     ),
-    tag="tournament"
+    tag="tournaments"
 )]
 async fn delete_tournament_by_id(
     Path(id): Path<Uuid>,

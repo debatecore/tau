@@ -35,7 +35,7 @@ pub async fn create_affiliation(judge_id: &str, team_id: &str, token: &str) -> R
 
     client
         .post(format!(
-            "http://{}/user/{}/affiliations",
+            "http://{}/users/{}/affiliations",
             socket_address, judge_id
         ))
         .json(&request_body)
@@ -53,7 +53,7 @@ pub async fn get_affiliation(id: &str, judge_id: &str, token: &str) -> Response 
 
     client
         .get(format!(
-            "http://{}/user/{}/affiliations/{}",
+            "http://{}/users/{}/affiliations/{}",
             socket_address, judge_id, id
         ))
         .header("accept", "application/json")
@@ -73,7 +73,7 @@ pub async fn get_all_affiliations(
 
     client
         .get(format!(
-            "http://{}/user/{}/affiliations/tournament/{}",
+            "http://{}/users/{}/affiliations/tournament/{}",
             socket_address, judge_id, tournament_id
         ))
         .header("accept", "application/json")
@@ -98,7 +98,7 @@ pub async fn patch_affiliation(
 
     client
         .patch(format!(
-            "http://{}/user/{}/affiliations/{}",
+            "http://{}/users/{}/affiliations/{}",
             socket_address, judge_id, id
         ))
         .json(&request_body)
@@ -116,7 +116,7 @@ pub async fn delete_affiliation(id: &str, judge_id: &str, token: &str) -> Respon
 
     client
         .delete(format!(
-            "http://{}/user/{}/affiliations/{}",
+            "http://{}/users/{}/affiliations/{}",
             socket_address, judge_id, id
         ))
         .header("accept", "text/plain")

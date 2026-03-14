@@ -46,21 +46,21 @@ pub struct UserPasswordPatch {
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/user", get(get_users).post(create_user))
+        .route("/users", get(get_users).post(create_user))
         .route(
-            "/user/:id",
+            "/users/:id",
             get(get_user_by_id)
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
-        ).route("/user/:id/login_token", post(generate_login_token))
-        .route("/user/:id/password", patch(change_user_password))
+        ).route("/users/:id/login_token", post(generate_login_token))
+        .route("/users/:id/password", patch(change_user_password))
 }
 
 /// Get a list of all users
 /// 
 /// This request only returns the users the user is permitted to see.
 /// The user must be given any role within a user to see it.
-#[utoipa::path(get, path = "/user", 
+#[utoipa::path(get, path = "/users", 
     responses(
         (
             status=200, description = "Ok",
@@ -74,7 +74,7 @@ pub fn route() -> Router<AppState> {
         ),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag = "users"
 )]
 async fn get_users(
     State(state): State<AppState>,
@@ -99,7 +99,7 @@ async fn get_users(
 #[utoipa::path(
     post,
     request_body=User,
-    path = "/user",
+    path = "/users",
     responses
     (
         (
@@ -117,7 +117,7 @@ async fn get_users(
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
     ),
-    tag="user"
+    tag="users"
 )]
 async fn create_user(
     State(state): State<AppState>,
@@ -145,7 +145,7 @@ async fn create_user(
 /// Get details of an existing user
 /// 
 /// Every user is permitted to use this endpoint.
-#[utoipa::path(get, path = "/user/{id}", 
+#[utoipa::path(get, path = "/users/{id}", 
     responses
     (
         (
@@ -161,7 +161,7 @@ async fn create_user(
         (status=404, description = "User not found"),
         (status=500, description = "Internal server error")
     ),
-    tag="user"
+    tag="users"
 )]
 async fn get_user_by_id(
     Path(id): Path<Uuid>,
@@ -186,7 +186,7 @@ async fn get_user_by_id(
 /// Allows to modify user data not related to security.
 /// Available to the infrastructure admin and the user modifying their own account.
 /// In order to change user password, use the /user/{id}/password endpoint.
-#[utoipa::path(patch, path = "/user/{id}", 
+#[utoipa::path(patch, path = "/users/{id}", 
     request_body=UserPatch,
     responses(
         (
@@ -204,7 +204,7 @@ async fn get_user_by_id(
         (status=422, description = "Invalid picture link"),
         (status=500, description = "Internal server error")
     ),
-    tag="user"
+    tag="users"
 )]
 async fn patch_user_by_id(
     Path(id): Path<Uuid>,
@@ -236,7 +236,7 @@ async fn patch_user_by_id(
 /// Change user password
 /// 
 /// Available to the infrastructure admin and the user modifying their own account.
-#[utoipa::path(patch, path = "/user/{id}/password", 
+#[utoipa::path(patch, path = "/users/{id}/password", 
     request_body=UserPasswordPatch,
     responses(
         (
@@ -250,7 +250,7 @@ async fn patch_user_by_id(
         (status=404, description = "User not found"),
         (status=500, description = "Internal server error")
     ),
-    tag = "user"
+    tag = "users"
 )]
 async fn change_user_password(
     Path(id): Path<Uuid>,
@@ -287,7 +287,7 @@ async fn change_user_password(
 /// Deleted user is automatically logged out of all sessions.
 /// This operation is only allowed when there are no resources
 /// referencing this user.
-#[utoipa::path(delete, path = "/user/{id}", 
+#[utoipa::path(delete, path = "/users/{id}", 
     responses(
         (status=204, description = "User deleted successfully"),
         (status=400, description = "Bad request"),
@@ -295,7 +295,7 @@ async fn change_user_password(
         (status=404, description = "User not found"),
         (status=409, description = "Other resources reference this user. They must be deleted first")
     ),
-    tag="user"
+    tag="users"
 )]
 async fn delete_user_by_id(
     Path(id): Path<Uuid>,
@@ -338,7 +338,7 @@ async fn delete_user_by_id(
 /// Generate a single-use login token.
 /// 
 /// Available only to the infrastructure admin.
-#[utoipa::path(delete, path = "/user/{id}/login_link", 
+#[utoipa::path(delete, path = "/users/{id}/login_link", 
     responses(
         (status=200, description = "A single-use login link"),
         (status=400, description = "Bad request"),
@@ -346,7 +346,7 @@ async fn delete_user_by_id(
         (status=404, description = "User not found"),
         (status=409, description = "Other resources reference this user. They must be deleted first")
     ),
-    tag="user"
+    tag="users"
 )]
 async fn generate_login_token(
     Path(id): Path<Uuid>,

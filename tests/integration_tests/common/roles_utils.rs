@@ -1,6 +1,6 @@
 use reqwest::{Client, Response};
 use tau::setup::get_socket_addr;
-use tau::tournament::roles::Role;
+use tau::tournaments::roles::Role;
 
 pub async fn create_roles(
     user_id: &str,
@@ -14,7 +14,7 @@ pub async fn create_roles(
 
     client
         .post(format!(
-            "http://{}/user/{}/tournament/{}/roles",
+            "http://{}/users/{}/tournaments/{}/roles",
             socket_address, user_id, tournament_id
         ))
         .body(roles_string)
@@ -32,7 +32,7 @@ pub async fn get_roles(user_id: &str, tournament_id: &str, token: &str) -> Respo
 
     client
         .get(format!(
-            "http://{}/user/{}/tournament/{}/roles",
+            "http://{}/users/{}/tournaments/{}/roles",
             socket_address, user_id, tournament_id
         ))
         .header("accept", "text/plain")
@@ -55,7 +55,7 @@ pub async fn patch_roles(
 
     client
         .patch(format!(
-            "http://{}/user/{}/tournament/{}/roles",
+            "http://{}/users/{}/tournaments/{}/roles",
             socket_address, user_id, tournament_id
         ))
         .body(roles_string)
@@ -73,7 +73,7 @@ pub async fn delete_roles(user_id: &str, tournament_id: &str, token: &str) -> Re
 
     client
         .delete(format!(
-            "http://{}/user/{}/tournament/{}/roles",
+            "http://{}/users/{}/tournaments/{}/roles",
             socket_address, user_id, tournament_id
         ))
         .header("accept", "text/plain")

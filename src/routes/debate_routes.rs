@@ -1,4 +1,4 @@
-use crate::{omni_error::OmniError, setup::AppState, tournament::{debate::{Debate, DebatePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{debates::{Debate, DebatePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -13,16 +13,16 @@ use uuid::Uuid;
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournament/:tournament_id/debate", get(get_debates).post(create_debate))
+        .route("/tournaments/:tournament_id/debates", get(get_debates).post(create_debate))
         .route(
-            "/tournament/:tournament_id/debate/:id",
+            "/tournaments/:tournament_id/debates/:id",
             get(get_debate_by_id)
                 .delete(delete_debate_by_id)
                 .patch(patch_debate_by_id),
         )
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/debate", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates", 
     responses(
         (
             status=200, description = "Ok",
@@ -37,7 +37,7 @@ pub fn route() -> Router<AppState> {
         (status=404, description = "Tournament not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="debate"
+    tag="debates"
 )]
 /// Get a list of all debates
 /// 
@@ -70,7 +70,7 @@ async fn get_debates(
 /// Create a new debate
 /// 
 /// Available only to Organizers and Admins.
-#[utoipa::path(post, request_body=Debate, path = "/tournament/{tournament_id}/debate",
+#[utoipa::path(post, request_body=Debate, path = "/tournaments/{tournament_id}/debates",
     responses(
         (
             status=200,
@@ -86,7 +86,7 @@ async fn get_debates(
         (status=404, description = "Tournament or attendee not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="debate"
+    tag="debates"
 )]
 async fn create_debate(
     State(state): State<AppState>,
@@ -116,7 +116,7 @@ async fn create_debate(
 /// Get details of an existing debate
 /// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournament/{tournament_id}/debate/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates/{id}", 
     responses(
         (
             status=200,
@@ -132,7 +132,7 @@ async fn create_debate(
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="debate"
+    tag="debates"
 )]
 async fn get_debate_by_id(
     State(state): State<AppState>,
@@ -165,7 +165,7 @@ async fn get_debate_by_id(
 /// Patch an existing debate
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "tournament/{tournament_id}/debate/{id}", 
+#[utoipa::path(patch, path = "tournaments/{tournament_id}/debates/{id}", 
     request_body=DebatePatch,
     responses(
         (
@@ -181,7 +181,7 @@ async fn get_debate_by_id(
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="debate"
+    tag="debates"
 )]
 async fn patch_debate_by_id(
     State(state): State<AppState>,
@@ -215,7 +215,7 @@ async fn patch_debate_by_id(
 /// Delete an existing debate
 /// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "{tournament_id}/debate/{id}", 
+#[utoipa::path(delete, path = "{tournament_id}/debates/{id}", 
     responses
     (
         (status=204, description = "Debate deleted successfully"),
@@ -228,7 +228,7 @@ async fn patch_debate_by_id(
         (status=404, description = "Tournament or debate not found"),
         (status=500, description = "Internal server error"),
     ),
-    tag="debate"
+    tag="debates"
 )]
 async fn delete_debate_by_id(
     State(state): State<AppState>,

@@ -13,10 +13,10 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournament::{
-        affiliation::{Affiliation, AffiliationPatch},
+    tournaments::{
+        affiliations::{Affiliation, AffiliationPatch},
         roles::Role,
-        team::Team,
+        teams::Team,
         Tournament,
     },
     users::{permissions::Permission, TournamentUser, User},
@@ -24,13 +24,13 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/user/:user_id/affiliations", post(create_affiliation))
+        .route("/users/:user_id/affiliations", post(create_affiliation))
         .route(
-            "/user/:user_id/affiliations/tournament/:tournament_id",
+            "/users/:user_id/affiliations/tournament/:tournament_id",
             get(get_affiliations),
         )
         .route(
-            "/user/:user_id/affiliations/:id",
+            "/users/:user_id/affiliations/:id",
             get(get_affiliation_by_id)
                 .patch(patch_affiliation_by_id)
                 .delete(delete_affiliation_by_id),
@@ -40,7 +40,7 @@ pub fn route() -> Router<AppState> {
 /// Create a new affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(post, request_body=Affiliation, path = "/user/{user_id}/affiliations",
+#[utoipa::path(post, request_body=Affiliation, path = "/users/{user_id}/affiliations",
     responses(
         (status=200, description = "Ok", body=Affiliation),
         (status=400, description = "Bad request"),
@@ -92,7 +92,7 @@ fn params_and_affiliation_fields_match(
     return true;
 }
 
-#[utoipa::path(get, path = "/user/{user_id}/affiliations/tournament/{tournament_id}",
+#[utoipa::path(get, path = "/users/{user_id}/affiliations/tournament/{tournament_id}",
     responses
     (
         (status=200, description = "Ok", body=Vec<Affiliation>),
@@ -145,7 +145,7 @@ async fn get_affiliations(
 /// Get details of an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(get, path = "/user/{user_id}/affiliations/{id}",
+#[utoipa::path(get, path = "/users/{user_id}/affiliations/{id}",
     responses(
         (status=200, description = "Ok", body=Affiliation),
         (status=400, description = "Bad request"),
@@ -178,7 +178,7 @@ async fn get_affiliation_by_id(
 /// Patch an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/user/{user_id}/affiliations/{id}",
+#[utoipa::path(patch, path = "/users/{user_id}/affiliations/{id}",
     request_body=Affiliation,
     responses(
         (status=200, description = "Ok", body=Affiliation),
@@ -230,7 +230,7 @@ async fn patch_affiliation_by_id(
 /// Delete an existing affiliation
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/user/{user_id}/affiliations/{id}",
+#[utoipa::path(delete, path = "/users/{user_id}/affiliations/{id}",
     responses(
         (status=204, description = "No content"),
         (status=400, description = "Bad request"),

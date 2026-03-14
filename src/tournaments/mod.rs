@@ -1,26 +1,26 @@
-use debate::Debate;
-use location::Location;
-use phase::{Phase, PhaseStatus};
-use round::Round;
+use debates::Debate;
+use locations::Location;
+use phases::{Phase, PhaseStatus};
+use rounds::Round;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
-use team::Team;
+use teams::Team;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::omni_error::OmniError;
 
-pub(crate) mod affiliation;
-pub(crate) mod attendee;
-pub(crate) mod debate;
-pub(crate) mod location;
-pub(crate) mod motion;
-pub(crate) mod phase;
+pub(crate) mod affiliations;
+pub(crate) mod attendees;
+pub(crate) mod debates;
+pub(crate) mod locations;
+pub(crate) mod motions;
+pub(crate) mod phases;
 pub mod roles;
-pub(crate) mod room;
-pub(crate) mod round;
-pub(crate) mod team;
+pub(crate) mod rooms;
+pub(crate) mod rounds;
+pub(crate) mod teams;
 
 static DEFAULT_SPEECH_TIME: i32 = 300;
 static DEFAULT_END_PROTECTED_TIME: i32 = 30;

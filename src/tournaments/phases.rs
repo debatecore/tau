@@ -7,9 +7,10 @@ use sqlx::{query, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::omni_error::OmniError;
-
-use super::round::{Round, RoundStatus};
+use crate::{
+    omni_error::OmniError,
+    tournaments::rounds::{Round, RoundStatus},
+};
 
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema, Clone)]

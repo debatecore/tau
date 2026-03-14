@@ -33,7 +33,7 @@ pub async fn create_team(
 
     client
         .post(format!(
-            "http://{}/tournament/{}/team",
+            "http://{}/tournaments/{}/teams",
             socket_address, tournament_id
         ))
         .json(&request_body)
@@ -51,7 +51,7 @@ pub async fn get_team(id: &str, tournament_id: &str, token: &str) -> Response {
 
     client
         .get(format!(
-            "http://{}/tournament/{}/team/{}",
+            "http://{}/tournaments/{}/teams/{}",
             socket_address, tournament_id, id
         ))
         .header("accept", "text/plain")
@@ -79,7 +79,7 @@ pub async fn patch_team(
 
     client
         .patch(format!(
-            "http://{}/tournament/{}/team/{}",
+            "http://{}/tournaments/{}/teams/{}",
             socket_address, tournament_id, id
         ))
         .json(&request_body)
@@ -97,7 +97,7 @@ pub async fn delete_team(id: &str, tournament_id: &str, token: &str) -> Response
 
     client
         .delete(format!(
-            "http://{}/tournament/{}/team/{}",
+            "http://{}/tournaments/{}/teams/{}",
             socket_address, tournament_id, id
         ))
         .header("accept", "text/plain")

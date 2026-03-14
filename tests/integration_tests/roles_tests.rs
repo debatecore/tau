@@ -5,7 +5,7 @@ use serial_test::serial;
 use tau::{
     omni_error::OmniError,
     setup::{self},
-    tournament::roles::Role,
+    tournaments::roles::Role,
 };
 
 use crate::common::{

@@ -3,7 +3,7 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, tournament::team::Team, users::User};
+use crate::{omni_error::OmniError, tournaments::teams::Team, users::User};
 
 use super::{roles::Role, Tournament};
 

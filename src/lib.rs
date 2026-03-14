@@ -8,7 +8,7 @@ pub mod database;
 pub mod omni_error;
 pub mod routes;
 pub mod setup;
-pub mod tournament;
+pub mod tournaments;
 pub mod users;
 
 pub async fn start_server() {
