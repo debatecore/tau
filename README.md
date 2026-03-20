@@ -35,6 +35,7 @@ sqlx-cli         Running database migrations
 Docker Desktop   Running the local database container
 
 
+
 ### Step 1 — GitHub Setup
 
 Create a GitHub account if you don't have one.
@@ -49,6 +50,7 @@ git checkout -b test/your-name
 git push origin test/your-name
 
 
+
 ### Step 2 — Clone the Repository
 
 bash
@@ -59,6 +61,7 @@ Windows users: Before cloning, disable automatic line ending conversion to preve
 
 cmd
 git config --global core.autocrlf false
+
 
 
 ### Step 3 — Install Rust
@@ -85,6 +88,7 @@ cmd
 cargo --version
 
 
+
 ### Step 4 - Install sqlx-cli
 
 This tool runs the database migrations.
@@ -93,6 +97,7 @@ bash
 cargo install sqlx-cli
 
 This works the same on Windows, macOS, and Linux.
+
 
 
 ### Step 5 — Install Docker Desktop
@@ -109,6 +114,7 @@ Windows                  Download from docker.com/products/docker-desktop — ru
                          
                   
 After installation, start Docker Desktop and wait until it shows "Engine running" before continuing.
+
 
 
 ### Step 6 — Configure Environment
@@ -140,6 +146,7 @@ PORT=2023
 You can change SECRET, DOCKER_DB_ROOT_PASSWORD, and DOCKER_DB_PASSWORD to any values you like. The DATABASE_URL must remain exactly as shown for local development.
 
 
+
 ### Step 7 — Start the Database
 
 This starts a PostgreSQL database container using the dev Docker Compose profile.
@@ -168,6 +175,7 @@ cmddocker compose --profile dev down -v
 docker compose --profile dev up -d
 
 
+
 ### Step 8 — Run Migrations
 
 Wait ~10 seconds after starting the container for PostgreSQL to fully initialize, then run:
@@ -176,6 +184,7 @@ bash
 sqlx migrate run
 
 You should see output confirming migrations were applied. This only needs to be done once (and again when new migrations are added to the repo).
+
 
 
 ### Step 9 — Run the Backend
@@ -193,6 +202,7 @@ INFO tau::setup: Listener socket address is: 0.0.0.0:2023
 Important: The database container must be running before cargo run. The sqlx package validates SQL queries at compile time, so the build will fail if the database is unreachable.
 
 
+
 ### Step 10 — Set Up the Git Hook
 
 Run this once to keep the .sqlx query cache up to date before each commit:
@@ -207,6 +217,7 @@ git config --local core.hooksPath
 Should print: .githooks/
 
 
+
 ### Daily Workflow
 
 Starting development
@@ -216,16 +227,19 @@ bash
 2. Start the database
 docker compose --profile dev up -d
 
-# 3. Run the backend
+
+#3. Run the backend
 cargo run
 #Stopping when done
 bash
 Stop the backend: press Ctrl+C in the cargo run terminal
 
+
 #Stop the database
 docker compose --profile dev down
 
 #Optionally: quit Docker Desktop from the system tray / menu 
+
 
 
 ### Understanding Docker Containers
