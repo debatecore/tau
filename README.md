@@ -204,7 +204,7 @@ No output means it worked. Verify with:
 
 bash
 git config --local core.hooksPath
-# Should print: .githooks/
+Should print: .githooks/
 
 
 ### Daily Workflow
@@ -212,20 +212,20 @@ git config --local core.hooksPath
 Starting development
 
 bash
-# 1. Start Docker Desktop (if not already running)
-# 2. Start the database
+1. Start Docker Desktop (if not already running)
+2. Start the database
 docker compose --profile dev up -d
 
 # 3. Run the backend
 cargo run
-Stopping when done
+#Stopping when done
 bash
-# Stop the backend: press Ctrl+C in the cargo run terminal
+Stop the backend: press Ctrl+C in the cargo run terminal
 
-# Stop the database
+#Stop the database
 docker compose --profile dev down
 
-# Optionally: quit Docker Desktop from the system tray / menu 
+#Optionally: quit Docker Desktop from the system tray / menu 
 
 
 ### Understanding Docker Containers
