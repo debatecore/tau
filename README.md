@@ -13,7 +13,7 @@ SECRET=CENTRUMRWLYSONOSTARPOZNANCDNSBCD4L52SPM
 DOCKER_DB_ROOT_PASSWORD=superdoopersecretpasswordthatcannotbeleaked
 DOCKER_DB_PASSWORD=wedoingsecurityinhere
 FRONTEND_ORIGIN=https://example.com
-PORT=2019
+PORT=2023
 ```
 
 #### Required variables
@@ -50,12 +50,12 @@ architecture-beta
 
 **Prerequisites:** docker,  cargo (Rust), uv (Python).
 
-Once you [configure your environment](#environment-setup), you can run:
+Once you [configure your environment](#environment-setup), you can run (in your project directory):
 
 ```sh
-docker compose --profile dev up -d  # To start the database container
-sqlx migrate run                    # To perform sqlx migrations
-cargo run                           # To run the crate
+docker compose --profile dev up -d  		# To start the database container
+cargo install sqlx-cli && sqlx migrate run  # To perform sqlx migrations (recommended way)
+cargo run                           		# To run the crate
 ```
 
 #### Commit hook
