@@ -1,0 +1,11 @@
+[project]
+name = "tau"
+version = "0.1.0"
+description = "A project for versioning python-based tau development utils"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "eralchemy>=1.6.0",
+    "graphviz>=0.21",
+    "psycopg2-binary>=2.9.11",
+]
