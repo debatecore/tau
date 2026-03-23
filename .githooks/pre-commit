@@ -1,3 +1,8 @@
 # This command ensures unit tests will pass on a CI environment, even in the database is not connected
 cargo sqlx prepare
 git add .sqlx
+
+source .env
+ER_DIAGRAM_PATH=docs/er_diagram.pdf
+uv run eralchemy -i "$DATABASE_URL" -o $ER_DIAGRAM_PATH --exclude-tables _sqlx_migrations
+git add $ER_DIAGRAM_PATH
