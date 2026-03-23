@@ -20,6 +20,7 @@ mod teapot;
 mod tournament_routes;
 mod user_routes;
 mod version;
+mod tournament_plan_routes;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -41,4 +42,5 @@ pub fn routes() -> Router<AppState> {
         .merge(affiliation_routes::route())
         .merge(phase_routes::route())
         .merge(round_routes::route())
+        .merge(tournament_plan_routes::route())
 }
