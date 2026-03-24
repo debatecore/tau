@@ -1,3 +1,7 @@
+pub mod handlers;
+
+// ... your existing Permission enum code ...
+
 use strum::{EnumIter, VariantArray, EnumString}; // Added EnumString
 use utoipa::ToSchema;
 use serde::{Deserialize, Serialize} // use serde :: {Deserialize, Serialize} added.
