@@ -192,7 +192,7 @@ async fn patch_plan_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Json(new_plan): Json<TournamentPlan>,
+    Json(new_plan): Json<TournamentPlanPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -203,8 +203,9 @@ async fn patch_plan_by_id(
     //     false => return Err(OmniError::InsufficientPermissionsError),
     // }
 
-    let plan = TournamentPlan::get_by_id(id, pool).await?;
+    new_plan.validate(pool).await?;
 
+    let plan = TournamentPlan::get_by_id(id, pool).await?;
     match plan.patch(new_plan, pool).await {
         Ok(plan) => Ok(axum::Json::<TournamentPlan>(plan).into_response()),
         Err(e) => Err(e)?,

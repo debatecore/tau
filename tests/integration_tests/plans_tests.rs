@@ -95,7 +95,6 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
     
     assert_eq!(create_response.status(), StatusCode::OK);
 
-    // Store the result in a variable to avoid temporary value issues
     let response_body = create_response.json::<serde_json::Value>().await.unwrap();
     let plan_id = response_body["id"].as_str().unwrap();
 
@@ -155,11 +154,12 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     let response_body = create_response.json::<serde_json::Value>().await.unwrap();
     let plan_id = response_body["id"].as_str().unwrap();
 
+    // Data should be valid
     let patch_data = json!({
         "group_phase_rounds": 5,
-        "groups_count": 8,
+        "groups_count": 10,
         "advancing_teams": 4,
-        "total_teams": 32,
+        "total_teams": 30,
     });
 
     // WHEN
