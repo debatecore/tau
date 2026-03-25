@@ -8,6 +8,7 @@ pub mod roles_utils;
 pub mod teams_utils;
 pub mod tournament_utils;
 pub mod user_utils;
+pub mod plans_utils;
 
 use tau::{
     database, routes,

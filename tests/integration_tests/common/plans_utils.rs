@@ -1,84 +1,32 @@
-use reqwest::{Client, Response};
+use reqwest::{Client, Response, StatusCode};
 use tau::setup::get_socket_addr;
 use tau::tournaments::plans::TournamentPlan;
+use serde_json::json;
 
-pub async fn create_plans(
-    user_id: &str,
+pub async fn create_plan(
     tournament_id: &str,
-    plans: Vec<TournamentPlan>,
+    advancing_teams: i32,
+    group_phase_rounds: i32,
+    groups_count: i32,
+    total_teams: i32,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-    let plans_string: String = serde_json::to_string(&plans).unwrap();
+    let plan_data = json!({
+        "tournament_id": tournament_id,
+        "group_phase_rounds": group_phase_rounds,
+        "groups_count": groups_count,
+        "advancing_teams": advancing_teams,
+        "total_teams": total_teams,
+    });
 
-    client
+    // WHEN
+    Client::new()
         .post(format!(
-            "http://{}/users/{}/tournaments/{}/plan",
-            socket_address, user_id, tournament_id
+            "http://{}/tournaments/{}/plan",
+            get_socket_addr(), tournament_id
         ))
-        .body(plans_string)
-        .header("accept", "text/plain")
-        .header("Content-Type", "application/json")
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap()
-}
-
-pub async fn get_plans(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-
-    client
-        .get(format!(
-            "http://{}/users/{}/tournaments/{}/plan",
-            socket_address, user_id, tournament_id
-        ))
-        .header("accept", "text/plain")
-        .header("Content-Type", "application/json")
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap()
-}
-
-pub async fn patch_plans(
-    user_id: &str,
-    tournament_id: &str,
-    plans: Vec<TournamentPlan>,
-    token: &str,
-) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-    let plans_string: String = serde_json::to_string(&plans).unwrap();
-
-    client
-        .patch(format!(
-            "http://{}/users/{}/tournaments/{}/plans",
-            socket_address, user_id, tournament_id
-        ))
-        .body(plans_string)
-        .header("accept", "text/plain")
-        .header("Content-Type", "application/json")
-        .bearer_auth(token)
-        .send()
-        .await
-        .unwrap()
-}
-
-pub async fn delete_plans(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-
-    client
-        .delete(format!(
-            "http://{}/users/{}/tournaments/{}/plan",
-            socket_address, user_id, tournament_id
-        ))
-        .header("accept", "text/plain")
-        .header("Content-Type", "application/json")
-        .bearer_auth(token)
+        .json(&plan_data)
+        .bearer_auth(token.clone())
         .send()
         .await
         .unwrap()
