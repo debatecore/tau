@@ -17,6 +17,7 @@ use crate::routes::room_routes;
 use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
+use crate::routes::permissions_routes;
 use crate::tournaments;
 use crate::tournaments::affiliations;
 use crate::tournaments::attendees;
@@ -117,7 +118,8 @@ pub fn route() -> Router<AppState> {
         phase_routes::get_phase_by_id,
         phase_routes::get_phases,
         phase_routes::patch_phase_by_id,
-        phase_routes::delete_phase_by_id
+        phase_routes::delete_phase_by_id,
+        permissions_routes::has_permission
     ),
     components(schemas(
         version::VersionDetails,
