@@ -153,145 +153,98 @@ impl TournamentPlan {
         }
     }
 
-    // QUESTION: just reject or try to substitute numbers? design so it's impossible to mess something up?
     pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
-        if self.total_teams <= Some(1) || self.group_phase_rounds <= Some(0) || self.groups_count <= Some(0) {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Invalid tournament plan setup: all numbers should be positive".to_owned(),
-            });
-        }
-        
-        if let (Some(total_teams), Some(group_phase_rounds)) =
-            (self.total_teams, self.group_phase_rounds)
+        match validate(
+            self.total_teams, 
+            self.group_phase_rounds, 
+            self.groups_count, 
+            self.advancing_teams,
+            pool
+        ).await
         {
-            if group_phase_rounds == 0 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "Group phase rounds cannot be zero".to_owned(),
-                });
-            }
-
-            if total_teams % group_phase_rounds != 0 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "total_teams must be divisible by group_phase_rounds".to_owned(),
-                });
-            }
-        } else {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Group phase rounds and total teams cannot be zero".to_owned(),
-            });
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
         }
-        
-        if self.total_teams <= self.groups_count {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Number of groups cannot be higher than or equal to the total number of teams".to_owned(),
-            });
-        }
-
-        if self.total_teams <= self.advancing_teams {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Number of advancing teams cannot be higher than or equal to the total number of teams".to_owned(),
-            });
-        }
-
-        if let Some(advancing_teams) = self.advancing_teams {
-            if advancing_teams <= 1 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "advancing_teams must be greater than 1".to_owned(),
-                });
-            }
-
-            if (advancing_teams & (advancing_teams - 1)) != 0 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "Number of advancing teams should be equal to the power of 2 (e.g. 4, 16, 32 ...)".to_owned(),
-                });
-            }
-        } else {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "advancing_teams must be set".to_owned(),
-            });
-        }
-
-        Ok(())
     }
 }
 
-// Should be one function actually
 impl TournamentPlanPatch {
-    pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> { // just reject or try to substitute numbers? design so it's impossible to mess something up?
-        if self.total_teams <= Some(1) || self.group_phase_rounds <= Some(0) || self.groups_count <= Some(0) {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Invalid tournament plan setup: all numbers should be positive".to_owned(),
-            });
-        }
-        
-        if let (Some(total_teams), Some(group_phase_rounds)) =
-            (self.total_teams, self.group_phase_rounds)
+    pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
+        match validate(
+            self.total_teams, 
+            self.group_phase_rounds, 
+            self.groups_count, 
+            self.advancing_teams,
+            pool
+        )
+        .await
         {
-            if group_phase_rounds == 0 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "Group phase rounds cannot be zero".to_owned(),
-                });
-            }
-
-            if total_teams % group_phase_rounds != 0 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "total_teams must be divisible by group_phase_rounds".to_owned(),
-                });
-            }
-        } else {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Group phase rounds and total teams cannot be zero".to_owned(),
-            });
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)?,
         }
-        
-        if self.total_teams <= self.groups_count {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Number of groups cannot be higher than or equal to the total number of teams".to_owned(),
-            });
-        }
-
-        if self.total_teams <= self.advancing_teams {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "Number of advancing teams cannot be higher than or equal to the total number of teams".to_owned(),
-            });
-        }
-
-        if let Some(advancing_teams) = self.advancing_teams {
-            if advancing_teams <= 1 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "advancing_teams must be greater than 1".to_owned(),
-                });
-            }
-
-            if (advancing_teams & (advancing_teams - 1)) != 0 {
-                return Err(OmniError::ExplicitError {
-                    status: StatusCode::BAD_REQUEST,
-                    message: "Number of advancing teams should be equal to the power of 2 (e.g. 4, 16, 32 ...)".to_owned(),
-                });
-            }
-        } else {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "advancing_teams must be set".to_owned(),
-            });
-        }
-
-        Ok(())
     }
+}
+
+async fn validate(
+    total_teams:        Option<i32>, 
+    group_phase_rounds: Option<i32>, 
+    groups_count:       Option<i32>, 
+    advancing_teams:    Option<i32>, 
+    pool:               &Pool<Postgres>
+) -> Result<(), OmniError> {
+    if total_teams <= Some(1) || group_phase_rounds <= Some(0) || groups_count <= Some(0) {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::BAD_REQUEST,
+            message: "Invalid tournament plan setup: all numbers should be positive".to_owned(),
+        });
+    }        
+    if let (Some(total_teams), Some(group_phase_rounds)) = (total_teams, group_phase_rounds) {
+        if group_phase_rounds == 0 {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "Group phase rounds cannot be zero".to_owned(),
+            });
+        }
+
+        if total_teams % group_phase_rounds != 0 {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "total_teams must be divisible by group_phase_rounds".to_owned(),
+            });
+        }
+    } else {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::BAD_REQUEST,
+            message: "Group phase rounds and total teams cannot be zero".to_owned(),
+        });
+    }        
+    if total_teams <= groups_count {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::BAD_REQUEST,
+            message: "Number of groups cannot be higher than or equal to the total number of teams".to_owned(),
+        });
+    }
+
+    if total_teams <= advancing_teams {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::BAD_REQUEST,
+            message: "Number of advancing teams cannot be higher than or equal to the total number of teams".to_owned(),
+        });
+    }
+
+    if let Some(advancing_teams) = advancing_teams {
+        if (advancing_teams & (advancing_teams - 1)) != 0 {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "Number of advancing teams should be equal to the power of 2 (e.g. 4, 16, 32 ...)".to_owned(),
+            });
+        }
+    } else {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::BAD_REQUEST,
+            message: "advancing_teams must be set".to_owned(),
+        });
+    }
+
+    Ok(())
 }
