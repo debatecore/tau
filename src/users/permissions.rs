@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use strum::{EnumIter, VariantArray, EnumString}; // Added EnumString
 use utoipa::ToSchema;
 
@@ -36,7 +37,7 @@ use utoipa::ToSchema;
 /// | `WriteLocations` | Create or modify venues/locations. |
 /// | `ReadRooms` | View room assignments. |
 /// | `WriteRooms` | Create or modify room assignments. |
-
+#[derive(Deserialize, Copy)]
 pub enum Permission {
     ReadAttendees,
     WriteAttendees,
