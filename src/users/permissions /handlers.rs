@@ -1,75 +1,126 @@
 use axum::{
-    extract::{Path, RawQuery, State},
+    extract::{Path, Query, RawQuery, State},
     http::{HeaderMap, StatusCode},
+    response::IntoResponse,
     Json,
 };
-use std::str::FromStr;
+
+use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tower_cookies::Cookies;
 use uuid::Uuid;
 
-use crate::permissions::Permission;
-use crate::TournamentUser; // Adjust path as necessary based on your crate structure
+use crate::{
+    omni_error::OmniError,
+    users::{permissions::Permission, TournamentUser},
+};
+
+// ---------------------------------------------------------------------------
+// Query-string shape
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct PermissionQuery{
+    permission_name: String, 
+}
+
+// ---------------------------------------------------------------------------
+// Handler
+// ---------------------------------------------------------------------------
+ 
+/// Check whether a user has a specific permission within a tournament.
+///
+/// Returns `true` if the user holds the requested permission, `false` otherwise.
+///
+/// # Errors
+/// * **400 Bad Request** – more than one `permission_name` value was supplied.
+/// * **401 Unauthorized** – the authenticated user is not a member of this tournament.
+/// * **404 Not Found** – the supplied `permission_name` does not correspond to any
+///   known [`Permission`] variant.
 
 #[utoipa::path(
     get,
     path = "/user/{id}/tournaments/{tournament_id}/permissions",
     params(
-        ("id" = Uuid, Path, description = "The ID of the user"),
-        ("tournament_id" = Uuid, Path, description = "The ID of the tournament"),
-        ("permission_name" = String, Query, description = "The exact name of the permission to check (e.g., 'WriteTeams')")
+        ("id"            = Uuid, Path, description = "UUID of the user whose permissions are being queried"),
+        ("tournament_id" = Uuid, Path, description = "UUID of the tournament"),
+        ("permission_name" = String, Query, description = "Exact name of the permission to check, e.g. `WriteTeams`. \
+         Must be supplied exactly once. Supplying multiple values returns 400."),
     ),
     responses(
-        (status = 200, description = "Boolean indicating if the user has the permission", body = bool),
-        (status = 400, description = "Multiple permissions provided in the query string"),
-        (status = 401, description = "User is not authenticated or not assigned to the tournament"),
-        (status = 404, description = "The requested permission does not exist")
-    )
+        (status = 200, description = "Permission check result", body = bool,
+         example = json!(true)),
+        (status = 400, description = "Multiple `permission_name` query parameters were provided"),
+        (status = 401, description = "The user is not assigned to this tournament"),
+        (status = 404, description = "The supplied `permission_name` is not a recognised permission"),
+    ),
+    tag = "Permissions",
 )]
-pub async fn check_permission_endpoint(
+
+pub async fn get_user_tournament_permission(
     Path((user_id, tournament_id)): Path<(Uuid, Uuid)>,
     RawQuery(raw_query): RawQuery,
+    Query(query): Query<PermissionQuery>,
     headers: HeaderMap,
     cookies: Cookies,
     State(pool): State<Pool<Postgres>>,
-) -> Result<Json<bool>, (StatusCode, String)> {
-    
-    // 1. Validate Query Parameters (Requirement: 400 on multiple permissions)
-    let query_str = raw_query.unwrap_or_default();
-    let permission_params: Vec<&str> = query_str
+) -> Result<impl IntoResponse, OmniError> {
+    // -----------------------------------------------------------------------
+    // 400 – reject if the caller supplied more than one permission_name value.
+    // -----------------------------------------------------------------------
+    let raw = raw_query.unwrap_or_default();
+    let permission_name_conut = raw
         .split('&')
-        .filter(|param| param.starts_with("permission_name="))
-        .collect();
+        .filter(|kv| kv.starts_with("permission_name= "))
+        .count();
 
-    if permission_params.is_empty() {
-        return Err((StatusCode::NOT_FOUND, "Missing 'permission_name' query parameter".to_string()));
-    }
-    if permission_params.len() > 1 {
-        return Err((StatusCode::BAD_REQUEST, "Cannot check multiple permissions at once".to_string()));
-    }
-
-    // Extract the actual string value
-    let permission_str = permission_params[0].trim_start_matches("permission_name=");
-
-    // 2. Parse Permission (Requirement: 404 on nonexistent permissions)
-    let permission = Permission::from_str(permission_str).map_err(|_| {
-        (StatusCode::NOT_FOUND, format!("Permission '{}' does not exist", permission_str))
-    })?;
-
-    // 3. Authenticate and Validate Assignment (Requirement: 401 on unassigned/unauthorized)
-    // Note: Assuming `TournamentUser::authenticate` returns your `OmniError` if unassigned.
-    let tournament_user = TournamentUser::authenticate(tournament_id, &headers, cookies, &pool)
-        .await
-        .map_err(|_| {
-            (StatusCode::UNAUTHORIZED, "User is not assigned to this tournament or unauthorized".to_string())
-        })?;
-
-    // Ensure the user ID in the path matches the authenticated token's user ID
-    if tournament_user.user.id != user_id {
-        return Err((StatusCode::UNAUTHORIZED, "Token does not match requested user ID".to_string()));
+    if permission_name_count > 1 {
+        return Ok ((
+            StatusCode::BAD_REQUEST;
+            Json(serde_json::json!({
+                "error": "Exactly one `permission_name` must be provided. \
+                          Multiple values are not supported."
+            })),
+        )
+        .into_response());
     }
 
-    // 4. Check Permission (Requirement: 200 OK with boolean)
-    let has_perm = tournament_user.has_permission(permission);
-    Ok(Json(has_perm))
+// -----------------------------------------------------------------------
+    // 404 – parse the permission name; unknown names are rejected here.
+    // -----------------------------------------------------------------------
+    
+    let permission: Permission = query
+        .permission_name
+        .parse()
+        .map_err(|_| OmniError::ResourceNotFound)?;
+    
+    // -----------------------------------------------------------------------
+    // 401 – authenticate; if the user is not in the tournament this returns
+    // Err which maps to 401 via OmniError's IntoResponse impl.
+    // -----------------------------------------------------------------------
+        
+    let tournament_user = TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+
+     // -----------------------------------------------------------------------
+    // 200 – delegate to the existing has_permission helper.
+    // -----------------------------------------------------------------------
+
+    let has_permission = tournament_user.has_permission(permission);
+    Ok(Json(has_permission).into_response())
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+  
