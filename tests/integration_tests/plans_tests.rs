@@ -2,14 +2,58 @@ use reqwest::{Client, Response, StatusCode};
 use std::future::IntoFuture;
 use tau::setup::get_socket_addr;
 use serial_test::serial;
+use serde_json::json;
 use tau::{omni_error::OmniError, setup};
 use crate::common::{
     create_app, create_listener, prepare_empty_database,
     tournament_utils::get_id_of_a_new_tournament,
-    user_utils::{get_organizer_token, get_token_for_user_with_roles},
+    user_utils::{
+        get_organizer_token, 
+        get_token_for_user_with_roles, 
+        get_token_for_user_with_no_roles
+    },
 };
-use uuid::Uuid;
-use serde_json::json;
+
+#[tokio::test]
+#[serial]
+async fn tournament_plan_creation_should_impossible_for_other_users() -> Result<(), OmniError>  {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let token = get_token_for_user_with_no_roles().await;
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
+
+    let plan_data = json!({
+        "tournament_id": tournament_id,
+        "group_phase_rounds": 4,
+        "groups_count": 8,
+        "advancing_teams": 4,
+        "total_teams": 32,
+    });
+
+    // WHEN
+    let response = Client::new()
+        .post(format!(
+            "http://{}/tournaments/{}/plan",
+            get_socket_addr(), tournament_id
+        ))
+        .json(&plan_data)
+        .bearer_auth(token.clone())
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    Ok(())
+}
 
 #[tokio::test]
 #[serial]

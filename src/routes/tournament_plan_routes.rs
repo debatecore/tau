@@ -56,10 +56,10 @@ async fn create_plan(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    // match tournament_user.has_permission(Permission::WritePlan) {
-    //     true => (),
-    //     false => return Err(OmniError::InsufficientPermissionsError),
-    // }
+    match tournament_user.has_permission(Permission::WritePlan) {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
+    }
 
     json.validate(pool).await?;
 
@@ -105,10 +105,10 @@ async fn get_plan(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    // match tournament_user.has_permission(Permission::ReadPlan) {
-    //     true => (),
-    //     false => return Err(OmniError::InsufficientPermissionsError),
-    // }
+    match tournament_user.has_permission(Permission::ReadPlan) {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
+    }
 
     let tournament = Tournament::get_by_id(tournament_id, pool).await?;
     match tournament.get_plan(pool).await
@@ -151,10 +151,10 @@ async fn get_plan_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    // match tournament_user.has_permission(Permission::ReadPlan) {
-    //     true => (),
-    //     false => return Err(OmniError::InsufficientPermissionsError),
-    // }
+    match tournament_user.has_permission(Permission::ReadPlan) {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
+    }
 
     match TournamentPlan::get_by_id(id, pool).await {
         Ok(plan) => Ok(axum::Json::<TournamentPlan>(plan).into_response()),
@@ -198,10 +198,10 @@ async fn patch_plan_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    // match tournament_user.has_permission(Permission::WritePlan) {
-    //     true => (),
-    //     false => return Err(OmniError::InsufficientPermissionsError),
-    // }
+    match tournament_user.has_permission(Permission::WritePlan) {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
+    }
 
     new_plan.validate(pool).await?;
 
@@ -240,10 +240,10 @@ async fn delete_plan_by_id(
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-    // match tournament_user.has_permission(Permission::WritePlan) {
-    //     true => (),
-    //     false => return Err(OmniError::InsufficientPermissionsError),
-    // }
+    match tournament_user.has_permission(Permission::WritePlan) {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
+    }
 
     let plan = TournamentPlan::get_by_id(id, pool).await?;
     match plan.delete(&state.connection_pool).await {
