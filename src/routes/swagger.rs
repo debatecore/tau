@@ -117,7 +117,7 @@ pub fn route() -> Router<AppState> {
         phase_routes::get_phase_by_id,
         phase_routes::get_phases,
         phase_routes::patch_phase_by_id,
-        phase_routes::delete_phase_by_id
+        phase_routes::delete_phase_by_id,
     ),
     components(schemas(
         version::VersionDetails,

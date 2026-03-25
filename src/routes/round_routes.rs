@@ -26,7 +26,8 @@ pub fn route() -> Router<AppState> {
 
 /// Create a new round
 /// 
-/// Available only to the tournament Organizers.
+/// Requires the WriteRounds permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/round",
     responses
     (
@@ -166,7 +167,8 @@ async fn get_round_by_id(
 /// Patch an existing round
 /// 
 /// Patches any debates assigned to this round, if applicable.
-/// Available only to the tournament Organizers.
+/// Requires the WriteRounds permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}", 
     request_body=Round,
     responses(
@@ -226,7 +228,9 @@ async fn patch_round_by_id(
 /// Delete an existing round
 ///
 /// This operation is only allowed when there are no entities
-/// referencing this round. Available only to the tournament Organizers.
+/// referencing this round.
+/// Requires the WriteRounds permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(delete, path = "/tournaments/{tournament_id}/rounds/{id}", 
     responses
     (

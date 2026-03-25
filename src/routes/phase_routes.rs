@@ -26,7 +26,8 @@ pub fn route() -> Router<AppState> {
 
 /// Create a new phase
 /// 
-/// Available only to the tournament Organizers.
+/// Requires the WritePhases permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(post, request_body=Phase, path = "/tournaments/{tournament_id}/phases",
     responses
     (
@@ -165,7 +166,8 @@ async fn get_phase_by_id(
 
 /// Patch an existing phase
 /// 
-/// Available only to the tournament Organizers.
+/// Requires the WritePhases permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{id}", 
     request_body=Phase,
     responses(
@@ -218,7 +220,9 @@ async fn patch_phase_by_id(
 /// Delete an existing phase
 ///
 /// This operation is only allowed when there are no entities
-/// referencing this phase. Available only to the tournament Organizers.
+/// referencing this phase.
+/// Requires the WritePhases permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(delete, path = "/tournaments/{tournament_id}/phases/{id}", 
     responses
     (
