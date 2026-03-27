@@ -36,10 +36,10 @@ pub struct TournamentPlan {
 }
 
 #[derive(Deserialize, ToSchema, sqlx::FromRow)]
-/// TournamentPlanExternal can be used to patch a TournamentPlan without 
+/// TournamentPlanPatch can be used to patch a TournamentPlan without 
 // changing important fields such as ID
 // CHANGED: rename occured because we don't want to enter an ID and let it be handled externally
-pub struct TournamentPlanExternal {
+pub struct TournamentPlanPatch {
     // Number of rounds for a single group for one phase
     pub group_phase_rounds: Option<i32>,
     // Number of groups of teams participating in tournament
@@ -58,15 +58,15 @@ impl TournamentPlan {
     ) -> Result<TournamentPlan, OmniError> {
         json.validate()?;
 
-        let mut tx = pool.begin().await?;
-        let plan = Self::post_tx(&mut tx, tournament_id, json).await?;
-        tx.commit().await?;
+        let mut transaction = pool.begin().await?;
+        let plan = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        transaction.commit().await?;
         Ok(plan)
     }
 
     /// Transaction-aware create. Use this when part of a larger operation.
-    pub async fn post_tx(
-        tx: &mut Transaction<'_, Postgres>,
+    pub async fn post_with_transaction(
+        transaction: &mut Transaction<'_, Postgres>,
         tournament_id: Uuid,
         json: TournamentPlan,
     ) -> Result<TournamentPlan, OmniError> {
@@ -89,7 +89,7 @@ impl TournamentPlan {
             json.advancing_teams,
             json.total_teams
         )
-        .fetch_one(&mut **tx)
+        .fetch_one(&mut **transaction)
         .await?;
 
         Ok(plan)
@@ -118,22 +118,22 @@ impl TournamentPlan {
     /// Standalone patch.
     pub async fn patch(
         self,
-        patch: TournamentPlanExternal,
+        patch: TournamentPlanPatch,
         pool: &Pool<Postgres>,
     ) -> Result<TournamentPlan, OmniError> {
         patch.validate()?;
 
-        let mut tx = pool.begin().await?;
-        let plan = self.patch_tx(&mut tx, patch).await?;
-        tx.commit().await?;
+        let mut transaction = pool.begin().await?;
+        let plan = self.patch_with_transaction(&mut transaction, patch).await?;
+        transaction.commit().await?;
         Ok(plan)
     }
 
     /// Transaction-aware patch.
-    pub async fn patch_tx(
+    pub async fn patch_with_transaction(
         self,
-        tx: &mut Transaction<'_, Postgres>,
-        patch: TournamentPlanExternal,
+        transaction: &mut Transaction<'_, Postgres>,
+        patch: TournamentPlanPatch,
     ) -> Result<TournamentPlan, OmniError> {
         patch.validate()?;
 
@@ -156,7 +156,7 @@ impl TournamentPlan {
             patch.total_teams,
             self.id
         )
-        .fetch_one(&mut **tx)
+        .fetch_one(&mut **transaction)
         .await?;
 
         Ok(updated)
@@ -164,22 +164,22 @@ impl TournamentPlan {
 
     /// Standalone delete.
     pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
-        let mut tx = pool.begin().await?;
-        self.delete_tx(&mut tx).await?;
-        tx.commit().await?;
+        let mut transaction = pool.begin().await?;
+        self.delete_with_transaction(&mut transaction).await?;
+        transaction.commit().await?;
         Ok(())
     }
 
     /// Transaction-aware delete.
-    pub async fn delete_tx(
+    pub async fn delete_with_transaction(
         self,
-        tx: &mut Transaction<'_, Postgres>,
+        transaction: &mut Transaction<'_, Postgres>,
     ) -> Result<(), OmniError> {
         query!(
             r#"DELETE FROM tournament_plans WHERE id = $1"#,
             self.id
         )
-        .execute(&mut **tx)
+        .execute(&mut **transaction)
         .await?;
 
         Ok(())
@@ -195,7 +195,7 @@ impl TournamentPlan {
     }
 }
 
-impl TournamentPlanExternal {
+impl TournamentPlanPatch {
     pub fn validate(&self) -> Result<(), OmniError> {
         validate(
             self.total_teams,

@@ -104,7 +104,7 @@ async fn create_debate(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Debate::post(json, &state.connection_pool).await {
+    match Debate::post(tournament_id, json, &state.connection_pool).await {
         Ok(debate) => Ok(Json(debate).into_response()),
         Err(e) => {
             error!("Error creating a new debate: {e}");

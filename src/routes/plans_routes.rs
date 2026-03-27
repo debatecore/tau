@@ -10,7 +10,7 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{plans::{TournamentPlan, TournamentPlanExternal}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{plans::{TournamentPlan, TournamentPlanPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 pub fn route() -> Router<AppState> {
     Router::new()
@@ -191,7 +191,7 @@ async fn patch_plan_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Json(new_plan): Json<TournamentPlanExternal>,
+    Json(new_plan): Json<TournamentPlanPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =

@@ -133,7 +133,7 @@ pub fn route() -> Router<AppState> {
         tournaments::Tournament,
         tournaments::TournamentPatch,
         plans::TournamentPlan,
-        plans::TournamentPlanExternal,
+        plans::TournamentPlanPatch,
         motions::Motion,
         motions::MotionPatch,
         teams::Team,
