@@ -13,10 +13,13 @@ use crate::{omni_error::OmniError, users::permissions::Permission};
 /// Within a tournament, users must be granted roles for their
 /// permissions to be defined. Each role comes with a predefined
 /// set of permissions to perform certain operations.
+/// Each endpoint should contain information about which of the
+/// default roles is authorized to use it.
 /// By default, a newly created user has no roles.
 /// Multiple users can have the same role.
 pub enum Role {
     /// This role grants all possible permissions within a tournament.
+    /// Some actions are still restricted to the infrastructure admin.
     Organizer,
     /// Judges can submit their verdicts regarding debates they were assigned to.
     Judge,

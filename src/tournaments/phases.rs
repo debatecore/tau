@@ -15,7 +15,9 @@ use crate::{
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
-/// Phases have their
+/// A phase is a part of a tournament. It consists of many rounds.
+/// It can be a group phase or a finals phase, which influences
+/// children rounds.
 pub struct Phase {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
@@ -30,7 +32,8 @@ pub struct Phase {
     /// If this is the first phase of the tournament,
     /// previous_phase_id should be left empty. Otherwise, it must be defined.
     pub previous_phase_id: Option<Uuid>,
-    /// Defines how many teams should be
+    /// Defines how many teams teams should be assigned a group within a group phase.
+    /// Has no effect on final phases.
     pub group_size: Option<i32>,
     /// Indicates whether the phase is Planned, Ongoing, or Finished.
     /// Can only be changed to Finished, if all children rounds are Finished.
@@ -38,6 +41,7 @@ pub struct Phase {
 }
 
 #[derive(Deserialize, ToSchema, Clone)]
+/// Used to modify an existing phase
 pub struct PhasePatch {
     pub name: Option<String>,
     pub tournament_id: Option<Uuid>,

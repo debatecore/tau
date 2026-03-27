@@ -8,18 +8,28 @@ use crate::omni_error::OmniError;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
+/// Debates are the core part of a tournament.
+/// Each debate is attended by two teams (Proposition and Opposition)
+/// debating on a motion. It is conducted by a Marshal
+/// and listened to by Judges.
 pub struct Debate {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
+    /// ID of a motion being debated
     pub motion_id: Option<Uuid>,
+    /// ID of the Marshal conducting the debate
     pub marshal_user_id: Option<Uuid>,
+    /// Parent tournament ID
+    /// TO-DO: remove to avoid redundancy
     pub tournament_id: Uuid,
+    /// Parent round ID
     pub round_id: Uuid,
 }
 
 #[serde_inline_default]
 #[derive(Deserialize, ToSchema)]
+/// Can be used to patch an existing debate
 pub struct DebatePatch {
     pub motion_id: Option<Uuid>,
     pub marshal_user_id: Option<Uuid>,
