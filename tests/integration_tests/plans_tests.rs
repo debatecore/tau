@@ -7,18 +7,36 @@ use tau::{omni_error::OmniError, setup};
 use crate::common::{
     create_app, create_listener, prepare_empty_database,
     tournament_utils::get_id_of_a_new_tournament,
-    plans_utils::create_plan,
+    plans_utils::{
+        create_plan,
+        count_debates,
+        count_phases,
+        count_plans,
+        count_rounds
+    },
     user_utils::{
         get_organizer_token, 
         get_token_for_user_with_roles, 
         get_token_for_user_with_no_roles
     },
 };
+use uuid::Uuid;
 
 const TEST_GROUP_PHASE_ROUNDS: i32 = 4;
 const TEST_GROUPS_COUNT:       i32 = 8;
 const TEST_ADVANCING_TEAMS:    i32 = 4;
 const TEST_TOTAL_TEAMS:        i32 = 32;
+
+fn expected_counts(group_phase_rounds: i32, groups_count: i32, total_teams: i32) -> (i64, i64, i64) {
+    let group_size = total_teams / groups_count;
+    let debates_per_round = (group_size * (group_size - 1)) / 2;
+
+    let phases = 2;
+    let rounds = group_phase_rounds as i64;
+    let debates = debates_per_round as i64;
+
+    (phases, rounds, debates)
+}
 
 #[tokio::test]
 #[serial]
@@ -61,6 +79,7 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
     setup::read_environmental_variables();
     setup::check_secret_env_var();
     let state = setup::create_app_state().await;
+    let pool = state.connection_pool.clone();
     prepare_empty_database(&state.connection_pool).await;
     let app = create_app(state).await;
     let listener = create_listener().await;
@@ -70,19 +89,32 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
     let tournament_id = get_id_of_a_new_tournament("test").await?;
     let token = get_organizer_token(&tournament_id).await;
 
-    assert_eq!(
-        create_plan(
-            &tournament_id, 
-            TEST_GROUP_PHASE_ROUNDS, 
-            TEST_GROUPS_COUNT, 
-            TEST_ADVANCING_TEAMS, 
-            TEST_TOTAL_TEAMS,
-            &token
-        )
-        .await
-        .status(), 
-        StatusCode::OK
-    );
+    let response = create_plan(
+        &tournament_id,
+        TEST_GROUP_PHASE_ROUNDS,
+        TEST_GROUPS_COUNT,
+        TEST_ADVANCING_TEAMS,
+        TEST_TOTAL_TEAMS,
+        &token,
+    ).await;
+
+    let status = response.status();
+    let body = response.text().await.unwrap();
+    println!("create plan status: {status}, body: {body}");
+
+    assert_eq!(status, StatusCode::OK);
+
+    let (expected_phases, expected_rounds, expected_debates) =
+        expected_counts(TEST_GROUP_PHASE_ROUNDS, TEST_GROUPS_COUNT, TEST_TOTAL_TEAMS);
+
+    let ph = count_phases(&pool, &tournament_id).await;
+    let r = count_rounds(&pool, &tournament_id).await;
+    assert_eq!(count_plans(&pool, &tournament_id).await, 1);
+    println!("phases: {ph}, expected: {expected_phases}");
+    assert_eq!(count_phases(&pool, &tournament_id).await, expected_phases);
+    println!("rounds: {r}, expected: {expected_rounds}");
+    assert_eq!(count_rounds(&pool, &tournament_id).await, expected_rounds);
+    assert_eq!(count_debates(&pool, &tournament_id).await, expected_debates);
 
     Ok(())
 }
@@ -140,6 +172,7 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     setup::read_environmental_variables();
     setup::check_secret_env_var();
     let state = setup::create_app_state().await;
+    let pool = state.connection_pool.clone();
     prepare_empty_database(&state.connection_pool).await;
     let app = create_app(state).await;
     let listener = create_listener().await;
@@ -185,6 +218,18 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
+
+    let (new_expected_phases, new_expected_rounds, new_expected_debates) = expected_counts(2, 6, 24);
+
+    let ph = count_phases(&pool, &tournament_id).await;
+    let r = count_rounds(&pool, &tournament_id).await;
+    assert_eq!(count_plans(&pool, &tournament_id).await, 1);
+    println!("phases: {ph}, expected: {new_expected_phases}");
+    assert_eq!(ph, new_expected_phases);
+    println!("rounds: {r}, expected: {new_expected_rounds}");
+    assert_eq!(r, new_expected_rounds);
+    assert_eq!(count_debates(&pool, &tournament_id).await, new_expected_debates);
+
     Ok(())
 }
 
@@ -195,6 +240,7 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
     setup::read_environmental_variables();
     setup::check_secret_env_var();
     let state = setup::create_app_state().await;
+    let pool = state.connection_pool.clone();
     prepare_empty_database(&state.connection_pool).await;
     let app = create_app(state).await;
     let listener = create_listener().await;
@@ -231,5 +277,66 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
 
     // THEN
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+    assert_eq!(count_plans(&pool, &tournament_id).await, 0);
+    assert_eq!(count_phases(&pool, &tournament_id).await, 0);
+    assert_eq!(count_rounds(&pool, &tournament_id).await, 0);
+    assert_eq!(count_debates(&pool, &tournament_id).await, 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn create_plan_should_rollback_everything_if_underlying_creation_fails() -> Result<(), OmniError> {
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let pool = state.connection_pool.clone();
+
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
+    let tournament_uuid = Uuid::parse_str(&tournament_id).unwrap();
+
+    let plan = tau::tournaments::plans::TournamentPlan {
+        id: Uuid::now_v7(),
+        tournament_id: tournament_uuid,
+        group_phase_rounds: Some(TEST_GROUP_PHASE_ROUNDS),
+        groups_count: Some(TEST_GROUPS_COUNT),
+        advancing_teams: Some(TEST_ADVANCING_TEAMS),
+        total_teams: Some(TEST_TOTAL_TEAMS),
+    };
+
+    let mut transaction = pool.begin().await.unwrap();
+
+    let result: Result<(), OmniError> = async {
+        let _created = tau::tournaments::plans::TournamentPlan::post_with_transaction(
+            &mut transaction,
+            tournament_uuid,
+            plan,
+        )
+        .await?;
+
+        Err(OmniError::ExplicitError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "forced failure".to_owned(),
+        })
+    }
+    .await;
+
+    assert!(result.is_err());
+
+    transaction.rollback().await.unwrap();
+
+    assert_eq!(count_plans(&pool, &tournament_id).await, 0);
+    assert_eq!(count_phases(&pool, &tournament_id).await, 0);
+    assert_eq!(count_rounds(&pool, &tournament_id).await, 0);
+    assert_eq!(count_debates(&pool, &tournament_id).await, 0);
+
     Ok(())
 }

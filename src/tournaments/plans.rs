@@ -6,6 +6,16 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::{
+    tournaments::{
+        phases::{Phase, PhaseStatus},
+        rounds::{Round, RoundStatus},
+        debates::Debate,
+    }
+};
+
+use serde_json::json;
+
+use crate::{
     omni_error::OmniError,
 };
 
@@ -50,7 +60,7 @@ pub struct TournamentPlanPatch {
     pub total_teams:        Option<i32>
 }
 
-impl TournamentPlan {
+impl TournamentPlan { // post with debates rounds phases
     pub async fn post(
         tournament_id: Uuid,
         json: TournamentPlan,
@@ -91,6 +101,8 @@ impl TournamentPlan {
         )
         .fetch_one(&mut **transaction)
         .await?;
+
+        plan.post_underlying_structs_with_transaction(transaction).await?;
 
         Ok(plan)
     }
@@ -159,6 +171,13 @@ impl TournamentPlan {
         .fetch_one(&mut **transaction)
         .await?;
 
+        updated
+            .delete_underlying_structs_with_transaction(transaction)
+            .await?;
+        updated
+            .post_underlying_structs_with_transaction(transaction)
+            .await?;
+
         Ok(updated)
     }
 
@@ -175,6 +194,8 @@ impl TournamentPlan {
         self,
         transaction: &mut Transaction<'_, Postgres>,
     ) -> Result<(), OmniError> {
+        self.delete_underlying_structs_with_transaction(transaction).await?;
+
         query!(
             r#"DELETE FROM tournament_plans WHERE id = $1"#,
             self.id
@@ -192,6 +213,141 @@ impl TournamentPlan {
             self.groups_count,
             self.advancing_teams,
         )
+    }
+
+    fn validated_values(&self) -> Result<(i32, i32, i32, i32), OmniError> {
+        Ok((
+            self.total_teams.ok_or_else(|| OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "total_teams must be set".to_owned(),
+            })?,
+            self.group_phase_rounds.ok_or_else(|| OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "group_phase_rounds must be set".to_owned(),
+            })?,
+            self.groups_count.ok_or_else(|| OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "groups_count must be set".to_owned(),
+            })?,
+            self.advancing_teams.ok_or_else(|| OmniError::ExplicitError {
+                status: StatusCode::BAD_REQUEST,
+                message: "advancing_teams must be set".to_owned(),
+            })?,
+        ))
+    }
+
+    async fn post_underlying_structs_with_transaction(
+        &self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        let (total_teams, group_phase_rounds, groups_count, _advancing_teams) =
+            self.validated_values()?;
+
+        let group_size = total_teams / groups_count;
+
+        let mut previous_phase_id: Option<Uuid> = None;
+
+        for phase_index in 1..=2 {
+            let curr_phase_id = Uuid::now_v7();
+            let is_finals = phase_index == 2; // is phase count constant (group phase / final phase)?
+
+            let phase: Phase = Phase {
+                id: curr_phase_id,
+                name: format!("phase_{phase_index}"),
+                tournament_id: self.tournament_id,
+                is_finals,
+                previous_phase_id,
+                group_size: Some(group_size),
+                status: PhaseStatus::Planned
+            };
+
+            Phase::post_with_transaction(transaction, self.tournament_id, phase).await?;
+
+            let mut previous_round_id: Option<Uuid> = None;
+
+            for round_index in 1..=group_phase_rounds {
+                let curr_round_id = Uuid::now_v7();
+
+                let round: Round = Round {
+                    id: curr_round_id,
+                    name: format!("round_{round_index}"),
+                    phase_id: curr_phase_id,
+                    planned_start_time: None,
+                    planned_end_time: None,
+                    motion_id: None,
+                    previous_round_id: previous_round_id,
+                    status: RoundStatus::Planned,
+                };
+
+                Round::post_with_transaction(transaction, round).await?;
+
+                let combinations = (group_size * (group_size - 1)) / 2;
+
+                for _ in 1..=combinations {
+                    let debate: Debate = Debate {
+                        id: Uuid::now_v7(),
+                        motion_id: None,
+                        marshal_user_id: None,
+                        tournament_id: self.tournament_id,
+                        round_id: curr_round_id,
+                    };
+
+                    Debate::post_with_transaction(transaction, self.tournament_id, debate).await?;
+                }
+
+                previous_round_id = Some(curr_round_id);
+            }
+
+            previous_phase_id = Some(curr_phase_id);
+        }
+
+        Ok(())
+    }
+
+    async fn delete_underlying_structs_with_transaction(
+        &self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        query!(
+            r#"
+            DELETE FROM debates
+            WHERE round_id IN (
+                SELECT r.id
+                FROM rounds r
+                INNER JOIN phases p ON p.id = r.phase_id
+                WHERE p.tournament_id = $1
+            )
+            "#,
+            self.tournament_id
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        query!(
+            r#"
+            DELETE FROM rounds
+            WHERE phase_id IN (
+                SELECT id
+                FROM phases
+                WHERE tournament_id = $1
+            )
+            "#,
+            self.tournament_id
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        query!(
+            r#"
+            DELETE FROM phases
+            WHERE tournament_id = $1
+            "#,
+            self.tournament_id
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(())
     }
 }
 
