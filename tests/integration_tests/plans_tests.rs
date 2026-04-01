@@ -12,7 +12,9 @@ use crate::common::{
         count_debates,
         count_phases,
         count_plans,
-        count_rounds
+        count_rounds,
+        get_final_phase_rounds,
+        get_final_phase_debates
     },
     user_utils::{
         get_organizer_token, 
@@ -27,14 +29,22 @@ const TEST_GROUPS_COUNT:       i32 = 8;
 const TEST_ADVANCING_TEAMS:    i32 = 4;
 const TEST_TOTAL_TEAMS:        i32 = 32;
 
-fn expected_counts(group_phase_rounds: i32, groups_count: i32, total_teams: i32) -> (i64, i64, i64) {
-    let group_size = total_teams / groups_count;
-    let debates_per_round = (group_size * (group_size - 1)) / 2;
+const TEST_GROUP_PHASE_ROUNDS_PATCH: i32 = 5;
+const TEST_GROUPS_COUNT_PATCH:       i32 = 10;
+const TEST_ADVANCING_TEAMS_PATCH:    i32 = 4;
+const TEST_TOTAL_TEAMS_PATCH:        i32 = 30;
 
-    let phases = 2;
-    let rounds = group_phase_rounds as i64;
-    let debates = debates_per_round as i64;
+fn expected_counts(group_phase_rounds: i32, groups_count: i32, advancing_teams: i32) -> (i64, i64, i64) {
+    let phases  = 2;
+    let c = group_phase_rounds;
+    let d = get_final_phase_rounds(advancing_teams);
+    println!("rounds expected group: {c}, rounds expected final: {d}");
+    let rounds  = (c+d) as i64;
 
+    let a = groups_count*group_phase_rounds;
+    let b = get_final_phase_debates(advancing_teams);
+    println!("debates expected group: {a}, debates expected final: {b}");
+    let debates = (a+b) as i64;
     (phases, rounds, debates)
 }
 
@@ -91,9 +101,9 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
 
     let response = create_plan(
         &tournament_id,
+        TEST_ADVANCING_TEAMS,
         TEST_GROUP_PHASE_ROUNDS,
         TEST_GROUPS_COUNT,
-        TEST_ADVANCING_TEAMS,
         TEST_TOTAL_TEAMS,
         &token,
     ).await;
@@ -105,15 +115,17 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
     assert_eq!(status, StatusCode::OK);
 
     let (expected_phases, expected_rounds, expected_debates) =
-        expected_counts(TEST_GROUP_PHASE_ROUNDS, TEST_GROUPS_COUNT, TEST_TOTAL_TEAMS);
+        expected_counts(TEST_GROUP_PHASE_ROUNDS, TEST_GROUPS_COUNT, TEST_ADVANCING_TEAMS);
 
     let ph = count_phases(&pool, &tournament_id).await;
     let r = count_rounds(&pool, &tournament_id).await;
+    let d = count_debates(&pool, &tournament_id).await;
     assert_eq!(count_plans(&pool, &tournament_id).await, 1);
     println!("phases: {ph}, expected: {expected_phases}");
     assert_eq!(count_phases(&pool, &tournament_id).await, expected_phases);
     println!("rounds: {r}, expected: {expected_rounds}");
     assert_eq!(count_rounds(&pool, &tournament_id).await, expected_rounds);
+    println!("debates: {d}, expected: {expected_debates}");
     assert_eq!(count_debates(&pool, &tournament_id).await, expected_debates);
 
     Ok(())
@@ -137,9 +149,9 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
 
     let create_response = create_plan(
         &tournament_id, 
+        TEST_ADVANCING_TEAMS, 
         TEST_GROUP_PHASE_ROUNDS, 
         TEST_GROUPS_COUNT, 
-        TEST_ADVANCING_TEAMS, 
         TEST_TOTAL_TEAMS,
         &token
     ).await;
@@ -184,9 +196,9 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
 
     let create_response = create_plan(
         &tournament_id, 
+        TEST_ADVANCING_TEAMS, 
         TEST_GROUP_PHASE_ROUNDS, 
         TEST_GROUPS_COUNT, 
-        TEST_ADVANCING_TEAMS, 
         TEST_TOTAL_TEAMS,
         &token
     ).await;
@@ -198,10 +210,10 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
 
     // Data should be valid
     let patch_data = json!({
-        "group_phase_rounds": 5,
-        "groups_count": 10,
-        "advancing_teams": 4,
-        "total_teams": 30,
+        "group_phase_rounds": TEST_GROUP_PHASE_ROUNDS_PATCH,
+        "groups_count":       TEST_GROUPS_COUNT_PATCH,
+        "advancing_teams":    TEST_ADVANCING_TEAMS_PATCH,
+        "total_teams":        TEST_TOTAL_TEAMS_PATCH,
     });
 
     // WHEN
@@ -219,7 +231,8 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
 
-    let (new_expected_phases, new_expected_rounds, new_expected_debates) = expected_counts(2, 6, 24);
+    let (new_expected_phases, new_expected_rounds, new_expected_debates) = 
+        expected_counts(TEST_GROUP_PHASE_ROUNDS_PATCH, TEST_GROUPS_COUNT_PATCH, TEST_ADVANCING_TEAMS_PATCH);
 
     let ph = count_phases(&pool, &tournament_id).await;
     let r = count_rounds(&pool, &tournament_id).await;
@@ -228,6 +241,8 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     assert_eq!(ph, new_expected_phases);
     println!("rounds: {r}, expected: {new_expected_rounds}");
     assert_eq!(r, new_expected_rounds);
+    let d = count_debates(&pool, &tournament_id).await;
+    println!("debates: {d}, expected: {new_expected_debates}");
     assert_eq!(count_debates(&pool, &tournament_id).await, new_expected_debates);
 
     Ok(())
@@ -252,9 +267,9 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
 
     let create_response = create_plan(
         &tournament_id, 
+        TEST_ADVANCING_TEAMS, 
         TEST_GROUP_PHASE_ROUNDS, 
         TEST_GROUPS_COUNT, 
-        TEST_ADVANCING_TEAMS, 
         TEST_TOTAL_TEAMS,
         &token
     ).await;

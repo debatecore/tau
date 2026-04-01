@@ -93,3 +93,25 @@ pub async fn count_debates(pool: &Pool<Postgres>, tournament_id: &str) -> i64 {
     .await
     .unwrap()
 }
+
+pub fn get_final_phase_rounds(advancing_teams: i32) -> i32 {
+    let mut teams = advancing_teams.clone();
+    let mut final_phase_rounds = 0;
+    if (teams != 0) {
+        while (teams & 1) == 0 {
+            final_phase_rounds+=1;
+            teams >>= 1;
+        }
+    }
+    return final_phase_rounds
+}
+
+pub fn get_final_phase_debates(advancing_teams: i32) -> i32 {
+    let mut final_phase_debates = 1;
+    let mut remaining_debates   = advancing_teams/2;
+    while remaining_debates > 1 {
+        final_phase_debates += remaining_debates;
+        remaining_debates /= 2;
+    }
+    final_phase_debates
+}
