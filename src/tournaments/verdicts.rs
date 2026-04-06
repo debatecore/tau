@@ -3,7 +3,11 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, tournaments::teams::Team, users::User};
+use crate::{
+    omni_error::OmniError,
+    tournaments::{debates::Debate, teams::Team},
+    users::User,
+};
 
 use super::{roles::Role, Tournament};
 
@@ -125,16 +129,17 @@ impl Verdict {
         &self,
         pool: &Pool<Postgres>,
     ) -> Result<Uuid, OmniError> {
-        let team = Team::get_by_id(self.debate_id, pool).await?;
-        Ok(team.tournament_id)
+        let debate = Debate::get_by_id(self.debate_id, pool).await?;
+        Ok(debate.tournament_id)
     }
 
     async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
         match query_as!(
             Verdict,
-            "SELECT * FROM verdicts WHERE judge_user_id = $1 AND debate_id = $2",
+            "SELECT * FROM verdicts WHERE judge_user_id = $1 AND debate_id = $2 AND proposition_won = $3",
             self.judge_user_id,
-            self.debate_id
+            self.debate_id,
+            self.proposition_won
         )
         .fetch_optional(pool)
         .await

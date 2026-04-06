@@ -2,9 +2,10 @@ use axum::{
     extract::{Path, State},
     http::HeaderMap,
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
     Json, Router,
 };
+use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -20,23 +21,22 @@ use crate::{
 };
 
 pub fn route() -> Router<AppState> {
-    Router::new().route(
-        "/tournaments/:tournament_id/debates/:debate_id/verdicts",
-        post(create_verdict),
-    )
-    // .route("/users/:user_id/verdicts/tournament/:tournament_id")
-    // .route(
-    //     "/users/:user_id/verdicts/:id",
-    //     get(get_verdict_by_id)
-    //         .patch(patch_verdict_by_id)
-    //         .delete(delete_verdict_by_id),
-    // )
+    Router::new()
+        .route(
+            "/tournaments/:tournament_id/debates/:debate_id/verdicts",
+            post(create_verdict).get(get_verdicts),
+        )
+        // .route("/users/:user_id/verdicts/tournament/:tournament_id")
+        .route(
+            "/tournaments/:tournament_id/debates/:debate_id/verdicts/:verdict_id",
+            get(get_verdict_by_id).patch(patch_verdict_by_id), //         .delete(delete_verdict_by_id),
+        )
 }
 
 /// Create a new verdict
 ///
 /// Available only to Organizers and the infrastructure admin.
-#[utoipa::path(post, request_body=Verdict, path = "/users/{user_id}/verdicts",
+#[utoipa::path(post, request_body=Verdict, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts",
     responses(
         (status=200, description = "Ok", body=Verdict),
         (status=400, description = "Bad request"),
@@ -73,140 +73,124 @@ async fn create_verdict(
     }
 }
 
-// #[utoipa::path(get, path = "/users/{user_id}/verdicts/tournament/{tournament_id}",
-//     responses
-//     (
-//         (status=200, description = "Ok", body=Vec<Verdict>),
-//         (status=400, description = "Bad request"),
-//         (status=401, description = "Unauthorized"),
-//         (status=404, description = "Resource not found"),
-//         (status=500, description = "Internal server error"),
-//     ),
-//     tag="verdicts"
-// )]
-// /// Get a list of all user verdicts within a given tournament.
-// ///
-// /// Available only to Organizers and the infrastructure admin.
-// async fn get_verdicts(
-//     State(state): State<AppState>,
-//     headers: HeaderMap,
-//     cookies: Cookies,
-//     Path((user_id, tournament_id)): Path<(Uuid, Uuid)>,
-// ) -> Result<Response, OmniError> {
-//     let pool = &state.connection_pool;
-//     let tournament_user =
-//         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+#[utoipa::path(get, path = "/users/{user_id}/verdicts/tournament/{tournament_id}",
+    responses
+    (
+        (status=200, description = "Ok", body=Vec<Verdict>),
+        (status=400, description = "Bad request"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
+        (status=500, description = "Internal server error"),
+    ),
+    tag="verdicts"
+)]
+/// Get a list of all user verdicts within a given tournament.
+///
+/// Available only to Organizers and the infrastructure admin.
+async fn get_verdicts(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path((tournament_id, debate_id)): Path<(Uuid, Uuid)>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-//     match tournament_user.has_permission(Permission::ReadVerdicts) {
-//         true => (),
-//         false => return Err(OmniError::InsufficientPermissionsError),
-//     }
+    match query_as!(
+        Verdict,
+        "SELECT * FROM verdicts WHERE debate_id = $1",
+        debate_id
+    )
+    .fetch_all(&state.connection_pool)
+    .await
+    {
+        Ok(verdicts) => Ok(Json(verdicts).into_response()),
+        Err(e) => {
+            error!("Error getting verdicts of debate {}: {e}", debate_id);
+            Err(e)?
+        }
+    }
+}
 
-//     let affiliated_user = User::get_by_id(user_id, pool).await?;
-//     if !affiliated_user
-//         .has_role(Role::Judge, tournament_id, pool)
-//         .await?
-//     {
-//         return Err(OmniError::NotAJudgeVerdictError);
-//     }
+/// Get details of an existing verdict
+///
+/// Available only to Organizers and the infrastructure admin.
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
+    responses(
+        (status=200, description = "Ok", body=Verdict),
+        (status=400, description = "Bad request"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
+        (status=500, description = "Internal server error"),
+    ),
+    tag="verdicts"
+)]
+async fn get_verdict_by_id(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path((_tournament_id, _debate_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
+    let verdict = Verdict::get_by_id(id, pool).await?;
+    let tournament_id = verdict.infer_tournament_id(pool).await?;
+    TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-//     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-//     match query_as!(Verdict, "SELECT * FROM judge_team_assignments")
-//         .fetch_all(&state.connection_pool)
-//         .await
-//     {
-//         Ok(verdicts) => Ok(Json(verdicts).into_response()),
-//         Err(e) => {
-//             error!("Error getting verdicts of user {}: {e}", user_id);
-//             Err(e)?
-//         }
-//     }
-// }
+    Ok(Json(verdict).into_response())
+}
 
-// /// Get details of an existing verdict
-// ///
-// /// Available only to Organizers and the infrastructure admin.
-// #[utoipa::path(get, path = "/users/{user_id}/verdicts/{id}",
-//     responses(
-//         (status=200, description = "Ok", body=Verdict),
-//         (status=400, description = "Bad request"),
-//         (status=401, description = "Unauthorized"),
-//         (status=404, description = "Resource not found"),
-//         (status=500, description = "Internal server error"),
-//     ),
-//     tag="verdicts"
-// )]
-// async fn get_verdict_by_id(
-//     State(state): State<AppState>,
-//     headers: HeaderMap,
-//     cookies: Cookies,
-//     Path((_user_id, id)): Path<(Uuid, Uuid)>,
-// ) -> Result<Response, OmniError> {
-//     let pool = &state.connection_pool;
-//     let verdict = Verdict::get_by_id(id, pool).await?;
-//     let tournament_id = verdict.infer_tournament_id(pool).await?;
-//     let tournament_user =
-//         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+/// Patch an existing verdict
+///
+/// Available only to Organizers and the infrastructure admin.
+#[utoipa::path(patch, path = "/users/{user_id}/verdicts/{id}",
+    request_body=Verdict,
+    responses(
+        (status=200, description = "Ok", body=Verdict),
+        (status=400, description = "Bad request"),
+        (status=401, description = "Unauthorized"),
+        (status=404, description = "Resource not found"),
+        (status=500, description = "Internal server error"),
+    ),
+    tag="verdicts"
+)]
+#[axum::debug_handler]
+async fn patch_verdict_by_id(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    cookies: Cookies,
+    Path((tournament_id, _debate_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Json(new_verdict): Json<VerdictPatch>,
+) -> Result<Response, OmniError> {
+    let pool = &state.connection_pool;
 
-//     match tournament_user.has_permission(Permission::ReadVerdicts) {
-//         true => (),
-//         false => return Err(OmniError::InsufficientPermissionsError),
-//     }
+    let tournament_user =
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
-//     Ok(Json(verdict).into_response())
-// }
+    match tournament_user.has_permission(Permission::SubmitOwnVerdictVote) {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
+    }
 
-// /// Patch an existing verdict
-// ///
-// /// Available only to Organizers and the infrastructure admin.
-// #[utoipa::path(patch, path = "/users/{user_id}/verdicts/{id}",
-//     request_body=Verdict,
-//     responses(
-//         (status=200, description = "Ok", body=Verdict),
-//         (status=400, description = "Bad request"),
-//         (status=401, description = "Unauthorized"),
-//         (status=404, description = "Resource not found"),
-//         (status=500, description = "Internal server error"),
-//     ),
-//     tag="verdicts"
-// )]
-// #[axum::debug_handler]
-// async fn patch_verdict_by_id(
-//     State(state): State<AppState>,
-//     headers: HeaderMap,
-//     cookies: Cookies,
-//     Path((_user_id, id)): Path<(Uuid, Uuid)>,
-//     Json(new_verdict): Json<VerdictPatch>,
-// ) -> Result<Response, OmniError> {
-//     let pool = &state.connection_pool;
+    let old_verdict = Verdict::get_by_id(id, pool).await?;
 
-//     let verdict = Verdict::get_by_id(id, pool).await?;
-//     let team = Team::get_by_id(verdict.team_id, pool).await?;
-//     let tournament_id = Tournament::get_by_id(team.tournament_id, pool).await?.id;
-//     let tournament_user =
-//         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+    let new_verdict = Verdict {
+        id: old_verdict.id,
+        judge_user_id: new_verdict
+            .judge_user_id
+            .unwrap_or(old_verdict.judge_user_id),
+        debate_id: new_verdict.debate_id.unwrap_or(old_verdict.debate_id),
+        proposition_won: new_verdict
+            .proposition_won
+            .unwrap_or(old_verdict.proposition_won),
+    };
+    new_verdict.validate(tournament_id, pool).await?;
 
-//     match tournament_user.has_permission(Permission::WriteVerdicts) {
-//         true => (),
-//         false => return Err(OmniError::InsufficientPermissionsError),
-//     }
-
-//     let old_verdict = Verdict::get_by_id(id, pool).await?;
-
-//     let new_verdict = Verdict {
-//         id: old_verdict.id,
-//         judge_user_id: new_verdict
-//             .judge_user_id
-//             .unwrap_or(old_verdict.judge_user_id),
-//         team_id: new_verdict.team_id.unwrap_or(old_verdict.team_id),
-//     };
-//     new_verdict.validate(tournament_id, pool).await?;
-
-//     match old_verdict.patch(new_verdict, pool).await {
-//         Ok(verdict) => Ok(Json(verdict).into_response()),
-//         Err(e) => Err(e)?,
-//     }
-// }
+    match old_verdict.patch(new_verdict, pool).await {
+        Ok(verdict) => Ok(Json(verdict).into_response()),
+        Err(e) => Err(e)?,
+    }
+}
 
 // /// Delete an existing verdict
 // ///

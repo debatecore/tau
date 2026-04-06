@@ -11,13 +11,18 @@ pub async fn get_id_of_a_new_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Result<String, OmniError> {
-    match create_verdict(tournament_id, judge_id, debate_id, proposition_won, &token)
-        .await
-        .json::<serde_json::Value>()
-        .await
-        .unwrap()["id"]
-        .as_str()
-    {
+    let response =
+        create_verdict(tournament_id, judge_id, debate_id, proposition_won, &token).await;
+    if response.status() != StatusCode::OK {
+        return Err(OmniError::ExplicitError {
+            status: response.status(),
+            message: format!(
+                "Error creating verdict: {}",
+                response.text().await.unwrap()
+            ),
+        });
+    }
+    match response.json::<serde_json::Value>().await.unwrap()["id"].as_str() {
         Some(id) => Ok(id.to_owned()),
         None => Err(OmniError::ExplicitError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -55,14 +60,19 @@ pub async fn create_verdict(
         .unwrap()
 }
 
-pub async fn get_verdict(id: &str, judge_id: &str, token: &str) -> Response {
+pub async fn get_verdict(
+    id: &str,
+    tournament_id: &str,
+    debate_id: &str,
+    token: &str,
+) -> Response {
     let socket_address = get_socket_addr();
     let client = Client::new();
 
     client
         .get(format!(
-            "http://{}/users/{}/verdicts/{}",
-            socket_address, judge_id, id
+            "http://{}/tournaments/{}/debates/{}/verdicts/{}",
+            socket_address, tournament_id, debate_id, id
         ))
         .header("accept", "application/json")
         .bearer_auth(token)
@@ -81,7 +91,7 @@ pub async fn get_all_verdicts(
 
     client
         .get(format!(
-            "http://{}/users/{}/verdicts/tournament/{}",
+            "http://{}/tournaments/{}/debates/{}/verdicts",
             socket_address, judge_id, tournament_id
         ))
         .header("accept", "application/json")
@@ -92,22 +102,26 @@ pub async fn get_all_verdicts(
 }
 
 pub async fn patch_verdict(
-    id: &str,
+    verdict_id: &str,
+    tournament_id: &str,
     judge_id: &str,
-    team_id: &str,
+    debate_id: &str,
+    proposition_won: &bool,
     token: &str,
 ) -> Response {
     let socket_address = get_socket_addr();
     let client = Client::new();
 
     let mut request_body = HashMap::new();
-    request_body.insert("judge_user_id", judge_id);
-    request_body.insert("team_id", team_id);
+    request_body.insert("id", Value::String(verdict_id.to_owned()));
+    request_body.insert("judge_user_id", Value::String(judge_id.to_owned()));
+    request_body.insert("debate_id", Value::String(debate_id.to_owned()));
+    request_body.insert("proposition_won", Value::Bool(proposition_won.to_owned()));
 
     client
         .patch(format!(
-            "http://{}/users/{}/verdicts/{}",
-            socket_address, judge_id, id
+            "http://{}/tournaments/{}/debates/{}/verdicts/{}",
+            socket_address, tournament_id, debate_id, verdict_id
         ))
         .json(&request_body)
         .header("accept", "text/plain")
