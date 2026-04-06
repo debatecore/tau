@@ -41,8 +41,6 @@ pub async fn create_phase(
     request_body.insert("status", Value::String("Planned".to_owned()));
     request_body.insert("is_finals", Value::Bool(is_finals.to_owned()));
 
-    println!("{}", json!(request_body));
-
     client
         .post(format!(
             "http://{}/tournaments/{}/phases",

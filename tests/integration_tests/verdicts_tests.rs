@@ -3,6 +3,7 @@ use std::{future::IntoFuture, vec};
 use reqwest::StatusCode;
 use serial_test::serial;
 use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
+use uuid::Uuid;
 
 use crate::common::{
     auth_utils::get_session_token_for,
@@ -66,6 +67,42 @@ async fn judges_should_be_able_to_make_verdicts_on_debates_within_their_tourname
             .to_owned(),
         true
     );
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn making_verdicts_should_be_only_allowed_on_existing_debates(
+) -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
+    let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
+    let debate_id = Uuid::now_v7().to_string();
+    let token = get_judge_token(&tournament_id).await;
+    let proposition_won = true;
+
+    // WHEN
+    let response = create_verdict(
+        &tournament_id,
+        &judge_id,
+        &debate_id,
+        &proposition_won,
+        &token,
+    )
+    .await;
+
+    // THEN
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
     Ok(())
 }
 

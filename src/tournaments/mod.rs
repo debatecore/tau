@@ -19,7 +19,7 @@ pub(crate) mod motions;
 pub(crate) mod phases;
 pub mod roles;
 pub(crate) mod rooms;
-pub mod rounds;
+pub(crate) mod rounds;
 pub(crate) mod teams;
 pub mod verdicts;
 

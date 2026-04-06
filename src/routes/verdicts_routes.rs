@@ -129,11 +129,10 @@ async fn get_verdict_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((_tournament_id, _debate_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((tournament_id, _debate_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let verdict = Verdict::get_by_id(id, pool).await?;
-    let tournament_id = verdict.infer_tournament_id(pool).await?;
     TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
     Ok(Json(verdict).into_response())

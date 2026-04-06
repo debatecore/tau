@@ -3,7 +3,7 @@ use sqlx::{query, query_as, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, tournaments::debates::Debate, users::User};
+use crate::{omni_error::OmniError, users::User};
 
 use super::{roles::Role, Tournament};
 
@@ -150,14 +150,6 @@ impl Verdict {
         }
 
         Ok(())
-    }
-
-    pub async fn infer_tournament_id(
-        &self,
-        pool: &Pool<Postgres>,
-    ) -> Result<Uuid, OmniError> {
-        let debate = Debate::get_by_id(self.debate_id, pool).await?;
-        Ok(debate.tournament_id)
     }
 
     async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
