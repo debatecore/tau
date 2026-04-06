@@ -206,7 +206,7 @@ async fn organizers_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
 
 #[tokio::test]
 #[serial]
-async fn organizers_should_be_able_to_patch_verdicts() -> Result<(), OmniError> {
+async fn judges_should_be_able_to_patch_verdicts() -> Result<(), OmniError> {
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
