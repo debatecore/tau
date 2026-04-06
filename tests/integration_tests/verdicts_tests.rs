@@ -13,7 +13,7 @@ use crate::common::{
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
         create_user, get_id_of_a_new_judge, get_id_of_a_new_user, get_judge_token,
-        get_organizer_token,
+        get_marshal_token, get_organizer_token,
     },
     verdicts_utils::{
         create_verdict, delete_verdict, get_all_verdicts, get_id_of_a_new_verdict,
@@ -144,7 +144,7 @@ async fn organizers_should_be_able_to_get_verdicts() -> Result<(), OmniError> {
 
 #[tokio::test]
 #[serial]
-async fn organizers_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
+async fn anyone_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
@@ -156,14 +156,20 @@ async fn organizers_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     tokio::spawn(server);
 
     let tournament_id = get_id_of_a_new_tournament("test").await?;
-    let token = get_organizer_token(&tournament_id).await;
+    let organizer_token = get_organizer_token(&tournament_id).await;
     let debate_id = get_id_of_a_new_debate(&tournament_id).await?;
 
     let judge_username_alpha = "judge";
     let judge_password_alpha = "dredd";
     let judge_id_alpha =
         get_id_of_a_new_user(judge_username_alpha, judge_password_alpha).await;
-    create_roles(&judge_id_alpha, &tournament_id, vec![Role::Judge], &token).await;
+    create_roles(
+        &judge_id_alpha,
+        &tournament_id,
+        vec![Role::Judge],
+        &organizer_token,
+    )
+    .await;
     let token_alpha =
         get_session_token_for(judge_username_alpha, judge_password_alpha).await?;
 
@@ -171,9 +177,22 @@ async fn organizers_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     let judge_password_bravo = "wesołowska";
     let judge_id_bravo =
         get_id_of_a_new_user(judge_username_bravo, judge_password_bravo).await;
-    create_roles(&judge_id_bravo, &tournament_id, vec![Role::Judge], &token).await;
+    create_roles(
+        &judge_id_bravo,
+        &tournament_id,
+        vec![Role::Judge],
+        &organizer_token,
+    )
+    .await;
     let token_bravo =
         get_session_token_for(judge_username_bravo, judge_password_bravo).await?;
+
+    let tokens_to_test = vec![
+        get_marshal_token(&tournament_id).await,
+        token_alpha.clone(),
+        token_bravo.clone(),
+        organizer_token,
+    ];
 
     create_verdict(
         &tournament_id,
@@ -192,14 +211,16 @@ async fn organizers_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     )
     .await;
 
-    // WHEN
-    let response = get_all_verdicts(&tournament_id, &debate_id, &token_alpha).await;
+    for token in tokens_to_test {
+        // WHEN
+        let response = get_all_verdicts(&tournament_id, &debate_id, &token).await;
 
-    // THEN
-    assert_eq!(response.status(), StatusCode::OK);
+        // THEN
+        assert_eq!(response.status(), StatusCode::OK);
 
-    let response_body = response.json::<Vec<serde_json::Value>>().await.unwrap();
-    assert_eq!(response_body.len(), 2);
+        let response_body = response.json::<Vec<serde_json::Value>>().await.unwrap();
+        assert_eq!(response_body.len(), 2);
+    }
 
     Ok(())
 }

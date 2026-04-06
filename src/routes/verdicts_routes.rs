@@ -14,10 +14,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournaments::{
-        debates::Debate,
-        verdicts::{Verdict, VerdictPatch},
-    },
+    tournaments::verdicts::{Verdict, VerdictPatch},
     users::{permissions::Permission, TournamentUser},
 };
 
@@ -27,7 +24,6 @@ pub fn route() -> Router<AppState> {
             "/tournaments/:tournament_id/debates/:debate_id/verdicts",
             post(create_verdict).get(get_verdicts),
         )
-        // .route("/users/:user_id/verdicts/tournament/:tournament_id")
         .route(
             "/tournaments/:tournament_id/debates/:debate_id/verdicts/:verdict_id",
             get(get_verdict_by_id)
@@ -54,12 +50,10 @@ async fn create_verdict(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((tournament_id, debate_id)): Path<(Uuid, Uuid)>,
+    Path((tournament_id, _debate_id)): Path<(Uuid, Uuid)>,
     Json(verdict): Json<Verdict>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let debate = Debate::get_by_id(verdict.debate_id, pool).await?;
-    let tournament_id = debate.tournament_id;
     let tournament_user =
         TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
@@ -99,8 +93,7 @@ async fn get_verdicts(
     Path((tournament_id, debate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+    TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
 
     match query_as!(
         Verdict,
@@ -216,7 +209,7 @@ async fn delete_verdict_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path((tournament_id, debate_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((tournament_id, _debate_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
 
