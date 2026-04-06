@@ -16,8 +16,8 @@ use crate::common::{
         get_organizer_token,
     },
     verdicts_utils::{
-        create_verdict, get_all_verdicts, get_id_of_a_new_verdict, get_verdict,
-        patch_verdict,
+        create_verdict, delete_verdict, get_all_verdicts, get_id_of_a_new_verdict,
+        get_verdict, patch_verdict,
     },
 };
 
@@ -263,31 +263,39 @@ async fn organizers_should_be_able_to_patch_verdicts() -> Result<(), OmniError> 
     Ok(())
 }
 
-// #[tokio::test]
-// #[serial]
-// async fn organizers_should_be_able_to_delete_verdicts() -> Result<(), OmniError> {
-//     // GIVEN
-//     setup::read_environmental_variables();
-//     setup::check_secret_env_var();
-//     let state = setup::create_app_state().await;
-//     prepare_empty_database(&state.connection_pool).await;
+#[tokio::test]
+#[serial]
+async fn judges_should_be_able_to_delete_verdicts() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
 
-//     let app = create_app(state).await;
-//     let listener = create_listener().await;
-//     let server = axum::serve(listener, app).into_future();
-//     tokio::spawn(server);
+    let judge_username = "judge";
+    let judge_password = "dredd";
 
-//     let tournament_id = get_id_of_a_new_tournament("some").await?;
-//     let token = get_organizer_token(&tournament_id).await;
-//     let team_id = get_id_of_a_new_team(&tournament_id, "team").await;
-//     let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
-//     let verdict_id = get_id_of_a_new_verdict(&judge_id, &team_id).await?;
+    let tournament_id = get_id_of_a_new_tournament("test").await?;
+    let token = get_organizer_token(&tournament_id).await;
+    let judge_id = get_id_of_a_new_user(judge_username, judge_password).await;
+    create_roles(&judge_id, &tournament_id, vec![Role::Judge], &token).await;
+    let debate_id = get_id_of_a_new_debate(&tournament_id).await?;
+    create_user(judge_username, judge_password, &token).await;
+    let token = get_session_token_for(judge_username, judge_password).await?;
 
-//     // WHEN
-//     let response = delete_verdict(&verdict_id, &judge_id, &token).await;
+    let verdict_id =
+        get_id_of_a_new_verdict(&tournament_id, &judge_id, &debate_id, &true, &token)
+            .await?;
 
-//     // THEN
-//     assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    // WHEN
+    let response = delete_verdict(&verdict_id, &tournament_id, &debate_id, &token).await;
 
-//     Ok(())
-// }
+    // THEN
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+    Ok(())
+}

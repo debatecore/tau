@@ -3,17 +3,16 @@ use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{
-    omni_error::OmniError,
-    tournaments::{debates::Debate, teams::Team},
-    users::User,
-};
+use crate::{omni_error::OmniError, tournaments::debates::Debate, users::User};
 
 use super::{roles::Role, Tournament};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-/// TO-DO: docs here
+/// Verdict denotes a winner of a debate (i.e. Proposition or Opposition).
+/// Every Judge can make a verdict on a debate
+/// within a tournament they're assigned to.
+/// A debate can have multiple verdicts.
 pub struct Verdict {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]

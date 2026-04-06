@@ -132,14 +132,19 @@ pub async fn patch_verdict(
         .unwrap()
 }
 
-pub async fn delete_verdict(id: &str, judge_id: &str, token: &str) -> Response {
+pub async fn delete_verdict(
+    id: &str,
+    tournament_id: &str,
+    debate_id: &str,
+    token: &str,
+) -> Response {
     let socket_address = get_socket_addr();
     let client = Client::new();
 
     client
         .delete(format!(
-            "http://{}/users/{}/verdicts/{}",
-            socket_address, judge_id, id
+            "http://{}/tournaments/{}/debates/{}/verdicts/{}",
+            socket_address, tournament_id, debate_id, id
         ))
         .header("accept", "text/plain")
         .bearer_auth(token)
