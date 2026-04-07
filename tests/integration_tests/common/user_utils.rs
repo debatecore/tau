@@ -78,3 +78,23 @@ pub async fn get_id_of_a_new_judge(tournament_id: &str) -> Result<String, OmniEr
     create_roles(&judge_id, &tournament_id, vec![Role::Judge], &token).await;
     Ok(judge_id)
 }
+
+pub async fn check_permission(
+    user_id: &str,
+    tournament_id: &str,
+    permission_name: &str,
+    token: &str,
+) -> Response {
+    let socket_address = get_socket_addr();
+    let client = Client::new();
+
+    client
+        .get(format!(
+            "http://{}/users/{}/tournaments/{}/permissions?permission_name={}",
+            socket_address, user_id, tournament_id, permission_name
+        ))
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap()
+}

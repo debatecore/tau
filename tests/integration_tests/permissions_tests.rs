@@ -1,78 +1,267 @@
-#[cfg(tests)]
-mod tests {
- use axum ::{
-   body :: Body,
-   http :: {Request, StatusCode},
-   routing :: get,
-   Router,
- };
-  use tower :: ServiceExt; // for 'oneshot'
-  use uuid :: Uuid; 
-  // Note: You will need to mock your App State (Database Pool) and Auth headers 
-  // depending on how your existing tests are set up.
+use std::future::IntoFuture;
 
-  // A helper to create a mock router for testing the endpoint
-  fn app () -> Router {
-      // Build your router with mock state here
-      // Router::new().route("/user/:id/tournaments/:tournament_id/permissions", get(check_permission_endpoint)).with_state(mock_pool)
-    todo!("initialize your router with mock dependencies")
-  }
-  #[tokio::test]
-  async fn test_check_permission_success() {
-      let app = app();
-      let user_id = Uuid::now_v7();
-      let tournament_id = Uuid::now_v7();
+use reqwest::StatusCode;
+use serial_test::serial;
+use tau::{
+    omni_error::OmniError,
+    setup,
+    tournaments::roles::Role,
+};
+use uuid::Uuid;
 
-      // simulating a request for a valid permission
-      let uri = format!("/user/{}/tournaments/{}/permissions?permission_name=FakePermission", user_id, tournament_id)
+use crate::common::{
+    auth_utils::get_session_token_for_infrastructure_admin,
+    create_app, create_listener, prepare_empty_database,
+    tournament_utils::get_id_of_a_new_tournament,
+    user_utils::{check_permission, get_id_of_a_new_judge, get_id_of_a_new_user, get_organizer_token, get_judge_token},
+};
 
-      let request = Request::builder()
-            .uri(uri)
-            // .header("Authorization", "Bearer mock_token") // Add your auth mock
-            .body(Body::empty())
-            .unwrap();
+#[tokio::test]
+#[serial]
+async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
 
-      let response = app.oneshot(request).await.unwrap();
+    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
+    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
+    let admin_token = get_session_token_for_infrastructure_admin().await;
+    
+    // Assign organizer role to user
+    let role_response = crate::common::roles_utils::create_roles(
+        &user_id,
+        &tournament_id,
+        vec![Role::Organizer],
+        &admin_token,
+    )
+    .await;
+    assert_eq!(role_response.status(), StatusCode::OK);
 
-    // Assertions 
-   assert_eq!(response.status(), StatusCode::OK);
-        // Extract body bytes and check if it's `true` or `false`
-        let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
-        let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
-        assert!(body_str == "true" || body_str == "false");
-    }
+    let organizer_token = get_organizer_token(&tournament_id).await;
 
-    #[tokio::test]
-    async fn test_nonexistent_permission_returns_404() {
-        let app = app();
-        let user_id = Uuid::now_v7();
-        let tournament_id = Uuid::now_v7();
-        
-        let uri = format!("/user/{}/tournaments/{}/permissions?permission_name=FakePermission", user_id, tournament_id);
-        
-        let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
-        let response = app.oneshot(request).await.unwrap();
-        
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    }
+    // WHEN
+    let response = check_permission(
+        &user_id,
+        &tournament_id,
+        "WriteTournament",
+        &organizer_token,
+    )
+    .await;
 
-    #[tokio::test]
-    async fn test_multiple_permissions_returns_400() {
-        let app = app();
-        let user_id = Uuid::now_v7();
-        let tournament_id = Uuid::now_v7();
-        
-        let uri = format!(
-            "/user/{}/tournaments/{}/permissions?permission_name=WriteTeams&permission_name=ReadTeams", 
-            user_id, tournament_id
-        );
-        
-        let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
-        let response = app.oneshot(request).await.unwrap();
-        
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    }
+    // THEN
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.text().await.unwrap();
+    assert_eq!(body, "true");
+
+    Ok(())
 }
+
+#[tokio::test]
+#[serial]
+async fn user_with_judge_role_cannot_check_organizer_permission() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
+    let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
+    let judge_token = get_judge_token(&tournament_id).await;
+
+    // WHEN
+    let response = check_permission(
+        &judge_id,
+        &tournament_id,
+        "WriteTournament",
+        &judge_token,
+    )
+    .await;
+
+    // THEN
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.text().await.unwrap();
+    assert_eq!(body, "false");
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
+    let admin_token = get_session_token_for_infrastructure_admin().await;
+    
+    // Get admin user ID - infrastructure admin always has Uuid::max()
+    let admin_id = Uuid::max().to_string();
+
+    // WHEN - Try various permissions
+    let response1 = check_permission(
+        &admin_id,
+        &tournament_id,
+        "WriteTournament",
+        &admin_token,
+    )
+    .await;
+
+    let response2 = check_permission(
+        &admin_id,
+        &tournament_id,
+        "WriteTeams",
+        &admin_token,
+    )
+    .await;
+
+    // THEN
+    assert_eq!(response1.status(), StatusCode::OK);
+    assert_eq!(response1.text().await.unwrap(), "true");
+    
+    assert_eq!(response2.status(), StatusCode::OK);
+    assert_eq!(response2.text().await.unwrap(), "true");
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn invalid_permission_name_returns_404() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
+    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
+    let admin_token = get_session_token_for_infrastructure_admin().await;
+    let organizer_token = get_organizer_token(&tournament_id).await;
+
+    // WHEN
+    let response = check_permission(
+        &user_id,
+        &tournament_id,
+        "InvalidPermission",
+        &organizer_token,
+    )
+    .await;
+
+    // THEN
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
+    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
+    let organizer_token = get_organizer_token(&tournament_id).await;
+
+    // WHEN
+    let socket_address = tau::setup::get_socket_addr();
+    let client = reqwest::Client::new();
+    let response = client
+        .get(format!(
+            "http://{}/users/{}/tournaments/{}/permissions?permission_name=WriteTeams&permission_name=ReadTeams",
+            socket_address, user_id, tournament_id
+        ))
+        .bearer_auth(&organizer_token)
+        .send()
+        .await
+        .unwrap();
+
+    // THEN
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> {
+    // GIVEN
+    setup::read_environmental_variables();
+    setup::check_secret_env_var();
+    let state = setup::create_app_state().await;
+    prepare_empty_database(&state.connection_pool).await;
+    let app = create_app(state).await;
+    let listener = create_listener().await;
+    let server = axum::serve(listener, app).into_future();
+    tokio::spawn(server);
+
+    let tournament_alpha_id = get_id_of_a_new_tournament("tournament alpha").await?;
+    let tournament_beta_id = get_id_of_a_new_tournament("tournament beta").await?;
+    
+    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
+    
+    // Assign user to tournament alpha only
+    let admin_token = get_session_token_for_infrastructure_admin().await;
+    crate::common::roles_utils::create_roles(
+        &user_id,
+        &tournament_alpha_id,
+        vec![Role::Organizer],
+        &admin_token,
+    )
+    .await;
+
+    let user_token = crate::common::auth_utils::get_session_token_for(
+        &user_id,
+        "password",
+    )
+    .await
+    .unwrap();
+
+    // WHEN - Try to check permission in tournament they're not assigned to
+    let response = check_permission(
+        &user_id,
+        &tournament_beta_id,
+        "WriteTournament",
+        &user_token,
+    )
+    .await;
+
+    // THEN
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    Ok(())
+}
+
+
 
 
 
