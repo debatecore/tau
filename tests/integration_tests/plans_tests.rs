@@ -13,8 +13,8 @@ use crate::common::{
         count_phases,
         count_plans,
         count_rounds,
-        get_final_phase_rounds,
-        get_final_phase_debates
+        calculate_final_phase_rounds,
+        calculate_final_phase_debates
     },
     user_utils::{
         get_organizer_token, 
@@ -36,15 +36,8 @@ const TEST_TOTAL_TEAMS_PATCH:        i32 = 30;
 
 fn expected_counts(group_phase_rounds: i32, groups_count: i32, advancing_teams: i32) -> (i64, i64, i64) {
     let phases  = 2;
-    let c = group_phase_rounds;
-    let d = get_final_phase_rounds(advancing_teams);
-    println!("rounds expected group: {c}, rounds expected final: {d}");
-    let rounds  = (c+d) as i64;
-
-    let a = groups_count*group_phase_rounds;
-    let b = get_final_phase_debates(advancing_teams);
-    println!("debates expected group: {a}, debates expected final: {b}");
-    let debates = (a+b) as i64;
+    let rounds  = (group_phase_rounds+calculate_final_phase_rounds(advancing_teams)) as i64;
+    let debates = (groups_count*group_phase_rounds + calculate_final_phase_debates(advancing_teams)) as i64;
     (phases, rounds, debates)
 }
 
@@ -110,22 +103,15 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
 
     let status = response.status();
     let body = response.text().await.unwrap();
-    println!("create plan status: {status}, body: {body}");
 
     assert_eq!(status, StatusCode::OK);
 
     let (expected_phases, expected_rounds, expected_debates) =
         expected_counts(TEST_GROUP_PHASE_ROUNDS, TEST_GROUPS_COUNT, TEST_ADVANCING_TEAMS);
 
-    let ph = count_phases(&pool, &tournament_id).await;
-    let r = count_rounds(&pool, &tournament_id).await;
-    let d = count_debates(&pool, &tournament_id).await;
     assert_eq!(count_plans(&pool, &tournament_id).await, 1);
-    println!("phases: {ph}, expected: {expected_phases}");
     assert_eq!(count_phases(&pool, &tournament_id).await, expected_phases);
-    println!("rounds: {r}, expected: {expected_rounds}");
     assert_eq!(count_rounds(&pool, &tournament_id).await, expected_rounds);
-    println!("debates: {d}, expected: {expected_debates}");
     assert_eq!(count_debates(&pool, &tournament_id).await, expected_debates);
 
     Ok(())
@@ -208,7 +194,6 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     let response_body = create_response.json::<serde_json::Value>().await.unwrap();
     let plan_id = response_body["id"].as_str().unwrap();
 
-    // Data should be valid
     let patch_data = json!({
         "group_phase_rounds": TEST_GROUP_PHASE_ROUNDS_PATCH,
         "groups_count":       TEST_GROUPS_COUNT_PATCH,
@@ -234,15 +219,9 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     let (new_expected_phases, new_expected_rounds, new_expected_debates) = 
         expected_counts(TEST_GROUP_PHASE_ROUNDS_PATCH, TEST_GROUPS_COUNT_PATCH, TEST_ADVANCING_TEAMS_PATCH);
 
-    let ph = count_phases(&pool, &tournament_id).await;
-    let r = count_rounds(&pool, &tournament_id).await;
     assert_eq!(count_plans(&pool, &tournament_id).await, 1);
-    println!("phases: {ph}, expected: {new_expected_phases}");
-    assert_eq!(ph, new_expected_phases);
-    println!("rounds: {r}, expected: {new_expected_rounds}");
-    assert_eq!(r, new_expected_rounds);
-    let d = count_debates(&pool, &tournament_id).await;
-    println!("debates: {d}, expected: {new_expected_debates}");
+    assert_eq!(count_phases(&pool, &tournament_id).await, new_expected_phases);
+    assert_eq!(count_rounds(&pool, &tournament_id).await, new_expected_rounds);
     assert_eq!(count_debates(&pool, &tournament_id).await, new_expected_debates);
 
     Ok(())
@@ -293,9 +272,9 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
     // THEN
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
-    assert_eq!(count_plans(&pool, &tournament_id).await, 0);
-    assert_eq!(count_phases(&pool, &tournament_id).await, 0);
-    assert_eq!(count_rounds(&pool, &tournament_id).await, 0);
+    assert_eq!(count_plans(&pool,   &tournament_id).await, 0);
+    assert_eq!(count_phases(&pool,  &tournament_id).await, 0);
+    assert_eq!(count_rounds(&pool,  &tournament_id).await, 0);
     assert_eq!(count_debates(&pool, &tournament_id).await, 0);
 
     Ok(())
@@ -354,4 +333,28 @@ async fn create_plan_should_rollback_everything_if_underlying_creation_fails() -
     assert_eq!(count_debates(&pool, &tournament_id).await, 0);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test_debates_calculation {
+    use crate::common::plans_utils::calculate_final_phase_debates;
+    #[test]
+    fn test_finals_debates_calculation() {
+        assert_eq!(calculate_final_phase_debates(32), 16 + 8 + 4 + 2 + 1);
+        assert_eq!(calculate_final_phase_debates(16), 8 + 4 + 2 + 1);
+        assert_eq!(calculate_final_phase_debates(8),  4 + 2 + 1);
+        assert_eq!(calculate_final_phase_debates(4),  2 + 1);
+    }
+}
+
+#[cfg(test)]
+mod test_rounds_calculation {
+    use crate::common::plans_utils::calculate_final_phase_rounds;
+    #[test]
+    fn test_finals_rounds_calculation() {
+        assert_eq!(calculate_final_phase_rounds(32), 5);
+        assert_eq!(calculate_final_phase_rounds(16), 4);
+        assert_eq!(calculate_final_phase_rounds(8),  3);
+        assert_eq!(calculate_final_phase_rounds(4),  2);
+    }
 }

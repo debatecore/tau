@@ -58,7 +58,7 @@ pub struct TournamentPlanPatch {
     pub total_teams:        Option<i32>
 }
 
-impl TournamentPlan { // post with debates rounds phases
+impl TournamentPlan {
     pub async fn post(
         tournament_id: Uuid,
         json: TournamentPlan,
@@ -303,7 +303,7 @@ impl TournamentPlan { // post with debates rounds phases
             } else {
                 let mut remaining_teams = _advancing_teams/2;
                 // Rounds
-                for round_index in 1..=get_final_phase_rounds(_advancing_teams) {
+                for round_index in 1..=calculate_final_phase_rounds(_advancing_teams) {
                     let curr_round_id = Uuid::now_v7();
                     Round::post_with_transaction(
                         transaction, 
@@ -469,7 +469,7 @@ fn validate(
     Ok(())
 }
 
-fn get_final_phase_rounds(advancing_teams: i32) -> i32 {
+fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
     let mut teams = advancing_teams.clone();
     let mut final_phase_rounds = 0;
     if (teams != 0) {
