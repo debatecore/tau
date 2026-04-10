@@ -18,6 +18,7 @@ use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::routes::permissions_routes;
+use crate::routes::verdicts_routes;
 use crate::tournaments;
 use crate::tournaments::affiliations;
 use crate::tournaments::attendees;
@@ -29,6 +30,7 @@ use crate::tournaments::roles;
 use crate::tournaments::rooms;
 use crate::tournaments::rounds;
 use crate::tournaments::teams;
+use crate::tournaments::verdicts;
 use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
@@ -120,6 +122,11 @@ pub fn route() -> Router<AppState> {
         phase_routes::patch_phase_by_id,
         phase_routes::delete_phase_by_id,
         permissions_routes::has_permission
+        verdicts_routes::create_verdict,
+        verdicts_routes::get_verdict_by_id,
+        verdicts_routes::get_verdicts,
+        verdicts_routes::patch_verdict_by_id,
+        verdicts_routes::delete_verdict_by_id
     ),
     components(schemas(
         version::VersionDetails,
@@ -157,6 +164,8 @@ pub fn route() -> Router<AppState> {
         rounds::Round,
         rounds::RoundPatch,
         rounds::RoundStatus,
+        verdicts::Verdict,
+        verdicts::VerdictPatch,
     ))
 )]
 

@@ -20,6 +20,7 @@ mod team_routes;
 mod teapot;
 mod tournament_routes;
 mod user_routes;
+mod verdicts_routes;
 mod version;
 
 pub fn routes() -> Router<AppState> {
@@ -43,4 +44,5 @@ pub fn routes() -> Router<AppState> {
         .merge(phase_routes::route())
         .merge(round_routes::route())
         .merge(permissions_routes::route())
+        .merge(verdicts_routes::route())
 }
