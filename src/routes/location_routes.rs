@@ -10,13 +10,24 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{locations::{Location, LocationPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::{
+        locations::{Location, LocationPatch},
+        Tournament,
+    },
+    users::{permissions::Permission, TournamentUser},
+};
 
 const DUPLICATE_NAME_ERROR: &str = "Location with this name already exists within the scope of the tournament, to which the location is assigned.";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/locations", get(get_locations).post(create_location))
+        .route(
+            "/tournaments/:tournament_id/locations",
+            get(get_locations).post(create_location),
+        )
         .route(
             "/tournaments/:tournament_id/locations/:id",
             get(get_location_by_id)
@@ -26,7 +37,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new location
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Location, path = "/tournaments/{tournament_id}/locations",
     responses
@@ -63,7 +74,9 @@ async fn create_location(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    if Location::location_with_name_exists_in_tournament(&json.name, &tournament_id, pool).await? {
+    if Location::location_with_name_exists_in_tournament(&json.name, &tournament_id, pool)
+        .await?
+    {
         return Err(OmniError::ResourceAlreadyExistsError);
     }
 
@@ -73,7 +86,7 @@ async fn create_location(
         Err(e) => {
             error!("Error creating a new location: {e}");
             Err(e)
-        },
+        }
     }
 }
 
@@ -97,7 +110,7 @@ async fn create_location(
     tag="locations"
 )]
 /// Get a list of all locations
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_locations(
     State(state): State<AppState>,
@@ -115,9 +128,13 @@ async fn get_locations(
     }
 
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match query_as!(Location, "SELECT * FROM locations WHERE tournament_id = $1", tournament_id)
-        .fetch_all(&state.connection_pool)
-        .await
+    match query_as!(
+        Location,
+        "SELECT * FROM locations WHERE tournament_id = $1",
+        tournament_id
+    )
+    .fetch_all(&state.connection_pool)
+    .await
     {
         Ok(locations) => Ok(Json(locations).into_response()),
         Err(e) => {
@@ -128,7 +145,7 @@ async fn get_locations(
 }
 
 /// Get details of an existing location
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}", 
     responses(
@@ -151,7 +168,7 @@ async fn get_location_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path( (_tournament_id, id)): Path<(Uuid, Uuid)>
+    Path((_tournament_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -172,7 +189,7 @@ async fn get_location_by_id(
 }
 
 /// Patch an existing location
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}", 
     request_body=Location,
@@ -214,10 +231,16 @@ async fn patch_location_by_id(
     }
 
     let location = Location::get_by_id(id, pool).await?;
-    
+
     let name = new_location.name.clone();
     if name.is_some() {
-        if Location::location_with_name_exists_in_tournament(&name.unwrap(), &location.tournament_id, pool).await? {
+        if Location::location_with_name_exists_in_tournament(
+            &name.unwrap(),
+            &location.tournament_id,
+            pool,
+        )
+        .await?
+        {
             return Err(OmniError::ResourceAlreadyExistsError);
         }
     }
