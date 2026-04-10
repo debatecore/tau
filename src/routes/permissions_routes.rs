@@ -52,7 +52,9 @@ async fn has_permission(
     let pool = &state.connection_pool;
     let tournament_user =
     TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
-
+    if tournament_user.roles.is_empty() && !tournament_user.user.is_infrastructure_admin() {
+        return Err(OmniError::UnauthorizedError);
+    }
     // Parse query string to validate permission_name parameter
     let query_string = uri.query().unwrap_or("");
     

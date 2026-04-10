@@ -157,7 +157,7 @@ async fn invalid_permission_name_returns_404() -> Result<(), OmniError> {
 
     let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
     let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
-    let admin_token = get_session_token_for_infrastructure_admin().await;
+    let _admin_token = get_session_token_for_infrastructure_admin().await;
     let organizer_token = get_organizer_token(&tournament_id).await;
 
     // WHEN
@@ -226,8 +226,9 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
 
     let tournament_alpha_id = get_id_of_a_new_tournament("tournament alpha").await?;
     let tournament_beta_id = get_id_of_a_new_tournament("tournament beta").await?;
+    let user_name = Uuid::now_v7().to_string();
     
-    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
+    let user_id = get_id_of_a_new_user(&user_name, "password").await;
     
     // Assign user to tournament alpha only
     let admin_token = get_session_token_for_infrastructure_admin().await;
@@ -240,7 +241,7 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
     .await;
 
     let user_token = crate::common::auth_utils::get_session_token_for(
-        &user_id,
+        &user_name,
         "password",
     )
     .await
