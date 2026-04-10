@@ -62,13 +62,11 @@ async fn has_permission(
     {
         return Err(OmniError::UnauthorizedError);
     }
-    // Parse query string to validate permission_name parameter
+
     let query_string = uri.query().unwrap_or("");
 
-    // Check for multiple permission_name parameters and extract value
     let permission_name = extract_single_permission_name(query_string)?;
 
-    // Parse the permission name into the Permission enum
     let permission = Permission::from_str(&permission_name)
         .map_err(|_| OmniError::ResourceNotFoundError)?;
 
@@ -78,9 +76,6 @@ async fn has_permission(
     }
 }
 
-/// Extract a single permission_name value from query string
-/// Returns BadRequestError if multiple permission_name params exist
-/// Returns ResourceNotFoundError (404) if no permission_name param found
 fn extract_single_permission_name(query_string: &str) -> Result<String, OmniError> {
     if query_string.is_empty() {
         return Err(OmniError::BadRequestError);

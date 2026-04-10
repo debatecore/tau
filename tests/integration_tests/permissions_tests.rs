@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin,
     create_app, create_listener, prepare_empty_database,
+    roles_utils::create_roles,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
         check_permission, get_id_of_a_new_judge, get_id_of_a_new_user, get_judge_token,
@@ -34,7 +35,7 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
     let admin_token = get_session_token_for_infrastructure_admin().await;
 
     // Assign organizer role to user
-    let role_response = crate::common::roles_utils::create_roles(
+    let role_response = create_roles(
         &user_id,
         &tournament_id,
         vec![Role::Organizer],
@@ -64,8 +65,7 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
 
 #[tokio::test]
 #[serial]
-async fn user_with_judge_role_cannot_check_organizer_permission() -> Result<(), OmniError>
-{
+async fn user_can_verify_lack_of_permission() -> Result<(), OmniError> {
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
@@ -109,7 +109,6 @@ async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
     let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
     let admin_token = get_session_token_for_infrastructure_admin().await;
 
-    // Get admin user ID - infrastructure admin always has Uuid::max()
     let admin_id = Uuid::max().to_string();
 
     // WHEN - Try various permissions
@@ -220,7 +219,7 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
 
     // Assign user to tournament alpha only
     let admin_token = get_session_token_for_infrastructure_admin().await;
-    crate::common::roles_utils::create_roles(
+    create_roles(
         &user_id,
         &tournament_alpha_id,
         vec![Role::Organizer],
