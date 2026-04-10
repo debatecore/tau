@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use strum::{EnumIter, VariantArray, EnumString}; // Added EnumString
+use strum::{EnumIter, EnumString, VariantArray}; // Added EnumString
 use utoipa::ToSchema;
 
 #[derive(Debug, VariantArray, EnumIter, EnumString, Clone, PartialEq, ToSchema)]

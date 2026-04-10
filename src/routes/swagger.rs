@@ -11,13 +11,13 @@ use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
 use crate::routes::location_routes;
 use crate::routes::motion_routes;
+use crate::routes::permissions_routes;
 use crate::routes::phase_routes;
 use crate::routes::roles_routes;
 use crate::routes::room_routes;
 use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
-use crate::routes::permissions_routes;
 use crate::routes::verdicts_routes;
 use crate::tournaments;
 use crate::tournaments::affiliations;
@@ -121,7 +121,7 @@ pub fn route() -> Router<AppState> {
         phase_routes::get_phases,
         phase_routes::patch_phase_by_id,
         phase_routes::delete_phase_by_id,
-        permissions_routes::has_permission
+        permissions_routes::has_permission,
         verdicts_routes::create_verdict,
         verdicts_routes::get_verdict_by_id,
         verdicts_routes::get_verdicts,

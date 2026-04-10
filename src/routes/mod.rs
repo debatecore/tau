@@ -2,7 +2,6 @@ use axum::Router;
 
 use crate::setup::AppState;
 
-mod permissions_routes;
 mod affiliation_routes;
 mod attendee_routes;
 mod auth;
@@ -11,6 +10,7 @@ mod health_check;
 mod infradmin_routes;
 mod location_routes;
 mod motion_routes;
+mod permissions_routes;
 mod phase_routes;
 mod roles_routes;
 mod room_routes;

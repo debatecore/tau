@@ -9,13 +9,25 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{phases::Phase, rounds::{Round, RoundPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::{
+        phases::Phase,
+        rounds::{Round, RoundPatch},
+        Tournament,
+    },
+    users::{permissions::Permission, TournamentUser},
+};
 
 const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within the scope of the tournament, to which the round is assigned.";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/phases/:phase_id/round", get(get_rounds).post(create_round))
+        .route(
+            "/tournaments/:tournament_id/phases/:phase_id/round",
+            get(get_rounds).post(create_round),
+        )
         .route(
             "/tournaments/:tournament_id/phases/:phase_id/rounds/:id",
             get(get_round_by_id)
@@ -25,7 +37,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new round
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/round",
     responses
@@ -70,7 +82,7 @@ async fn create_round(
         Err(e) => {
             error!("Error creating a new round: {e}");
             Err(e)
-        },
+        }
     }
 }
 
@@ -94,7 +106,7 @@ async fn create_round(
     tag="rounds"
 )]
 /// Get a list of all rounds
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_rounds(
     State(state): State<AppState>,
@@ -114,13 +126,12 @@ async fn get_rounds(
     let phase = Phase::get_by_id(phase_id, pool).await?;
     match phase.get_rounds(pool).await {
         Ok(rounds) => Ok(Json(rounds).into_response()),
-        Err(e) => Err(e)?
+        Err(e) => Err(e)?,
     }
-
 }
 
 /// Get details of an existing round
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/rounds/{id}", 
     responses(
@@ -143,7 +154,7 @@ async fn get_round_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path( (_tournament_id, id)): Path<(Uuid, Uuid)>
+    Path((_tournament_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -164,7 +175,7 @@ async fn get_round_by_id(
 }
 
 /// Patch an existing round
-/// 
+///
 /// Patches any debates assigned to this round, if applicable.
 /// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}", 
@@ -218,7 +229,7 @@ async fn patch_round_by_id(
         Ok(patched_round) => {
             patched_round.patch_children_debates(pool).await?;
             Ok(Json(patched_round).into_response())
-        },
+        }
         Err(e) => Err(e)?,
     }
 }
@@ -265,9 +276,8 @@ async fn delete_round_by_id(
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError)
-            }
-            else {
+                return Err(OmniError::DependentResourcesError);
+            } else {
                 error!("Error deleting a round with id {id}: {e}");
                 Err(e)
             }

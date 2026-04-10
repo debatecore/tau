@@ -2,23 +2,23 @@ use std::future::IntoFuture;
 
 use reqwest::StatusCode;
 use serial_test::serial;
-use tau::{
-    omni_error::OmniError,
-    setup,
-    tournaments::roles::Role,
-};
+use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin,
     create_app, create_listener, prepare_empty_database,
     tournament_utils::get_id_of_a_new_tournament,
-    user_utils::{check_permission, get_id_of_a_new_judge, get_id_of_a_new_user, get_organizer_token, get_judge_token},
+    user_utils::{
+        check_permission, get_id_of_a_new_judge, get_id_of_a_new_user, get_judge_token,
+        get_organizer_token,
+    },
 };
 
 #[tokio::test]
 #[serial]
-async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(), OmniError> {
+async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(), OmniError>
+{
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
@@ -32,7 +32,7 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
     let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
     let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
     let admin_token = get_session_token_for_infrastructure_admin().await;
-    
+
     // Assign organizer role to user
     let role_response = crate::common::roles_utils::create_roles(
         &user_id,
@@ -64,7 +64,8 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
 
 #[tokio::test]
 #[serial]
-async fn user_with_judge_role_cannot_check_organizer_permission() -> Result<(), OmniError> {
+async fn user_with_judge_role_cannot_check_organizer_permission() -> Result<(), OmniError>
+{
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
@@ -80,13 +81,9 @@ async fn user_with_judge_role_cannot_check_organizer_permission() -> Result<(), 
     let judge_token = get_judge_token(&tournament_id).await;
 
     // WHEN
-    let response = check_permission(
-        &judge_id,
-        &tournament_id,
-        "WriteTournament",
-        &judge_token,
-    )
-    .await;
+    let response =
+        check_permission(&judge_id, &tournament_id, "WriteTournament", &judge_token)
+            .await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
@@ -111,31 +108,22 @@ async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
 
     let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
     let admin_token = get_session_token_for_infrastructure_admin().await;
-    
+
     // Get admin user ID - infrastructure admin always has Uuid::max()
     let admin_id = Uuid::max().to_string();
 
     // WHEN - Try various permissions
-    let response1 = check_permission(
-        &admin_id,
-        &tournament_id,
-        "WriteTournament",
-        &admin_token,
-    )
-    .await;
+    let response1 =
+        check_permission(&admin_id, &tournament_id, "WriteTournament", &admin_token)
+            .await;
 
-    let response2 = check_permission(
-        &admin_id,
-        &tournament_id,
-        "WriteTeams",
-        &admin_token,
-    )
-    .await;
+    let response2 =
+        check_permission(&admin_id, &tournament_id, "WriteTeams", &admin_token).await;
 
     // THEN
     assert_eq!(response1.status(), StatusCode::OK);
     assert_eq!(response1.text().await.unwrap(), "true");
-    
+
     assert_eq!(response2.status(), StatusCode::OK);
     assert_eq!(response2.text().await.unwrap(), "true");
 
@@ -227,9 +215,9 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
     let tournament_alpha_id = get_id_of_a_new_tournament("tournament alpha").await?;
     let tournament_beta_id = get_id_of_a_new_tournament("tournament beta").await?;
     let user_name = Uuid::now_v7().to_string();
-    
+
     let user_id = get_id_of_a_new_user(&user_name, "password").await;
-    
+
     // Assign user to tournament alpha only
     let admin_token = get_session_token_for_infrastructure_admin().await;
     crate::common::roles_utils::create_roles(
@@ -240,12 +228,10 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
     )
     .await;
 
-    let user_token = crate::common::auth_utils::get_session_token_for(
-        &user_name,
-        "password",
-    )
-    .await
-    .unwrap();
+    let user_token =
+        crate::common::auth_utils::get_session_token_for(&user_name, "password")
+            .await
+            .unwrap();
 
     // WHEN - Try to check permission in tournament they're not assigned to
     let response = check_permission(
@@ -261,9 +247,3 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
 
     Ok(())
 }
-
-
-
-
-
-

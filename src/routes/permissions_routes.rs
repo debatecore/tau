@@ -1,20 +1,26 @@
 use axum::{
-    Router, extract::{Path, State}, http::{HeaderMap, StatusCode, Uri}, response::{IntoResponse, Response}, routing::get
+    extract::{Path, State},
+    http::{HeaderMap, StatusCode, Uri},
+    response::{IntoResponse, Response},
+    routing::get,
+    Router,
 };
 
 use std::str::FromStr;
 use tower_cookies::Cookies;
 use uuid::Uuid;
 
-
 use crate::{
-    omni_error::OmniError, setup::AppState, users::{TournamentUser, permissions::Permission}
+    omni_error::OmniError,
+    setup::AppState,
+    users::{permissions::Permission, TournamentUser},
 };
 
 pub fn route() -> Router<AppState> {
-    Router::new()
-        .route("/users/:id/tournaments/:tournament_id/permissions", get(has_permission))
-        
+    Router::new().route(
+        "/users/:id/tournaments/:tournament_id/permissions",
+        get(has_permission),
+    )
 }
 
 /// Check if a user has a specific permission within a tournament
@@ -48,16 +54,17 @@ async fn has_permission(
     cookies: Cookies,
     uri: Uri,
     Path((_user_id, tournament_id)): Path<(Uuid, Uuid)>,
-) -> Result <Response, OmniError>{
+) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-    TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
-    if tournament_user.roles.is_empty() && !tournament_user.user.is_infrastructure_admin() {
+        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+    if tournament_user.roles.is_empty() && !tournament_user.user.is_infrastructure_admin()
+    {
         return Err(OmniError::UnauthorizedError);
     }
     // Parse query string to validate permission_name parameter
     let query_string = uri.query().unwrap_or("");
-    
+
     // Check for multiple permission_name parameters and extract value
     let permission_name = extract_single_permission_name(query_string)?;
 
@@ -80,7 +87,7 @@ fn extract_single_permission_name(query_string: &str) -> Result<String, OmniErro
     }
 
     let mut permission_values = Vec::new();
-    
+
     for param in query_string.split('&') {
         if let Some(value) = param.strip_prefix("permission_name=") {
             permission_values.push(value.to_string());
@@ -93,19 +100,3 @@ fn extract_single_permission_name(query_string: &str) -> Result<String, OmniErro
         _ => Err(OmniError::BadRequestError),
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-  
