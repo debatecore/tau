@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO phases\n            (id, name, tournament_id, is_finals, previous_phase_id, group_size, status)\n            VALUES ($1, $2, $3, $4, $5, $6, $7)\n            RETURNING id, name, tournament_id, is_finals, previous_phase_id, group_size, status",
+  "query": "\n            INSERT INTO phases\n                (id, name, tournament_id, is_finals, previous_phase_id, group_size, status)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7)\n            RETURNING\n                id,\n                name,\n                tournament_id,\n                is_finals,\n                previous_phase_id,\n                group_size,\n                status\n            ",
   "describe": {
     "columns": [
       {
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "e2dcced53ede58bf641c37e543b5e47b4ce2dde9a36d6541452814cf055240f2"
+  "hash": "9b6bf674ed4fe4ac5c68aae9a3aac0b097ffc946eb2c76cb02f244d12150a5cf"
 }
