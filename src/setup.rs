@@ -52,7 +52,7 @@ fn get_env_port() -> u16 {
 }
 
 pub fn get_socket_addr() -> SocketAddrV4 {
-    SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), get_env_port())
+    SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), get_env_port())
 }
 
 #[derive(Clone)]
