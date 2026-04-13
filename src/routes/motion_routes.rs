@@ -1,4 +1,9 @@
-use crate::{omni_error::OmniError, setup::AppState, tournaments::motions::{Motion, MotionPatch}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::motions::{Motion, MotionPatch},
+    users::{permissions::Permission, TournamentUser},
+};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -14,7 +19,10 @@ const DUPLICATE_MOTION_ERROR: &str = "Motion with such content already exists";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournaments/motions", get(get_motions).post(create_motion))
+        .route(
+            "/tournaments/:tournaments/motions",
+            get(get_motions).post(create_motion),
+        )
         .route(
             "/tournaments/:tournament_id/motions/:id",
             get(get_motion_by_id)
@@ -32,7 +40,7 @@ pub fn route() -> Router<AppState> {
     tag="motions"
 )]
 /// Get a list of all motions
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_motions(
     State(state): State<AppState>,
@@ -49,8 +57,7 @@ async fn get_motions(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Motion::get_all(pool).await
-    {
+    match Motion::get_all(pool).await {
         Ok(motions) => Ok(Json(motions).into_response()),
         Err(e) => {
             error!("Error getting a list of motions: {e}");
@@ -60,7 +67,7 @@ async fn get_motions(
 }
 
 /// Create a new motion
-/// 
+///
 /// Available only to Organizers and Admins.
 #[utoipa::path(
     post,
@@ -84,7 +91,7 @@ async fn get_motions(
     tag="motions"
 )]
 async fn create_motion(
-State(state): State<AppState>,
+    State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
     Path(tournament_id): Path<Uuid>,
@@ -100,15 +107,13 @@ State(state): State<AppState>,
     }
 
     match Motion::post(json, &state.connection_pool).await {
-        Ok(motion) => {
-            Ok(Json(motion).into_response())
-        },
-        Err(e) => Err(e)?
+        Ok(motion) => Ok(Json(motion).into_response()),
+        Err(e) => Err(e)?,
     }
 }
 
 /// Get details of an existing motion
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/motions/{id}", 
     responses((status=200, description = "Ok", body=Motion,
@@ -134,12 +139,12 @@ async fn get_motion_by_id(
 
     match Motion::get_by_id(id, &state.connection_pool).await {
         Ok(motion) => Ok(Json(motion).into_response()),
-        Err(e) => Err(e)?
+        Err(e) => Err(e)?,
     }
 }
 
 /// Patch an existing motion
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/motions/{id}", 
     request_body=MotionPatch,
@@ -177,9 +182,12 @@ async fn patch_motion_by_id(
     }
 
     let existing_motion = Motion::get_by_id(id, pool).await?;
-    match existing_motion.patch(new_motion, &state.connection_pool).await {
+    match existing_motion
+        .patch(new_motion, &state.connection_pool)
+        .await
+    {
         Ok(patched_motion) => Ok(Json(patched_motion).into_response()),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
@@ -219,8 +227,8 @@ async fn delete_motion_by_id(
 
     let motion = Motion::get_by_id(id, pool).await?;
     match motion.delete(pool).await {
-            Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
-            Err(e) => Err(e)?
+        Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Err(e) => Err(e)?,
     }
 }
 

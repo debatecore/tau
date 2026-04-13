@@ -1,9 +1,18 @@
-use crate::{omni_error::OmniError, setup::AppState, users::{auth::crypto::{generate_token, hash_token}, User, UserPatch}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    users::{
+        auth::crypto::{generate_token, hash_token},
+        User, UserPatch,
+    },
+};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
-    routing::{{get, patch}, post},
+    routing::{
+        post, {get, patch},
+    },
     Json, Router,
 };
 use serde::Deserialize;
@@ -13,9 +22,7 @@ use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{users::{photourl::PhotoUrl}};
-
-
+use crate::users::photourl::PhotoUrl;
 
 #[derive(Clone, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -33,7 +40,7 @@ impl From<UserWithPassword> for User {
         User {
             id: value.id,
             handle: value.handle,
-            picture_link: value.picture_link
+            picture_link: value.picture_link,
         }
     }
 }
@@ -52,12 +59,13 @@ pub fn route() -> Router<AppState> {
             get(get_user_by_id)
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
-        ).route("/users/:id/login_token", post(generate_login_token))
+        )
+        .route("/users/:id/login_token", post(generate_login_token))
         .route("/users/:id/password", patch(change_user_password))
 }
 
 /// Get a list of all users
-/// 
+///
 /// This request only returns the users the user is permitted to see.
 /// The user must be given any role within a user to see it.
 #[utoipa::path(get, path = "/users", 
@@ -94,7 +102,7 @@ async fn get_users(
 }
 
 /// Create a new user
-/// 
+///
 /// Available to the infrastructure admin and tournament Organizers.
 #[utoipa::path(
     post,
@@ -127,9 +135,11 @@ async fn create_user(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let user = User::authenticate(&headers, cookies, &pool).await?;
-    match user.is_infrastructure_admin() || user.is_organizer_of_any_tournament(pool).await? {
-            true => (),
-            false => return Err(OmniError::InsufficientPermissionsError)
+    match user.is_infrastructure_admin()
+        || user.is_organizer_of_any_tournament(pool).await?
+    {
+        true => (),
+        false => return Err(OmniError::InsufficientPermissionsError),
     }
 
     let user_without_password = User::from(json.clone());
@@ -143,7 +153,7 @@ async fn create_user(
 }
 
 /// Get details of an existing user
-/// 
+///
 /// Every user is permitted to use this endpoint.
 #[utoipa::path(get, path = "/users/{id}", 
     responses
@@ -182,7 +192,7 @@ async fn get_user_by_id(
 }
 
 /// Patch an existing user
-/// 
+///
 /// Allows to modify user data not related to security.
 /// Available to the infrastructure admin and the user modifying their own account.
 /// In order to change user password, use the /user/{id}/password endpoint.
@@ -214,12 +224,13 @@ async fn patch_user_by_id(
     Json(new_user): Json<UserPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user =
-        User::authenticate(&headers, cookies, &pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, &pool).await?;
 
     let user_to_be_patched = User::get_by_id(id, pool).await?;
-    
-    match requesting_user.is_infrastructure_admin() || requesting_user.id == user_to_be_patched.id {
+
+    match requesting_user.is_infrastructure_admin()
+        || requesting_user.id == user_to_be_patched.id
+    {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
     }
@@ -234,7 +245,7 @@ async fn patch_user_by_id(
 }
 
 /// Change user password
-/// 
+///
 /// Available to the infrastructure admin and the user modifying their own account.
 #[utoipa::path(patch, path = "/users/{id}/password", 
     request_body=UserPasswordPatch,
@@ -260,17 +271,21 @@ async fn change_user_password(
     Json(password_patch): Json<UserPasswordPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user =
-        User::authenticate(&headers, cookies, &pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, &pool).await?;
 
     let user_to_be_patched = User::get_by_id(id, pool).await?;
-    
-    match requesting_user.is_infrastructure_admin() || requesting_user.id == user_to_be_patched.id {
+
+    match requesting_user.is_infrastructure_admin()
+        || requesting_user.id == user_to_be_patched.id
+    {
         true => (),
         false => return Err(OmniError::UnauthorizedError),
     }
 
-    match user_to_be_patched.change_password(&password_patch.new_password, pool).await {
+    match user_to_be_patched
+        .change_password(&password_patch.new_password, pool)
+        .await
+    {
         Ok(()) => Ok(StatusCode::OK.into_response()),
         Err(e) => {
             error!("Error changing password of a user with id {}: {e}", id);
@@ -279,9 +294,8 @@ async fn change_user_password(
     }
 }
 
-
 /// Delete an existing user.
-/// 
+///
 /// Available only to the infrastructure admin,
 /// who's account cannot be deleted.
 /// Deleted user is automatically logged out of all sessions.
@@ -304,8 +318,7 @@ async fn delete_user_by_id(
     cookies: Cookies,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user =
-        User::authenticate(&headers, cookies, pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, pool).await?;
 
     match requesting_user.is_infrastructure_admin() {
         true => (),
@@ -316,27 +329,25 @@ async fn delete_user_by_id(
 
     match user_to_be_deleted.is_infrastructure_admin() {
         true => return Err(OmniError::InsufficientPermissionsError),
-        false => ()
+        false => (),
     }
 
     user_to_be_deleted.invalidate_all_sessions(pool).await?;
     match user_to_be_deleted.delete(pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
-        Err(e) =>
-        {
+        Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError)
-            }
-            else {
+                return Err(OmniError::DependentResourcesError);
+            } else {
                 error!("Error deleting a user with id {id}: {e}");
                 return Err(e)?;
             }
-        },
+        }
     }
 }
 
 /// Generate a single-use login token.
-/// 
+///
 /// Available only to the infrastructure admin.
 #[utoipa::path(delete, path = "/users/{id}/login_link", 
     responses(
@@ -357,17 +368,20 @@ async fn generate_login_token(
     let pool = &state.connection_pool;
     let user = User::authenticate(&headers, cookies, pool).await?;
     if !(user.is_infrastructure_admin()) {
-        return Err(OmniError::InsufficientPermissionsError)
+        return Err(OmniError::InsufficientPermissionsError);
     }
     let token = generate_token();
-    query!(r#"
+    query!(
+        r#"
         INSERT INTO login_tokens (id, token_hash, user_id, used)
         VALUES ($1, $2, $3, $4)"#,
         Uuid::now_v7(),
         hash_token(&token),
         id,
         false,
-    ).execute(pool).await?;
+    )
+    .execute(pool)
+    .await?;
     Ok((StatusCode::OK, token).into_response())
 }
 
@@ -396,5 +410,6 @@ fn get_users_list_example() -> String {
             "picture_link": "https://placehold.co/128x128.png"
         }
         ]
-    "#.to_owned()
+    "#
+    .to_owned()
 }

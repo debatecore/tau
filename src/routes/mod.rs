@@ -10,6 +10,7 @@ mod health_check;
 mod infradmin_routes;
 mod location_routes;
 mod motion_routes;
+mod permissions_routes;
 mod phase_routes;
 mod roles_routes;
 mod room_routes;
@@ -19,6 +20,7 @@ mod team_routes;
 mod teapot;
 mod tournament_routes;
 mod user_routes;
+mod verdicts_routes;
 mod version;
 mod plans_routes;
 
@@ -43,4 +45,6 @@ pub fn routes() -> Router<AppState> {
         .merge(phase_routes::route())
         .merge(round_routes::route())
         .merge(plans_routes::route())
+        .merge(permissions_routes::route())
+        .merge(verdicts_routes::route())
 }

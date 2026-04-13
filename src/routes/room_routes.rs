@@ -9,13 +9,25 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{locations::Location, rooms::{Room, RoomPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::{
+        locations::Location,
+        rooms::{Room, RoomPatch},
+        Tournament,
+    },
+    users::{permissions::Permission, TournamentUser},
+};
 
 const DUPLICATE_NAME_ERROR: &str = "Room with this name already exists within the scope of the tournament, to which the room is assigned.";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/locations/:location_id/rooms", get(get_rooms).post(create_room))
+        .route(
+            "/tournaments/:tournament_id/locations/:location_id/rooms",
+            get(get_rooms).post(create_room),
+        )
         .route(
             "/tournaments/:tournament_id/locations/:location_id/rooms/:id",
             get(get_room_by_id)
@@ -25,7 +37,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new room
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Room, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms",
     responses
@@ -72,7 +84,7 @@ async fn create_room(
         Err(e) => {
             error!("Error creating a new room: {e}");
             Err(e)
-        },
+        }
     }
 }
 
@@ -96,7 +108,7 @@ async fn create_room(
     tag="rooms"
 )]
 /// Get a list of all rooms within a location
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_rooms(
     State(state): State<AppState>,
@@ -114,8 +126,7 @@ async fn get_rooms(
     }
 
     let location = Location::get_by_id(location_id, pool).await?;
-    match location.get_rooms(pool).await
-    {
+    match location.get_rooms(pool).await {
         Ok(rooms) => Ok(Json(rooms).into_response()),
         Err(e) => {
             error!("Error getting a list of rooms: {e}");
@@ -125,7 +136,7 @@ async fn get_rooms(
 }
 
 /// Get details of an existing room
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
     responses(
@@ -169,7 +180,7 @@ async fn get_room_by_id(
 }
 
 /// Patch an existing room
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
     request_body=Room,
@@ -195,7 +206,7 @@ async fn get_room_by_id(
     tag="rooms"
 )]
 async fn patch_room_by_id(
-    Path(( tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
+    Path((tournament_id, _location_id, id)): Path<(Uuid, Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
@@ -213,8 +224,14 @@ async fn patch_room_by_id(
     let room = Room::get_by_id(id, pool).await?;
     let new_name = new_room.name.clone();
     if new_name.is_some() {
-        if Room::room_with_name_exists_in_location(&new_name.unwrap(), &room.location_id, pool).await? {
-            return Err(OmniError::ResourceAlreadyExistsError)
+        if Room::room_with_name_exists_in_location(
+            &new_name.unwrap(),
+            &room.location_id,
+            pool,
+        )
+        .await?
+        {
+            return Err(OmniError::ResourceAlreadyExistsError);
         }
     }
 
@@ -261,10 +278,10 @@ async fn delete_room_by_id(
     match Location::get_by_id(_location_id, pool).await {
         Ok(_) => (),
         Err(e) => {
-            if  e.is_not_found_error() {
+            if e.is_not_found_error() {
                 return Err(OmniError::ResourceNotFoundError);
             }
-        } 
+        }
     }
 
     let room = Room::get_by_id(id, pool).await?;

@@ -23,6 +23,7 @@ pub(crate) mod rooms;
 pub(crate) mod rounds;
 pub(crate) mod teams;
 pub mod plans;
+pub mod verdicts;
 
 static DEFAULT_SPEECH_TIME: i32 = 300;
 static DEFAULT_END_PROTECTED_TIME: i32 = 30;
