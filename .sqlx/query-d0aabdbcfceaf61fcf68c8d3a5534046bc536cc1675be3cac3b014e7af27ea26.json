@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM rounds WHERE id = $1",
+  "query": "INSERT INTO rounds\n            (id, name, phase_id, planned_start_time, planned_end_time, motion_id, previous_round_id, status)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n            RETURNING\n                id,\n                name,\n                phase_id,\n                planned_start_time,\n                planned_end_time,\n                motion_id,\n                previous_round_id,\n                status\n            ",
   "describe": {
     "columns": [
       {
@@ -46,7 +46,14 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid",
+        "Uuid",
+        "Text"
       ]
     },
     "nullable": [
@@ -60,5 +67,5 @@
       false
     ]
   },
-  "hash": "f07f959517379fbcd54a1319e91dbe6abd1223a80f26f6eafae16dddcf69b3c2"
+  "hash": "d0aabdbcfceaf61fcf68c8d3a5534046bc536cc1675be3cac3b014e7af27ea26"
 }

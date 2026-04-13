@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM debates\n            WHERE round_id IN (\n                SELECT r.id\n                FROM rounds r\n                INNER JOIN phases p ON p.id = r.phase_id\n                WHERE p.tournament_id = $1\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1a3b49f0957d4a25fd50e96a12389a1379d2da874a76453b3483ae1da879011c"
+}

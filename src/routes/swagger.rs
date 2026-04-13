@@ -11,12 +11,15 @@ use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
 use crate::routes::location_routes;
 use crate::routes::motion_routes;
+use crate::routes::permissions_routes;
 use crate::routes::phase_routes;
 use crate::routes::roles_routes;
 use crate::routes::room_routes;
 use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
+use crate::routes::plans_routes;
+use crate::routes::verdicts_routes;
 use crate::tournaments;
 use crate::tournaments::affiliations;
 use crate::tournaments::attendees;
@@ -28,6 +31,8 @@ use crate::tournaments::roles;
 use crate::tournaments::rooms;
 use crate::tournaments::rounds;
 use crate::tournaments::teams;
+use crate::tournaments::plans;
+use crate::tournaments::verdicts;
 use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
@@ -54,6 +59,11 @@ pub fn route() -> Router<AppState> {
         tournament_routes::patch_tournament_by_id,
         tournament_routes::delete_tournament_by_id,
         tournament_routes::get_tournaments,
+        plans_routes::create_plan,
+        plans_routes::get_plan_by_id,
+        plans_routes::patch_plan_by_id,
+        plans_routes::delete_plan_by_id,
+        plans_routes::get_plan,
         motion_routes::get_motions,
         motion_routes::create_motion,
         motion_routes::get_motion_by_id,
@@ -118,6 +128,12 @@ pub fn route() -> Router<AppState> {
         phase_routes::get_phases,
         phase_routes::patch_phase_by_id,
         phase_routes::delete_phase_by_id,
+        permissions_routes::has_permission,
+        verdicts_routes::create_verdict,
+        verdicts_routes::get_verdict_by_id,
+        verdicts_routes::get_verdicts,
+        verdicts_routes::patch_verdict_by_id,
+        verdicts_routes::delete_verdict_by_id
     ),
     components(schemas(
         version::VersionDetails,
@@ -125,6 +141,8 @@ pub fn route() -> Router<AppState> {
         version::GitInfo,
         tournaments::Tournament,
         tournaments::TournamentPatch,
+        plans::TournamentPlan,
+        plans::TournamentPlanPatch,
         motions::Motion,
         motions::MotionPatch,
         teams::Team,
@@ -155,6 +173,8 @@ pub fn route() -> Router<AppState> {
         rounds::Round,
         rounds::RoundPatch,
         rounds::RoundStatus,
+        verdicts::Verdict,
+        verdicts::VerdictPatch,
     ))
 )]
 

@@ -9,13 +9,24 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{phases::{Phase, PhasePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::{
+        phases::{Phase, PhasePatch},
+        Tournament,
+    },
+    users::{permissions::Permission, TournamentUser},
+};
 
 const CONFLICT_MESSAGE: &str = "Conflict";
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/phases", get(get_phases).post(create_phase))
+        .route(
+            "/tournaments/:tournament_id/phases",
+            get(get_phases).post(create_phase),
+        )
         .route(
             "/tournaments/:tournament_id/phases/:id",
             get(get_phase_by_id)
@@ -28,6 +39,8 @@ pub fn route() -> Router<AppState> {
 /// 
 /// Requires the WritePhases permission.
 /// Available only to tournament Organizers and the infrastructure admin.
+///
+/// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Phase, path = "/tournaments/{tournament_id}/phases",
     responses
     (
@@ -66,12 +79,12 @@ async fn create_phase(
     json.validate(pool).await?;
 
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match Phase::post(json, pool).await {
+    match Phase::post(tournament_id, json, pool).await {
         Ok(phase) => Ok(Json(phase).into_response()),
         Err(e) => {
             error!("Error creating a new phase: {e}");
             Err(e)
-        },
+        }
     }
 }
 
@@ -95,7 +108,7 @@ async fn create_phase(
     tag="phases"
 )]
 /// Get a list of all phases
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_phases(
     State(state): State<AppState>,
@@ -115,13 +128,12 @@ async fn get_phases(
     let tournament = Tournament::get_by_id(tournament_id, pool).await?;
     match tournament.get_phases(pool).await {
         Ok(phases) => Ok(Json(phases).into_response()),
-        Err(e) => Err(e)?
+        Err(e) => Err(e)?,
     }
-
 }
 
 /// Get details of an existing phase
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{id}", 
     responses(
@@ -144,7 +156,7 @@ async fn get_phase_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path( (_tournament_id, id)): Path<(Uuid, Uuid)>
+    Path((_tournament_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -168,6 +180,8 @@ async fn get_phase_by_id(
 /// 
 /// Requires the WritePhases permission.
 /// Available only to tournament Organizers and the infrastructure admin.
+///
+/// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{id}", 
     request_body=Phase,
     responses(
@@ -258,9 +272,8 @@ async fn delete_phase_by_id(
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError)
-            }
-            else {
+                return Err(OmniError::DependentResourcesError);
+            } else {
                 error!("Error deleting a phase with id {id}: {e}");
                 Err(e)?
             }

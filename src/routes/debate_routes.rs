@@ -1,4 +1,12 @@
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{debates::{Debate, DebatePatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::{
+        debates::{Debate, DebatePatch},
+        Tournament,
+    },
+    users::{permissions::Permission, TournamentUser},
+};
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
@@ -10,10 +18,12 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/debates", get(get_debates).post(create_debate))
+        .route(
+            "/tournaments/:tournament_id/debates",
+            get(get_debates).post(create_debate),
+        )
         .route(
             "/tournaments/:tournament_id/debates/:id",
             get(get_debate_by_id)
@@ -40,7 +50,7 @@ pub fn route() -> Router<AppState> {
     tag="debates"
 )]
 /// Get a list of all debates
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_debates(
     State(state): State<AppState>,
@@ -57,7 +67,10 @@ async fn get_debates(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Tournament::get_by_id(tournament_id, pool).await?.get_debates(pool).await
+    match Tournament::get_by_id(tournament_id, pool)
+        .await?
+        .get_debates(pool)
+        .await
     {
         Ok(debates) => Ok(Json(debates).into_response()),
         Err(e) => {
@@ -68,7 +81,7 @@ async fn get_debates(
 }
 
 /// Create a new debate
-/// 
+///
 /// Available only to Organizers and Admins.
 #[utoipa::path(post, request_body=Debate, path = "/tournaments/{tournament_id}/debates",
     responses(
@@ -104,7 +117,7 @@ async fn create_debate(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Debate::post(json, &state.connection_pool).await {
+    match Debate::post(tournament_id, json, &state.connection_pool).await {
         Ok(debate) => Ok(Json(debate).into_response()),
         Err(e) => {
             error!("Error creating a new debate: {e}");
@@ -114,7 +127,7 @@ async fn create_debate(
 }
 
 /// Get details of an existing debate
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/debates/{id}", 
     responses(
@@ -163,7 +176,7 @@ async fn get_debate_by_id(
 }
 
 /// Patch an existing debate
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "tournaments/{tournament_id}/debates/{id}", 
     request_body=DebatePatch,
@@ -213,7 +226,7 @@ async fn patch_debate_by_id(
 }
 
 /// Delete an existing debate
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(delete, path = "{tournament_id}/debates/{id}", 
     responses

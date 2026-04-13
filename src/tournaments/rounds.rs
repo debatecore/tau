@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, query_as, Pool, Postgres, Transaction, Executor};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -70,11 +70,30 @@ pub enum RoundStatus {
 
 impl Round {
     pub async fn post(round: Round, pool: &Pool<Postgres>) -> Result<Round, OmniError> {
-        match query!(
+        let mut transaction = pool.begin().await?;
+        let round = Self::post_with_transaction(&mut transaction, round).await?;
+        transaction.commit().await?;
+        Ok(round)
+    }
+
+    pub async fn post_with_transaction(
+        transaction: &mut Transaction<'_, Postgres>,
+        round: Round,
+    ) -> Result<Round, OmniError> {
+        let record = query!(
             r#"INSERT INTO rounds
             (id, name, phase_id, planned_start_time, planned_end_time, motion_id, previous_round_id, status)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id, name, phase_id, planned_start_time, planned_end_time, motion_id, previous_round_id, status"#,
+            RETURNING
+                id,
+                name,
+                phase_id,
+                planned_start_time,
+                planned_end_time,
+                motion_id,
+                previous_round_id,
+                status
+            "#,
             round.id,
             round.name,
             round.phase_id,
@@ -84,46 +103,52 @@ impl Round {
             round.previous_round_id,
             round.status.to_string(),
         )
-        .fetch_one(pool)
-        .await
-        {
-            Ok(record) => {
-                let round = Round {
-                    id: record.id,
-                    name: record.name,
-                    phase_id: record.phase_id,
-                    planned_start_time: record.planned_start_time,
-                    planned_end_time: record.planned_end_time,
-                    motion_id: record.motion_id,
-                    previous_round_id: record.previous_round_id,
-                    status: RoundStatus::try_from(record.status)?,
-                };
-                Ok(round)
-            }
-            Err(e) => Err(e)?,
-        }
+        .fetch_one(&mut **transaction)
+        .await?;
+
+        let round = Round {
+            id: record.id,
+            name: record.name,
+            phase_id: record.phase_id,
+            planned_start_time: record.planned_start_time,
+            planned_end_time: record.planned_end_time,
+            motion_id: record.motion_id,
+            previous_round_id: record.previous_round_id,
+            status: RoundStatus::try_from(record.status)?,
+        };
+
+        Ok(round)
     }
 
     pub async fn get_by_id(id: Uuid, pool: &Pool<Postgres>) -> Result<Round, OmniError> {
-        match query!("SELECT * FROM rounds WHERE id = $1", id)
-            .fetch_one(pool)
-            .await
-        {
-            Ok(record) => {
-                let round = Round {
-                    id: record.id,
-                    name: record.name,
-                    phase_id: record.phase_id,
-                    planned_start_time: record.planned_start_time,
-                    planned_end_time: record.planned_end_time,
-                    motion_id: record.motion_id,
-                    previous_round_id: record.previous_round_id,
-                    status: RoundStatus::try_from(record.status)?,
-                };
-                Ok(round)
-            }
-            Err(e) => Err(e)?,
-        }
+        let record = query!(
+            r#"SELECT
+                id,
+                name,
+                phase_id,
+                planned_start_time,
+                planned_end_time,
+                motion_id,
+                previous_round_id,
+                status
+            FROM rounds WHERE id = $1"#,
+            id
+        )
+        .fetch_one(pool)
+        .await?;
+
+        let round = Round {
+            id: record.id,
+            name: record.name,
+            phase_id: record.phase_id,
+            planned_start_time: record.planned_start_time,
+            planned_end_time: record.planned_end_time,
+            motion_id: record.motion_id,
+            previous_round_id: record.previous_round_id,
+            status: RoundStatus::try_from(record.status)?,
+        };
+
+        Ok(round)
     }
 
     pub async fn patch(
@@ -131,11 +156,38 @@ impl Round {
         new_round: Round,
         pool: &Pool<Postgres>,
     ) -> Result<Round, OmniError> {
-        match query!(
-            r#"
-                UPDATE rounds SET name = $1, phase_id = $2, planned_start_time = $3,
-                planned_end_time = $4, motion_id = $5, previous_round_id = $6,
-                status = $7 WHERE id = $8
+        let mut transaction = pool.begin().await?;
+        let round = self
+            .patch_with_transaction(&mut transaction, new_round)
+            .await?;
+        transaction.commit().await?;
+        Ok(round)
+    }
+
+    pub async fn patch_with_transaction(
+        self,
+        transaction: &mut Transaction<'_, Postgres>,
+        new_round: Round,
+    ) -> Result<Round, OmniError> {
+        let record = query!(
+            r#"UPDATE rounds SET
+                name = $1,
+                phase_id = $2,
+                planned_start_time = $3,
+                planned_end_time = $4,
+                motion_id = $5,
+                previous_round_id = $6,
+                status = $7
+            WHERE id = $8
+            RETURNING
+                id,
+                name,
+                phase_id,
+                planned_start_time,
+                planned_end_time,
+                motion_id,
+                previous_round_id,
+                status
             "#,
             new_round.name,
             new_round.phase_id,
@@ -144,14 +196,23 @@ impl Round {
             new_round.motion_id,
             new_round.previous_round_id,
             new_round.status.to_string(),
-            new_round.id,
+            self.id,
         )
-        .execute(pool)
-        .await
-        {
-            Ok(_) => Ok(new_round),
-            Err(e) => Err(e)?,
-        }
+        .fetch_one(&mut **transaction)
+        .await?;
+
+        let round = Round {
+            id: record.id,
+            name: record.name,
+            phase_id: record.phase_id,
+            planned_start_time: record.planned_start_time,
+            planned_end_time: record.planned_end_time,
+            motion_id: record.motion_id,
+            previous_round_id: record.previous_round_id,
+            status: RoundStatus::try_from(record.status)?,
+        };
+
+        Ok(round)
     }
 
     // TO-DO: perform as an atomic database transaction
@@ -159,39 +220,72 @@ impl Round {
         &self,
         pool: &Pool<Postgres>,
     ) -> Result<(), OmniError> {
-        for debate in self.get_debates(pool).await? {
+        let mut transaction = pool.begin().await?;
+        self.patch_children_debates_with_transaction(&mut transaction)
+            .await?;
+        transaction.commit().await?;
+        Ok(())
+    }
+
+    pub async fn patch_children_debates_with_transaction(
+        &self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        for debate in self.get_debates(&mut **transaction).await? {
             let new_debate = DebatePatch {
                 motion_id: self.motion_id,
                 marshal_user_id: debate.marshal_user_id,
                 tournament_id: Some(debate.tournament_id),
                 round_id: Some(self.id),
             };
-            debate.patch(new_debate, pool).await?;
+            debate
+                .patch_with_transaction(transaction, new_debate)
+                .await?;
         }
+
         Ok(())
     }
 
     pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
-        match query!("DELETE FROM rounds WHERE id = $1", self.id)
-            .execute(pool)
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e)?,
-        }
+        let mut transaction = pool.begin().await?;
+        self.delete_with_transaction(&mut transaction).await?;
+        transaction.commit().await?;
+        Ok(())
     }
 
-    pub async fn get_debates(
+    pub async fn delete_with_transaction(
+        self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        query!(
+            r#"
+            DELETE FROM rounds
+            WHERE id = $1
+            "#,
+            self.id
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn get_debates<'e, E>(
         &self,
-        pool: &Pool<Postgres>,
-    ) -> Result<Vec<Debate>, OmniError> {
-        match query_as!(Debate, "SELECT * FROM debates WHERE round_id = $1", self.id)
-            .fetch_all(pool)
-            .await
-        {
-            Ok(debates) => Ok(debates),
-            Err(e) => Err(e)?,
-        }
+        executor: E,
+    ) -> Result<Vec<Debate>, OmniError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let debates = query_as!(
+            Debate,
+            "SELECT * FROM debates WHERE round_id = $1",
+            self.id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        Ok(debates)
     }
 
     async fn get_parent_tournament(

@@ -39,6 +39,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   db-dev:
     image: postgres:17.2
     user: postgres

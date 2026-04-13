@@ -10,7 +10,15 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, setup::AppState, tournaments::{teams::{Team, TeamPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
+use crate::{
+    omni_error::OmniError,
+    setup::AppState,
+    tournaments::{
+        teams::{Team, TeamPatch},
+        Tournament,
+    },
+    users::{permissions::Permission, TournamentUser},
+};
 
 const DUPLICATE_NAME_ERROR: &str = r#"
     Team with this name already exists within the
@@ -18,7 +26,10 @@ const DUPLICATE_NAME_ERROR: &str = r#"
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/teams", get(get_teams).post(create_team))
+        .route(
+            "/tournaments/:tournament_id/teams",
+            get(get_teams).post(create_team),
+        )
         .route(
             "/tournaments/:tournament_id/teams/:id",
             get(get_team_by_id)
@@ -28,7 +39,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new team
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Team, path = "/tournaments/{tournament_id}/teams",
     responses
@@ -75,7 +86,7 @@ async fn create_team(
         Err(e) => {
             error!("Error creating a new team: {e}");
             Err(e)
-        },
+        }
     }
 }
 
@@ -99,7 +110,7 @@ async fn create_team(
     tag="teams"
 )]
 /// Get a list of all teams
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_teams(
     State(state): State<AppState>,
@@ -117,8 +128,7 @@ async fn get_teams(
     }
 
     let tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match tournament.get_teams(pool).await
-    {
+    match tournament.get_teams(pool).await {
         Ok(teams) => Ok(Json(teams).into_response()),
         Err(e) => {
             error!("Error getting a list of teams: {e}");
@@ -128,7 +138,7 @@ async fn get_teams(
 }
 
 /// Get details of an existing team
-/// 
+///
 /// The user must be given a role within this tournament to use this endpoint.
 #[utoipa::path(get, path = "/tournaments/{tournament_id}/teams/{id}", 
     responses(
@@ -172,7 +182,7 @@ async fn get_team_by_id(
 }
 
 /// Patch an existing team
-/// 
+///
 /// Available only to the tournament Organizers.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/teams/{id}", 
     request_body=Team,
@@ -215,11 +225,13 @@ async fn patch_team_by_id(
 
     let team = Team::get_by_id(id, pool).await?;
 
-
-    if new_team.full_name.is_some()  {
+    if new_team.full_name.is_some() {
         let new_name = new_team.full_name.clone().unwrap();
-        if new_name != team.full_name && team_with_name_exists_in_tournament(&new_name, &tournament_id, pool).await? {
-        return Err(OmniError::ResourceAlreadyExistsError);
+        if new_name != team.full_name
+            && team_with_name_exists_in_tournament(&new_name, &tournament_id, pool)
+                .await?
+        {
+            return Err(OmniError::ResourceAlreadyExistsError);
         }
     }
 

@@ -3,7 +3,7 @@ use std::fmt;
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, Pool, Postgres};
+use sqlx::{query, query_as, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -59,90 +59,168 @@ pub enum PhaseStatus {
 }
 
 impl Phase {
-    pub async fn post(phase: Phase, pool: &Pool<Postgres>) -> Result<Phase, OmniError> {
-        match query!(
-            r#"INSERT INTO phases
-            (id, name, tournament_id, is_finals, previous_phase_id, group_size, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id, name, tournament_id, is_finals, previous_phase_id, group_size, status"#,
-            phase.id,
-            phase.name,
-            phase.tournament_id,
-            phase.is_finals,
-            phase.previous_phase_id,
-            phase.group_size,
-            phase.status.to_string(),
+    pub async fn post(
+        tournament_id: Uuid,
+        json: Phase,
+        pool: &Pool<Postgres>,
+    ) -> Result<Phase, OmniError> {
+        let mut transaction = pool.begin().await?;
+        let phase = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        transaction.commit().await?;
+        Ok(phase)
+    }
+
+    pub async fn post_with_transaction(
+        transaction: &mut Transaction<'_, Postgres>,
+        tournament_id: Uuid,
+        json: Phase,
+    ) -> Result<Phase, OmniError> {
+        let record = query!(
+            r#"
+            INSERT INTO phases
+                (id, name, tournament_id, is_finals, previous_phase_id, group_size, status)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING
+                id,
+                name,
+                tournament_id,
+                is_finals,
+                previous_phase_id,
+                group_size,
+                status
+            "#,
+            json.id,
+            json.name,
+            tournament_id,
+            json.is_finals,
+            json.previous_phase_id,
+            json.group_size,
+            json.status.to_string(),
         )
-        .fetch_one(pool).await
-        {
-            Ok(record) => {
-                let phase = Phase {
-                    id: record.id,
-                    name: record.name,
-                    tournament_id: record.tournament_id,
-                    is_finals: record.is_finals,
-                    previous_phase_id: record.previous_phase_id,
-                    group_size: record.group_size,
-                    status: PhaseStatus::try_from(record.status)?,
-                };
-                Ok(phase)
-            }
-            Err(e) => Err(e)?,
-        }
+        .fetch_one(&mut **transaction)
+        .await?;
+
+        let phase = Phase {
+            id: record.id,
+            name: record.name,
+            tournament_id: record.tournament_id,
+            is_finals: record.is_finals,
+            previous_phase_id: record.previous_phase_id,
+            group_size: record.group_size,
+            status: PhaseStatus::try_from(record.status)?,
+        };
+
+        Ok(phase)
     }
 
     pub async fn get_by_id(id: Uuid, pool: &Pool<Postgres>) -> Result<Phase, OmniError> {
-        match query!("SELECT * FROM phases WHERE id = $1", id)
-            .fetch_one(pool)
-            .await
-        {
-            Ok(record) => {
-                let phase = Phase {
-                    id: record.id,
-                    name: record.name,
-                    tournament_id: record.tournament_id,
-                    is_finals: record.is_finals,
-                    previous_phase_id: record.previous_phase_id,
-                    group_size: record.group_size,
-                    status: PhaseStatus::try_from(record.status)?,
-                };
-                Ok(phase)
-            }
-            Err(e) => Err(e)?,
-        }
+        let record = query!(
+            r#"
+            SELECT id, name, tournament_id, is_finals, previous_phase_id, group_size, status
+            FROM phases
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_one(pool)
+        .await?;
+
+        let phase = Phase {
+            id: record.id,
+            name: record.name,
+            tournament_id: record.tournament_id,
+            is_finals: record.is_finals,
+            previous_phase_id: record.previous_phase_id,
+            group_size: record.group_size,
+            status: PhaseStatus::try_from(record.status)?,
+        };
+
+        Ok(phase)
     }
 
     pub async fn patch(
         self,
-        new_phase: Phase,
+        patch: Phase,
         pool: &Pool<Postgres>,
     ) -> Result<Phase, OmniError> {
-        match query!(
-            "UPDATE phases SET name = $1, tournament_id = $2, is_finals = $3, previous_phase_id = $4, group_size = $5, status = $6 WHERE id = $7",
-            new_phase.name,
-            new_phase.tournament_id,
-            new_phase.is_finals,
-            new_phase.previous_phase_id,
-            new_phase.group_size,
-            new_phase.status.to_string(),
-            new_phase.id,
+        let mut transaction = pool.begin().await?;
+        let phase = self.patch_with_transaction(&mut transaction, patch).await?;
+        transaction.commit().await?;
+        Ok(phase)
+    }
+
+    pub async fn patch_with_transaction(
+        self,
+        transaction: &mut Transaction<'_, Postgres>,
+        patch: Phase,
+    ) -> Result<Phase, OmniError> {
+        let record = query!(
+            r#"
+            UPDATE phases
+            SET
+                name = $1,
+                tournament_id = $2,
+                is_finals = $3,
+                previous_phase_id = $4,
+                group_size = $5,
+                status = $6
+            WHERE id = $7
+            RETURNING
+                id,
+                name,
+                tournament_id,
+                is_finals,
+                previous_phase_id,
+                group_size,
+                status
+            "#,
+            patch.name,
+            patch.tournament_id,
+            patch.is_finals,
+            patch.previous_phase_id,
+            patch.group_size,
+            patch.status.to_string(),
+            self.id
         )
-        .execute(pool)
-        .await
-        {
-            Ok(_) => Ok(new_phase),
-            Err(e) => Err(e)?,
-        }
+        .fetch_one(&mut **transaction)
+        .await?;
+
+        let updated = Phase {
+            id: record.id,
+            name: record.name,
+            tournament_id: record.tournament_id,
+            is_finals: record.is_finals,
+            previous_phase_id: record.previous_phase_id,
+            group_size: record.group_size,
+            status: PhaseStatus::try_from(record.status)?,
+        };
+
+        Ok(updated)
     }
 
     pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
-        match query!("DELETE FROM phases WHERE id = $1", self.id)
-            .execute(pool)
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e)?,
-        }
+        let mut transaction = pool.begin().await?;
+        self.delete_with_transaction(&mut transaction).await?;
+        transaction.commit().await?;
+        Ok(())
+    }
+
+    pub async fn delete_with_transaction(
+        self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        query!(
+            r#"
+            DELETE FROM phases
+            WHERE id = $1
+            "#,
+            self.id
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(())
     }
 
     pub async fn get_rounds(

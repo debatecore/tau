@@ -4,10 +4,15 @@ use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 pub mod affiliations_utils;
 pub mod auth_utils;
+pub mod debates_utils;
+pub mod phases_utils;
 pub mod roles_utils;
+pub mod rounds_utils;
 pub mod teams_utils;
 pub mod tournament_utils;
 pub mod user_utils;
+pub mod plans_utils;
+pub mod verdicts_utils;
 
 use tau::{
     database, routes,

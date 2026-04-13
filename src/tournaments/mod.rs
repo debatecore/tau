@@ -5,6 +5,7 @@ use rounds::Round;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use teams::Team;
+use plans::TournamentPlan;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -21,6 +22,8 @@ pub mod roles;
 pub(crate) mod rooms;
 pub(crate) mod rounds;
 pub(crate) mod teams;
+pub mod plans;
+pub mod verdicts;
 
 static DEFAULT_SPEECH_TIME: i32 = 300;
 static DEFAULT_END_PROTECTED_TIME: i32 = 30;
@@ -275,6 +278,20 @@ impl Tournament {
         .await
         {
             Ok(debates) => Ok(debates),
+            Err(e) => Err(e)?,
+        }
+    }
+
+    pub async fn get_plan(&self, pool: &Pool<Postgres>) -> Result<Vec<TournamentPlan>, OmniError> {
+        match query_as!(
+            TournamentPlan,
+            "SELECT * FROM tournament_plans WHERE tournament_id = $1",
+            &self.id
+        )
+        .fetch_all(pool)
+        .await
+        {
+            Ok(plan) => Ok(plan),
             Err(e) => Err(e)?,
         }
     }
