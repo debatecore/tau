@@ -46,6 +46,6 @@ USER appuser
 
 COPY --from=build /bin/server /bin/
 
-EXPOSE 2023
+EXPOSE ${PORT}
 
 CMD ["/bin/server"]
