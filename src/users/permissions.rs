@@ -80,4 +80,7 @@ pub enum Permission {
 
     ReadRounds,
     WriteRounds,
+
+    ReadPlan,
+    WritePlan,
 }

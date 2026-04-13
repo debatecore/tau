@@ -6,4 +6,5 @@ mod roles_tests;
 mod teams_tests;
 mod teapot_tests;
 mod tournament_tests;
+mod plans_tests;
 mod verdicts_tests;

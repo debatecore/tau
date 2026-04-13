@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM phases WHERE id = $1",
+  "query": "SELECT * FROM tournament_plans WHERE tournament_id = $1",
   "describe": {
     "columns": [
       {
@@ -10,33 +10,28 @@
       },
       {
         "ordinal": 1,
-        "name": "name",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 2,
         "name": "tournament_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 3,
-        "name": "is_finals",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 4,
-        "name": "previous_phase_id",
-        "type_info": "Uuid"
-      },
-      {
-        "ordinal": 5,
-        "name": "group_size",
+        "ordinal": 2,
+        "name": "group_phase_rounds",
         "type_info": "Int4"
       },
       {
-        "ordinal": 6,
-        "name": "status",
-        "type_info": "Text"
+        "ordinal": 3,
+        "name": "groups_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "advancing_teams",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_teams",
+        "type_info": "Int4"
       }
     ],
     "parameters": {
@@ -47,12 +42,11 @@
     "nullable": [
       false,
       false,
-      false,
-      false,
       true,
       true,
-      false
+      true,
+      true
     ]
   },
-  "hash": "ca3943f62b95ff0fa3da189edaa4f9321be10f932a7158ad8de9654f365884e3"
+  "hash": "93d9d3c56bf2969905164ecbcd6beb0a58c009d0ea95d647a97d5d258a20f554"
 }

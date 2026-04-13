@@ -18,6 +18,7 @@ use crate::routes::room_routes;
 use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
+use crate::routes::plans_routes;
 use crate::routes::verdicts_routes;
 use crate::tournaments;
 use crate::tournaments::affiliations;
@@ -30,6 +31,7 @@ use crate::tournaments::roles;
 use crate::tournaments::rooms;
 use crate::tournaments::rounds;
 use crate::tournaments::teams;
+use crate::tournaments::plans;
 use crate::tournaments::verdicts;
 use crate::users;
 use crate::users::permissions;
@@ -57,6 +59,11 @@ pub fn route() -> Router<AppState> {
         tournament_routes::patch_tournament_by_id,
         tournament_routes::delete_tournament_by_id,
         tournament_routes::get_tournaments,
+        plans_routes::create_plan,
+        plans_routes::get_plan_by_id,
+        plans_routes::patch_plan_by_id,
+        plans_routes::delete_plan_by_id,
+        plans_routes::get_plan,
         motion_routes::get_motions,
         motion_routes::create_motion,
         motion_routes::get_motion_by_id,
@@ -134,6 +141,8 @@ pub fn route() -> Router<AppState> {
         version::GitInfo,
         tournaments::Tournament,
         tournaments::TournamentPatch,
+        plans::TournamentPlan,
+        plans::TournamentPlanPatch,
         motions::Motion,
         motions::MotionPatch,
         teams::Team,

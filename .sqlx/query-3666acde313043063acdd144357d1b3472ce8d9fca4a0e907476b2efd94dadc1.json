@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rounds SET\n                name = $1,\n                phase_id = $2,\n                planned_start_time = $3,\n                planned_end_time = $4,\n                motion_id = $5,\n                previous_round_id = $6,\n                status = $7\n            WHERE id = $8\n            RETURNING\n                id,\n                name,\n                phase_id,\n                planned_start_time,\n                planned_end_time,\n                motion_id,\n                previous_round_id,\n                status\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "phase_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "planned_start_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "planned_end_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "motion_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "previous_round_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "3666acde313043063acdd144357d1b3472ce8d9fca4a0e907476b2efd94dadc1"
+}

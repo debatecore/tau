@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, query_as, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -29,25 +29,37 @@ pub struct DebatePatch {
 
 impl Debate {
     pub async fn post(
-        debate: Debate,
-        connection_pool: &Pool<Postgres>,
+        tournament_id: Uuid,
+        json: Debate,
+        pool: &Pool<Postgres>,
     ) -> Result<Debate, OmniError> {
-        match query_as!(
+
+        let mut transaction = pool.begin().await?;
+        let debate = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        transaction.commit().await?;
+        Ok(debate)
+    }
+
+    pub async fn post_with_transaction(
+        transaction: &mut Transaction<'_, Postgres>,
+        tournament_id: Uuid,
+        json: Debate,
+    ) -> Result<Debate, OmniError> {
+
+        let debate = query_as!(
             Debate,
             r#"INSERT INTO debates(id, motion_id, marshal_user_id, tournament_id, round_id)
             VALUES ($1, $2, $3, $4, $5) RETURNING id, motion_id, marshal_user_id, tournament_id, round_id"#,
-            debate.id,
-            debate.motion_id,
-            debate.marshal_user_id,
-            debate.tournament_id,
-            debate.round_id
+            json.id,
+            json.motion_id,
+            json.marshal_user_id,
+            tournament_id,
+            json.round_id
         )
-        .fetch_one(connection_pool)
-        .await
-        {
-            Ok(_) => Ok(debate),
-            Err(e) => Err(e)?,
-        }
+        .fetch_one(&mut **transaction)
+        .await?;
+
+        Ok(debate)
     }
 
     pub async fn get_by_id(
@@ -66,37 +78,54 @@ impl Debate {
     pub async fn patch(
         self,
         patch: DebatePatch,
-        connection_pool: &Pool<Postgres>,
+        pool: &Pool<Postgres>,
     ) -> Result<Debate, OmniError> {
-        let debate = Debate {
-            id: self.id,
-            motion_id: patch.motion_id,
-            marshal_user_id: patch.marshal_user_id,
-            tournament_id: patch.tournament_id.unwrap_or(self.tournament_id),
-            round_id: patch.round_id.unwrap_or(self.round_id),
-        };
-        match query!(
-            "UPDATE debates SET motion_id = $1, marshal_user_id = $2, round_id = $3 WHERE id = $4",
-            debate.motion_id,
-            debate.marshal_user_id,
-            debate.round_id,
-            debate.id,
-        )
-        .execute(connection_pool)
-        .await
-        {
-            Ok(_) => Ok(debate),
-            Err(e) => Err(e)?,
-        }
+
+        let mut transaction = pool.begin().await?;
+        let debate = self.patch_with_transaction(&mut transaction, patch).await?;
+        transaction.commit().await?;
+        Ok(debate)
     }
 
-    pub async fn delete(self, connection_pool: &Pool<Postgres>) -> Result<(), OmniError> {
-        match query!("DELETE FROM debates WHERE id = $1", self.id)
-            .execute(connection_pool)
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e)?,
-        }
+    pub async fn patch_with_transaction(
+        self,
+        transaction: &mut Transaction<'_, Postgres>,
+        patch: DebatePatch,
+    ) -> Result<Debate, OmniError> {
+
+        let updated = query_as!(
+            Debate,
+            r#"UPDATE debates SET motion_id = $1, marshal_user_id = $2, round_id = $3 WHERE id = $4
+            RETURNING id, motion_id, marshal_user_id, tournament_id, round_id"#,
+            patch.motion_id,
+            patch.marshal_user_id,
+            patch.round_id,
+            self.id
+        )
+        .fetch_one(&mut **transaction)
+        .await?;
+
+        Ok(updated)
+    }
+
+    pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
+        let mut transaction = pool.begin().await?;
+        self.delete_with_transaction(&mut transaction).await?;
+        transaction.commit().await?;
+        Ok(())
+    }
+
+    pub async fn delete_with_transaction(
+        self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        query!(
+            r#"DELETE FROM debates WHERE id = $1"#,
+            self.id
+        )
+        .execute(&mut **transaction)
+        .await?;
+
+        Ok(())
     }
 }

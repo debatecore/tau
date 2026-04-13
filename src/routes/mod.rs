@@ -22,6 +22,7 @@ mod tournament_routes;
 mod user_routes;
 mod verdicts_routes;
 mod version;
+mod plans_routes;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -43,6 +44,7 @@ pub fn routes() -> Router<AppState> {
         .merge(affiliation_routes::route())
         .merge(phase_routes::route())
         .merge(round_routes::route())
+        .merge(plans_routes::route())
         .merge(permissions_routes::route())
         .merge(verdicts_routes::route())
 }

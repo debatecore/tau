@@ -76,7 +76,7 @@ async fn create_phase(
     json.validate(pool).await?;
 
     let _tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match Phase::post(json, pool).await {
+    match Phase::post(tournament_id, json, pool).await {
         Ok(phase) => Ok(Json(phase).into_response()),
         Err(e) => {
             error!("Error creating a new phase: {e}");
