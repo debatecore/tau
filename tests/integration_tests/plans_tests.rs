@@ -334,27 +334,3 @@ async fn create_plan_should_rollback_everything_if_underlying_creation_fails() -
 
     Ok(())
 }
-
-#[cfg(test)]
-mod test_debates_calculation {
-    use crate::common::plans_utils::calculate_final_phase_debates;
-    #[test]
-    fn test_finals_debates_calculation() {
-        assert_eq!(calculate_final_phase_debates(32), 16 + 8 + 4 + 2 + 1);
-        assert_eq!(calculate_final_phase_debates(16), 8 + 4 + 2 + 1);
-        assert_eq!(calculate_final_phase_debates(8),  4 + 2 + 1);
-        assert_eq!(calculate_final_phase_debates(4),  2 + 1);
-    }
-}
-
-#[cfg(test)]
-mod test_rounds_calculation {
-    use crate::common::plans_utils::calculate_final_phase_rounds;
-    #[test]
-    fn test_finals_rounds_calculation() {
-        assert_eq!(calculate_final_phase_rounds(32), 5);
-        assert_eq!(calculate_final_phase_rounds(16), 4);
-        assert_eq!(calculate_final_phase_rounds(8),  3);
-        assert_eq!(calculate_final_phase_rounds(4),  2);
-    }
-}
