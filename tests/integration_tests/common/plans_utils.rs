@@ -22,7 +22,6 @@ pub async fn create_plan(
         "total_teams": total_teams,
     });
 
-    // WHEN
     Client::new()
         .post(format!(
             "http://{}/tournaments/{}/plan",
@@ -94,20 +93,18 @@ pub async fn count_debates(pool: &Pool<Postgres>, tournament_id: &str) -> i64 {
     .unwrap()
 }
 
-// The number of rounds is debate_tree_levels-1 or the number of zeros before the advancing_teams bit
-// For example, advancing teams = 16 is the same as 00010000 in binary, so the number of rounds is 4
 pub fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
     let mut teams = advancing_teams.clone();
-    assert!(teams > 0);
     let mut final_phase_rounds = 0;
-    while (teams & 1) == 0 {
-        final_phase_rounds+=1;
-        teams >>= 1;
+    if (teams != 0) {
+        while (teams & 1) == 0 {
+            final_phase_rounds+=1;
+            teams >>= 1;
+        }
     }
     return final_phase_rounds
 }
 
-// The number of debates is the sum of every power of 2 up to 2^(advancing_teams-1)
 pub fn calculate_final_phase_debates(advancing_teams: i32) -> i32 {
     let mut final_phase_debates = 1;
     let mut remaining_debates   = advancing_teams/2;

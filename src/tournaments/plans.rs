@@ -27,8 +27,6 @@ pub struct TournamentPlan {
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
     // Tournament ID for a particular plan
-    // QUESTION: Do we need a tournament id here or as tournament always 
-    // has only one config it should be embedded right into tournament struct?
     pub tournament_id:      Uuid,
     // Number of rounds for a single group for one phase
     pub group_phase_rounds: Option<i32>,
@@ -37,9 +35,6 @@ pub struct TournamentPlan {
     // Number of teams that reached the final phase. Must be a power of 2
     pub advancing_teams:    Option<i32>,
     // Number of total teams participating in tournament.
-    // QUESTION: As config (plan) is the most logical place to store this data and 
-    // I didn't find any teams number in other files, I make an assumption that I can 
-    // add the field, as it is important for tests
     pub total_teams:        Option<i32>
 }
 
