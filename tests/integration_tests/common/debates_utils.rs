@@ -49,14 +49,14 @@ pub async fn create_debate(tournament_id: &str, round_id: &str, token: &str) -> 
         .unwrap()
 }
 
-pub async fn get_debate(id: &str, judge_id: &str, token: &str) -> Response {
+pub async fn get_debate(id: &str, tournament_id: &str, token: &str) -> Response {
     let socket_address = get_socket_addr();
     let client = Client::new();
 
     client
         .get(format!(
-            "http://{}/users/{}/debates/{}",
-            socket_address, judge_id, id
+            "http://{}/tournaments/{}/debates/{}",
+            socket_address, tournament_id, id
         ))
         .header("accept", "application/json")
         .bearer_auth(token)
