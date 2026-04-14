@@ -25,7 +25,7 @@ const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within t
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/phases/:phase_id/round",
+            "/tournaments/:tournament_id/phases/:phase_id/rounds",
             get(get_rounds).post(create_round),
         )
         .route(
@@ -37,9 +37,12 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new round
+/// 
+/// Requires the WriteRounds permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/round",
+#[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds",
     responses
     (
         (
@@ -86,7 +89,7 @@ async fn create_round(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/round", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds", 
     responses
     (
         (
@@ -177,7 +180,8 @@ async fn get_round_by_id(
 /// Patch an existing round
 ///
 /// Patches any debates assigned to this round, if applicable.
-/// Available only to the tournament Organizers.
+/// Requires the WriteRounds permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}", 
     request_body=Round,
     responses(
@@ -237,7 +241,9 @@ async fn patch_round_by_id(
 /// Delete an existing round
 ///
 /// This operation is only allowed when there are no entities
-/// referencing this round. Available only to the tournament Organizers.
+/// referencing this round.
+/// Requires the WriteRounds permission.
+/// Available only to tournament Organizers and the infrastructure admin.
 #[utoipa::path(delete, path = "/tournaments/{tournament_id}/rounds/{id}", 
     responses
     (

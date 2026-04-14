@@ -16,6 +16,8 @@ pub mod permissions;
 pub mod photourl;
 
 #[derive(Serialize, Clone, ToSchema)]
+/// The ones who utilize the platform. They can log in using the /auth/login endpoint.
+/// By default, an infrastructure admin with username and password "admin" is created.
 pub struct User {
     pub id: Uuid,
     /// User handle used to log in and presented to other users.
@@ -27,6 +29,7 @@ pub struct User {
 
 #[derive(Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
+/// Used to patch existing users.
 pub struct UserPatch {
     pub handle: Option<String>,
     pub picture_link: Option<PhotoUrl>,

@@ -5,17 +5,13 @@ use sqlx::{query, query_as, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{
-    tournaments::{
-        phases::{Phase, PhaseStatus},
-        rounds::{Round, RoundStatus},
-        debates::Debate,
-    }
+use crate::tournaments::{
+    debates::Debate,
+    phases::{Phase, PhaseStatus},
+    rounds::{Round, RoundStatus},
 };
 
-use crate::{
-    omni_error::OmniError,
-};
+use crate::omni_error::OmniError;
 
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema, Clone, sqlx::FromRow)]
@@ -27,30 +23,30 @@ pub struct TournamentPlan {
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
     // Tournament ID for a particular plan
-    pub tournament_id:      Uuid,
+    pub tournament_id: Uuid,
     // Number of rounds for a single group for one phase
     pub group_phase_rounds: Option<i32>,
     // Number of groups of teams participating in tournament
-    pub groups_count:       Option<i32>,
+    pub groups_count: Option<i32>,
     // Number of teams that reached the final phase. Must be a power of 2
-    pub advancing_teams:    Option<i32>,
+    pub advancing_teams: Option<i32>,
     // Number of total teams participating in tournament.
-    pub total_teams:        Option<i32>
+    pub total_teams: Option<i32>,
 }
 
 #[derive(Deserialize, ToSchema, sqlx::FromRow)]
-/// TournamentPlanPatch can be used to patch a TournamentPlan without 
+/// TournamentPlanPatch can be used to patch a TournamentPlan without
 // changing important fields such as ID
 // CHANGED: rename occured because we don't want to enter an ID and let it be handled externally
 pub struct TournamentPlanPatch {
     // Number of rounds for a single group for one phase
     pub group_phase_rounds: Option<i32>,
     // Number of groups of teams participating in tournament
-    pub groups_count:       Option<i32>,
+    pub groups_count: Option<i32>,
     // Number of teams that reached the final phase. Must be a power of 2
-    pub advancing_teams:    Option<i32>,
+    pub advancing_teams: Option<i32>,
     // Number of total teams participating in tournament.
-    pub total_teams:        Option<i32>
+    pub total_teams: Option<i32>,
 }
 
 impl TournamentPlan {
@@ -62,7 +58,8 @@ impl TournamentPlan {
         json.validate()?;
 
         let mut transaction = pool.begin().await?;
-        let plan = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        let plan =
+            Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
         transaction.commit().await?;
         Ok(plan)
     }
@@ -95,7 +92,8 @@ impl TournamentPlan {
         .fetch_one(&mut **transaction)
         .await?;
 
-        plan.post_underlying_structs_with_transaction(transaction).await?;
+        plan.post_underlying_structs_with_transaction(transaction)
+            .await?;
 
         Ok(plan)
     }
@@ -187,14 +185,12 @@ impl TournamentPlan {
         self,
         transaction: &mut Transaction<'_, Postgres>,
     ) -> Result<(), OmniError> {
-        self.delete_underlying_structs_with_transaction(transaction).await?;
+        self.delete_underlying_structs_with_transaction(transaction)
+            .await?;
 
-        query!(
-            r#"DELETE FROM tournament_plans WHERE id = $1"#,
-            self.id
-        )
-        .execute(&mut **transaction)
-        .await?;
+        query!(r#"DELETE FROM tournament_plans WHERE id = $1"#, self.id)
+            .execute(&mut **transaction)
+            .await?;
 
         Ok(())
     }
@@ -214,23 +210,29 @@ impl TournamentPlan {
                 status: StatusCode::BAD_REQUEST,
                 message: "total_teams must be set".to_owned(),
             })?,
-            self.group_phase_rounds.ok_or_else(|| OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "group_phase_rounds must be set".to_owned(),
-            })?,
+            self.group_phase_rounds
+                .ok_or_else(|| OmniError::ExplicitError {
+                    status: StatusCode::BAD_REQUEST,
+                    message: "group_phase_rounds must be set".to_owned(),
+                })?,
             self.groups_count.ok_or_else(|| OmniError::ExplicitError {
                 status: StatusCode::BAD_REQUEST,
                 message: "groups_count must be set".to_owned(),
             })?,
-            self.advancing_teams.ok_or_else(|| OmniError::ExplicitError {
-                status: StatusCode::BAD_REQUEST,
-                message: "advancing_teams must be set".to_owned(),
-            })?,
+            self.advancing_teams
+                .ok_or_else(|| OmniError::ExplicitError {
+                    status: StatusCode::BAD_REQUEST,
+                    message: "advancing_teams must be set".to_owned(),
+                })?,
         ))
     }
 
-    async fn post_underlying_structs_with_transaction(&self, transaction: &mut Transaction<'_, Postgres>) -> Result<(), OmniError> {
-        let (total_teams, group_phase_rounds, groups_count, _advancing_teams) = self.validated_values()?;
+    async fn post_underlying_structs_with_transaction(
+        &self,
+        transaction: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), OmniError> {
+        let (total_teams, group_phase_rounds, groups_count, _advancing_teams) =
+            self.validated_values()?;
 
         // Phase
         let mut previous_phase_id: Option<Uuid> = None;
@@ -240,17 +242,17 @@ impl TournamentPlan {
             let is_finals = phase_index == 2; // is phase count constant (group phase / final phase)?
 
             Phase::post_with_transaction(
-                transaction, 
-                self.tournament_id, 
+                transaction,
+                self.tournament_id,
                 Phase {
                     id: curr_phase_id,
                     name: format!("phase_{phase_index}"),
                     tournament_id: self.tournament_id,
                     is_finals,
                     previous_phase_id,
-                    group_size: Some(total_teams/groups_count),
-                    status: PhaseStatus::Planned
-                }
+                    group_size: Some(total_teams / groups_count),
+                    status: PhaseStatus::Planned,
+                },
             )
             .await?;
 
@@ -262,7 +264,7 @@ impl TournamentPlan {
                 for round_index in 1..=group_phase_rounds {
                     let curr_round_id = Uuid::now_v7();
                     Round::post_with_transaction(
-                        transaction, 
+                        transaction,
                         Round {
                             id: curr_round_id,
                             name: format!("round_{round_index}"),
@@ -272,36 +274,36 @@ impl TournamentPlan {
                             motion_id: None,
                             previous_round_id: previous_round_id,
                             status: RoundStatus::Planned,
-                        }
+                        },
                     )
                     .await?;
 
                     // Debates
                     for _ in 1..=groups_count {
                         Debate::post_with_transaction(
-                            transaction, 
-                            self.tournament_id, 
+                            transaction,
+                            self.tournament_id,
                             Debate {
                                 id: Uuid::now_v7(),
                                 motion_id: None,
                                 marshal_user_id: None,
                                 tournament_id: self.tournament_id,
                                 round_id: curr_round_id,
-                            }
+                            },
                         )
-                        .await?;                        
+                        .await?;
                     }
 
                     previous_round_id = Some(curr_round_id);
                 }
             // Finals phase
             } else {
-                let mut remaining_teams = _advancing_teams/2;
+                let mut remaining_teams = _advancing_teams / 2;
                 // Rounds
                 for round_index in 1..=calculate_final_phase_rounds(_advancing_teams) {
                     let curr_round_id = Uuid::now_v7();
                     Round::post_with_transaction(
-                        transaction, 
+                        transaction,
                         Round {
                             id: curr_round_id,
                             name: format!("round_{round_index}"),
@@ -311,30 +313,30 @@ impl TournamentPlan {
                             motion_id: None,
                             previous_round_id: previous_round_id,
                             status: RoundStatus::Planned,
-                        }
+                        },
                     )
                     .await?;
 
                     // Debates
                     for _ in 1..=remaining_teams {
                         Debate::post_with_transaction(
-                            transaction, 
-                            self.tournament_id, 
+                            transaction,
+                            self.tournament_id,
                             Debate {
                                 id: Uuid::now_v7(),
                                 motion_id: None,
                                 marshal_user_id: None,
                                 tournament_id: self.tournament_id,
                                 round_id: curr_round_id,
-                            }
+                            },
                         )
-                        .await?;                        
+                        .await?;
                     }
 
                     remaining_teams /= 2;
                     previous_round_id = Some(curr_round_id);
                 }
-            }   
+            }
 
             previous_phase_id = Some(curr_phase_id);
         }
@@ -401,20 +403,21 @@ impl TournamentPlanPatch {
 }
 
 fn validate(
-    total_teams:        Option<i32>, 
-    group_phase_rounds: Option<i32>, 
-    groups_count:       Option<i32>, 
-    advancing_teams:    Option<i32>, 
+    total_teams: Option<i32>,
+    group_phase_rounds: Option<i32>,
+    groups_count: Option<i32>,
+    advancing_teams: Option<i32>,
 ) -> Result<(), OmniError> {
     let total_teams = total_teams.ok_or_else(|| OmniError::ExplicitError {
         status: StatusCode::BAD_REQUEST,
         message: "total_teams must be set".to_owned(),
     })?;
 
-    let group_phase_rounds = group_phase_rounds.ok_or_else(|| OmniError::ExplicitError {
-        status: StatusCode::BAD_REQUEST,
-        message: "group_phase_rounds must be set".to_owned(),
-    })?;
+    let group_phase_rounds =
+        group_phase_rounds.ok_or_else(|| OmniError::ExplicitError {
+            status: StatusCode::BAD_REQUEST,
+            message: "group_phase_rounds must be set".to_owned(),
+        })?;
 
     let groups_count = groups_count.ok_or_else(|| OmniError::ExplicitError {
         status: StatusCode::BAD_REQUEST,
@@ -429,7 +432,8 @@ fn validate(
     if total_teams <= 1 || group_phase_rounds <= 0 || groups_count <= 0 {
         return Err(OmniError::ExplicitError {
             status: StatusCode::BAD_REQUEST,
-            message: "Invalid tournament plan setup: all numbers should be positive".to_owned(),
+            message: "Invalid tournament plan setup: all numbers should be positive"
+                .to_owned(),
         });
     }
 
@@ -457,7 +461,9 @@ fn validate(
     if advancing_teams <= 0 || (advancing_teams & (advancing_teams - 1)) != 0 {
         return Err(OmniError::ExplicitError {
             status: StatusCode::BAD_REQUEST,
-            message: "Number of advancing teams should be a power of 2 (e.g. 4, 8, 16, 32 ...)".to_owned(),
+            message:
+                "Number of advancing teams should be a power of 2 (e.g. 4, 8, 16, 32 ...)"
+                    .to_owned(),
         });
     }
 
@@ -469,7 +475,7 @@ fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
     let mut final_phase_rounds = 0;
     if (teams != 0) {
         while (teams & 1) == 0 {
-            final_phase_rounds+=1;
+            final_phase_rounds += 1;
             teams >>= 1;
         }
     }

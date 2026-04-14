@@ -20,18 +20,21 @@ use crate::{
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
-/// Rounds can be used to plan multiple debates at once.
-/// Any changes to start and end times, as well as the selected motion
-/// will be applied to all debates assigned to a given round.
+/// Rounds make up tournament phases.
+/// They can be used to plan multiple debates at once.
 pub struct Round {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
     /// Round name. Must be unique within a phase it belongs to.
     pub name: String,
+    // Parent phase ID
     pub phase_id: Uuid,
+    // Planned start time. Will be applied to all children debates
     pub planned_start_time: Option<DateTime<Utc>>,
+    // Planned end time. Will be applied to all children debates
     pub planned_end_time: Option<DateTime<Utc>>,
+    // Motion ID. Will be applied to all children debates
     pub motion_id: Option<Uuid>,
     /// ID of a round occurring directly before this one.
     /// Must be unique, meaning a given round cannot be set as previous for multiple rounds.
@@ -46,6 +49,8 @@ pub struct Round {
 
 #[derive(Deserialize, ToSchema, Clone)]
 #[serde(deny_unknown_fields)]
+/// Can be used to modify existing rounds.
+/// Changes will be reflected in children debates.
 pub struct RoundPatch {
     pub name: Option<String>,
     pub phase_id: Option<Uuid>,
@@ -210,6 +215,7 @@ impl Round {
         Ok(round)
     }
 
+    // TO-DO: perform as an atomic database transaction
     pub async fn patch_children_debates(
         &self,
         pool: &Pool<Postgres>,

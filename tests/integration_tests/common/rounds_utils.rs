@@ -37,7 +37,7 @@ pub async fn create_round(tournament_id: &str, phase_id: &str, token: &str) -> R
 
     client
         .post(format!(
-            "http://{}/tournaments/{}/phases/{}/round",
+            "http://{}/tournaments/{}/phases/{}/rounds",
             socket_address, tournament_id, phase_id
         ))
         .json(&request_body)
