@@ -25,7 +25,7 @@ const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within t
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/phases/:phase_id/round",
+            "/tournaments/:tournament_id/phases/:phase_id/rounds",
             get(get_rounds).post(create_round),
         )
         .route(
@@ -42,7 +42,7 @@ pub fn route() -> Router<AppState> {
 /// Available only to tournament Organizers and the infrastructure admin.
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/round",
+#[utoipa::path(post, request_body=Round, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds",
     responses
     (
         (
@@ -89,7 +89,7 @@ async fn create_round(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/round", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds", 
     responses
     (
         (
