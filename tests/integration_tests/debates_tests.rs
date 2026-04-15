@@ -7,9 +7,9 @@ use tau::{omni_error::OmniError, setup};
 use crate::common::{
     create_app, create_listener,
     debates_utils::{get_debate, get_id_of_a_new_debate},
-    prepare_empty_database,
+    get_response_json, prepare_empty_database,
     tournament_utils::get_id_of_a_new_tournament,
-    user_utils::{get_id_of_a_new_user, get_organizer_token},
+    user_utils::get_organizer_token,
 };
 
 #[tokio::test]
@@ -34,6 +34,9 @@ async fn everyone_can_get_debate_details() -> Result<(), OmniError> {
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
+
+    let response_body = get_response_json(response).await?;
+    assert_eq!(response_body["tournament_id"], tournament_id.to_string());
 
     Ok(())
 }
