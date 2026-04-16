@@ -22,7 +22,8 @@ async fn tournament_creation_should_require_login() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
-    let socket_address = get_socket_addr();
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
 
     let mut request_body = HashMap::new();
     request_body.insert("full_name", "Wrocławska Liga Debat");
@@ -55,6 +56,7 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin().await;
@@ -76,6 +78,7 @@ async fn tournament_creation_should_impossible_for_other_users() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     let user_token = get_token_for_user_with_no_roles().await;
 
     // WHEN

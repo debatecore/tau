@@ -38,7 +38,7 @@ pub async fn create_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -66,7 +66,7 @@ pub async fn get_verdict(
     debate_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     client
@@ -86,7 +86,7 @@ pub async fn get_all_verdicts(
     tournament_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     client
@@ -109,7 +109,7 @@ pub async fn patch_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     let mut request_body = HashMap::new();
@@ -138,7 +138,7 @@ pub async fn delete_verdict(
     debate_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     client

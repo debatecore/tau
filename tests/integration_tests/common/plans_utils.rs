@@ -25,7 +25,7 @@ pub async fn create_plan(
     Client::new()
         .post(format!(
             "http://{}/tournaments/{}/plan",
-            get_socket_addr(), tournament_id
+            get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1"), tournament_id
         ))
         .json(&plan_data)
         .bearer_auth(token.clone())

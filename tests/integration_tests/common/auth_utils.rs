@@ -25,7 +25,7 @@ pub async fn login_with_credentials(handle: &str, password: &str) -> Response {
     let mut request_body = HashMap::new();
     request_body.insert("login", handle);
     request_body.insert("password", password);
-    let socket_address = get_socket_addr().to_string();
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
 
     let client = Client::new();
     client
