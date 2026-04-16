@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
-use tau::{omni_error::OmniError, setup::get_socket_addr};
+use tau::{omni_error::OmniError, setup::get_client_socket_addr};
 
 pub async fn get_session_token_for_infrastructure_admin() -> String {
     get_session_token_for("admin", "admin").await.unwrap()
@@ -25,7 +25,7 @@ pub async fn login_with_credentials(handle: &str, password: &str) -> Response {
     let mut request_body = HashMap::new();
     request_body.insert("login", handle);
     request_body.insert("password", password);
-    let socket_address = get_socket_addr().to_string();
+    let socket_address = get_client_socket_addr().to_string();
 
     let client = Client::new();
     client

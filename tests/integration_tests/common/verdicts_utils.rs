@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
 use serde_json::Value;
-use tau::{omni_error::OmniError, setup::get_socket_addr};
+use tau::{omni_error::OmniError, setup::get_client_socket_addr};
 
 pub async fn get_id_of_a_new_verdict(
     tournament_id: &str,
@@ -38,7 +38,7 @@ pub async fn create_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -66,7 +66,7 @@ pub async fn get_verdict(
     debate_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
@@ -86,7 +86,7 @@ pub async fn get_all_verdicts(
     tournament_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
@@ -109,7 +109,7 @@ pub async fn patch_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     let mut request_body = HashMap::new();
@@ -138,7 +138,7 @@ pub async fn delete_verdict(
     debate_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client

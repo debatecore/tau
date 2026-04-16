@@ -1,5 +1,5 @@
 use reqwest::{Client, Response};
-use tau::setup::get_socket_addr;
+use tau::setup::get_client_socket_addr;
 use tau::tournaments::roles::Role;
 
 pub async fn create_roles(
@@ -8,7 +8,7 @@ pub async fn create_roles(
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
     let roles_string: String = serde_json::to_string(&roles).unwrap();
 
@@ -27,7 +27,7 @@ pub async fn create_roles(
 }
 
 pub async fn get_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
@@ -49,7 +49,7 @@ pub async fn patch_roles(
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
     let roles_string: String = serde_json::to_string(&roles).unwrap();
 
@@ -68,7 +68,7 @@ pub async fn patch_roles(
 }
 
 pub async fn delete_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client

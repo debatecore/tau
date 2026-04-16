@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
-use tau::{omni_error::OmniError, setup::get_socket_addr};
+use tau::{omni_error::OmniError, setup::get_client_socket_addr};
 
 use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin,
@@ -28,7 +28,7 @@ pub async fn get_id_of_a_new_debate(tournament_id: &str) -> Result<String, OmniE
 }
 
 pub async fn create_debate(tournament_id: &str, round_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -50,7 +50,7 @@ pub async fn create_debate(tournament_id: &str, round_id: &str, token: &str) -> 
 }
 
 pub async fn get_debate(id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
@@ -70,7 +70,7 @@ pub async fn get_all_debates(
     tournament_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
@@ -91,7 +91,7 @@ pub async fn patch_debate(
     team_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     let mut request_body = HashMap::new();
@@ -113,7 +113,7 @@ pub async fn patch_debate(
 }
 
 pub async fn delete_debate(id: &str, judge_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client

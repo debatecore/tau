@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response};
-use tau::{omni_error::OmniError, setup::get_socket_addr, tournaments::roles::Role};
+use tau::{omni_error::OmniError, setup::get_client_socket_addr, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
@@ -10,7 +10,7 @@ use crate::common::{
 };
 
 pub async fn create_user(handle: &str, password: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -85,7 +85,7 @@ pub async fn check_permission(
     permission_name: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response};
-use tau::setup::get_socket_addr;
+use tau::setup::get_client_socket_addr;
 
 use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
 
@@ -23,7 +23,7 @@ pub async fn create_team(
     shortened_name: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -46,7 +46,7 @@ pub async fn create_team(
 }
 
 pub async fn get_team(id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
@@ -69,7 +69,7 @@ pub async fn patch_team(
     shortened_name: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -92,7 +92,7 @@ pub async fn patch_team(
 }
 
 pub async fn delete_team(id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_client_socket_addr();
     let client = Client::new();
 
     client
