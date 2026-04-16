@@ -102,7 +102,7 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
     ).await;
 
     let status = response.status();
-    let body = response.text().await.unwrap();
+    let _body = response.text().await.unwrap();
 
     assert_eq!(status, StatusCode::OK);
 
