@@ -55,7 +55,7 @@ pub fn get_socket_addr() -> SocketAddrV4 {
     SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), get_env_port())
 }
 
-pub fn get_client_socket_addr() -> SocketAddrV4 {
+pub fn get_local_socket_addr() -> SocketAddrV4 {
     SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), get_env_port())
 }
 

@@ -2,7 +2,7 @@ use std::future::IntoFuture;
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
-use tau::setup::{self, get_client_socket_addr};
+use tau::setup::{self, get_local_socket_addr};
 
 use crate::common::{create_app, create_listener, prepare_empty_database};
 
@@ -12,7 +12,7 @@ async fn test_teapot() {
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
-    let socket_address = get_client_socket_addr().to_string();
+    let socket_address = get_local_socket_addr().to_string();
     let state = setup::create_app_state().await;
     prepare_empty_database(&state.connection_pool).await;
     let app = create_app(state).await;

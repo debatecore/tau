@@ -180,7 +180,7 @@ async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
     let organizer_token = get_organizer_token(&tournament_id).await;
 
     // WHEN
-    let socket_address = tau::setup::get_client_socket_addr();
+    let socket_address = tau::setup::get_local_socket_addr();
     let client = reqwest::Client::new();
     let response = client
         .get(format!(

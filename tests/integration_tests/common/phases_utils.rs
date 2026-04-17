@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
 use serde_json::{json, Value};
-use tau::{omni_error::OmniError, setup::get_client_socket_addr};
+use tau::{omni_error::OmniError, setup::get_local_socket_addr};
 use uuid::Uuid;
 
 pub async fn get_id_of_a_new_group_phase(
@@ -29,7 +29,7 @@ pub async fn create_phase(
     is_finals: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_client_socket_addr();
+    let socket_address = get_local_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
 
