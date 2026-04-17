@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
-use tau::{omni_error::OmniError, setup::get_socket_addr};
+use tau::{omni_error::OmniError, setup::get_local_socket_addr};
 
 use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
 
@@ -10,7 +10,7 @@ pub async fn create_tournament(
     shortened_name: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_local_socket_addr();
     let mut request_body = HashMap::new();
     request_body.insert("full_name", full_name);
     request_body.insert("shortened_name", shortened_name);

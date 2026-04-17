@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
 use serde_json::Value;
-use tau::{omni_error::OmniError, setup::get_socket_addr};
+use tau::{omni_error::OmniError, setup::get_local_socket_addr};
 use uuid::Uuid;
 
 pub async fn get_id_of_a_new_round(
@@ -26,7 +26,7 @@ pub async fn get_id_of_a_new_round(
 }
 
 pub async fn create_round(tournament_id: &str, phase_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_local_socket_addr();
     let mut request_body = HashMap::new();
     let client = Client::new();
     let phase_name = format!("phase_{}", Uuid::now_v7().to_string());

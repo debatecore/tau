@@ -1,6 +1,6 @@
 use reqwest::{Client, Response, StatusCode};
 use std::future::IntoFuture;
-use tau::setup::get_socket_addr;
+use tau::setup::get_local_socket_addr;
 use serial_test::serial;
 use serde_json::json;
 use tau::{omni_error::OmniError, setup};
@@ -151,7 +151,7 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
     let response = Client::new()
         .get(format!(
             "http://{}/tournaments/{}/plan/{}",
-            get_socket_addr(), tournament_id, plan_id
+            get_local_socket_addr(), tournament_id, plan_id
         ))
         .bearer_auth(token.clone())
         .send()
@@ -205,7 +205,7 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     let response = Client::new()
         .patch(format!(
             "http://{}/tournaments/{}/plan/{}",
-            get_socket_addr(), tournament_id, plan_id
+            get_local_socket_addr(), tournament_id, plan_id
         ))
         .json(&patch_data)
         .bearer_auth(token.clone())
@@ -262,7 +262,7 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
     let response = Client::new()
         .delete(format!(
             "http://{}/tournaments/{}/plan/{}",
-            get_socket_addr(), tournament_id, plan_id
+            get_local_socket_addr(), tournament_id, plan_id
         ))
         .bearer_auth(token.clone())
         .send()

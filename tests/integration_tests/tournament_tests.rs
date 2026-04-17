@@ -2,7 +2,7 @@ use std::{collections::HashMap, future::IntoFuture};
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
-use tau::setup::{self, get_socket_addr};
+use tau::setup::{self, get_local_socket_addr};
 
 use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin, create_app, create_listener,
@@ -22,7 +22,7 @@ async fn tournament_creation_should_require_login() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
-    let socket_address = get_socket_addr();
+    let socket_address = get_local_socket_addr();
 
     let mut request_body = HashMap::new();
     request_body.insert("full_name", "Wrocławska Liga Debat");
