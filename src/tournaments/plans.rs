@@ -473,7 +473,7 @@ fn validate(
 fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
     let mut teams = advancing_teams.clone();
     let mut final_phase_rounds = 0;
-    if (teams != 0) {
+    if teams != 0 {
         while (teams & 1) == 0 {
             final_phase_rounds += 1;
             teams >>= 1;
