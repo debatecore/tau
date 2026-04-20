@@ -1,4 +1,4 @@
-use std::{collections::HashMap, future::IntoFuture};
+﻿use std::{collections::HashMap, future::IntoFuture};
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
@@ -25,7 +25,7 @@ async fn tournament_creation_should_require_login() {
     let socket_address = get_local_socket_addr();
 
     let mut request_body = HashMap::new();
-    request_body.insert("full_name", "Wrocławska Liga Debat");
+    request_body.insert("full_name", "WrocÅ‚awska Liga Debat");
     request_body.insert("shortened_name", "WrLD");
 
     // WHEN
@@ -58,7 +58,7 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin().await;
-    let res = create_tournament("Wrocławska Liga Debat", "WrLD", &token).await;
+    let res = create_tournament("WrocÅ‚awska Liga Debat", "WrLD", &token).await;
 
     // THEN
     assert_eq!(res.status(), StatusCode::OK);
@@ -99,7 +99,7 @@ async fn tournament_names_should_not_allow_duplicates() {
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
 
-    let full_name = "Wrocławska Liga Debat";
+    let full_name = "WrocÅ‚awska Liga Debat";
     let shortened_name = "WrLD";
     let token = get_session_token_for_infrastructure_admin().await;
 

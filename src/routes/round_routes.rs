@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -37,7 +37,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new round
-/// 
+///
 /// Requires the WriteRounds permission.
 /// Available only to tournament Organizers and the infrastructure admin.
 ///
@@ -53,7 +53,7 @@ pub fn route() -> Router<AppState> {
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify rounds within this tournament"
         ),
         (status=404, description = "Tournament or round not found"),
@@ -89,7 +89,7 @@ async fn create_round(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds",
     responses
     (
         (
@@ -100,7 +100,7 @@ async fn create_round(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read rounds within this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -136,7 +136,7 @@ async fn get_rounds(
 /// Get details of an existing round
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/rounds/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/rounds/{id}",
     responses(
         (
             status=200, description = "Ok", body=Round,
@@ -145,7 +145,7 @@ async fn get_rounds(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read rounds within this tournament"
         ),
         (status=404, description = "Tournament or round not found"),
@@ -182,7 +182,7 @@ async fn get_round_by_id(
 /// Patches any debates assigned to this round, if applicable.
 /// Requires the WriteRounds permission.
 /// Available only to tournament Organizers and the infrastructure admin.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}",
     request_body=Round,
     responses(
         (
@@ -193,7 +193,7 @@ async fn get_round_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify rounds within this tournament"
         ),
         (status=404, description = "Tournament or round not found"),
@@ -244,14 +244,14 @@ async fn patch_round_by_id(
 /// referencing this round.
 /// Requires the WriteRounds permission.
 /// Available only to tournament Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/rounds/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/rounds/{id}",
     responses
     (
         (status=204, description = "Round deleted successfully"),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify rounds within this tournament"
         ),
         (status=404, description = "Tournament or round not found"),
@@ -294,7 +294,7 @@ async fn delete_round_by_id(
 fn get_round_example() -> String {
     r#"
     {
-        "address": "Poznań, Poland",
+        "address": "PoznaÅ„, Poland",
         "name": "ZSK",
         "remarks": "Where debatecore was born",
         "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
@@ -307,7 +307,7 @@ fn get_rounds_list_example() -> String {
     r#"
     [
         {
-            "address": "Poznań, Poland",
+            "address": "PoznaÅ„, Poland",
             "name": "ZSK",
             "remarks": "Where debatecore was born",
             "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"

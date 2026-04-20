@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use std::error::Error;
 use url::Url;
 use utoipa::ToSchema;

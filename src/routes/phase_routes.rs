@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -36,7 +36,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new phase
-/// 
+///
 /// Requires the WritePhases permission.
 /// Available only to tournament Organizers and the infrastructure admin.
 ///
@@ -52,7 +52,7 @@ pub fn route() -> Router<AppState> {
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify phases within this tournament"
         ),
         (status=404, description = "Tournament or phase not found"),
@@ -88,7 +88,7 @@ async fn create_phase(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases",
     responses
     (
         (
@@ -99,7 +99,7 @@ async fn create_phase(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read phases within this tournament"
         ),
         (status=404, description = "Tournament not found"),
@@ -135,7 +135,7 @@ async fn get_phases(
 /// Get details of an existing phase
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/phases/{id}",
     responses(
         (
             status=200, description = "Ok", body=Phase,
@@ -144,7 +144,7 @@ async fn get_phases(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read phases within this tournament"
         ),
         (status=404, description = "Tournament or phase not found"),
@@ -177,12 +177,12 @@ async fn get_phase_by_id(
 }
 
 /// Patch an existing phase
-/// 
+///
 /// Requires the WritePhases permission.
 /// Available only to tournament Organizers and the infrastructure admin.
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/phases/{id}",
     request_body=Phase,
     responses(
         (
@@ -193,7 +193,7 @@ async fn get_phase_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify phases within this tournament"
         ),
         (status=404, description = "Tournament or phase not found"),
@@ -237,14 +237,14 @@ async fn patch_phase_by_id(
 /// referencing this phase.
 /// Requires the WritePhases permission.
 /// Available only to tournament Organizers and the infrastructure admin.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/phases/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/phases/{id}",
     responses
     (
         (status=204, description = "Phase deleted successfully"),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify phases within this tournament"
         ),
         (status=404, description = "Tournament or phase not found"),

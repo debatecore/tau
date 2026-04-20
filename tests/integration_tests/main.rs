@@ -1,4 +1,4 @@
-mod affiliations_tests;
+﻿mod affiliations_tests;
 mod auth_tests;
 pub mod common;
 mod debates_tests;

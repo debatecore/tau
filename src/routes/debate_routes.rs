@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournaments::{
@@ -32,7 +32,7 @@ pub fn route() -> Router<AppState> {
         )
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates",
     responses(
         (
             status=200, description = "Ok",
@@ -129,7 +129,7 @@ async fn create_debate(
 /// Get details of an existing debate
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/debates/{id}",
     responses(
         (
             status=200,
@@ -177,7 +177,7 @@ async fn get_debate_by_id(
 /// Patch an existing debate
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "tournaments/{tournament_id}/debates/{id}", 
+#[utoipa::path(patch, path = "tournaments/{tournament_id}/debates/{id}",
     request_body=DebatePatch,
     responses(
         (
@@ -187,7 +187,7 @@ async fn get_debate_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),
@@ -227,14 +227,14 @@ async fn patch_debate_by_id(
 /// Delete an existing debate
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "{tournament_id}/debates/{id}", 
+#[utoipa::path(delete, path = "{tournament_id}/debates/{id}",
     responses
     (
         (status=204, description = "Debate deleted successfully"),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify debates within this tournament"
         ),
         (status=404, description = "Tournament or debate not found"),

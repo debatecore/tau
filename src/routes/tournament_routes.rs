@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournaments::{Tournament, TournamentPatch},
@@ -253,7 +253,7 @@ fn get_tournament_example_with_id() -> String {
     r#"
     {
     "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
-    "full_name": "Poznań Debate Night",
+    "full_name": "PoznaÅ„ Debate Night",
     "shortened_name": "PDN",
     "speech_time": 300,
     "end_protected_time": 30,
@@ -274,7 +274,7 @@ fn get_tournaments_list_example() -> String {
         [
     {
     "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
-    "full_name": "Poznań Debate Night",
+    "full_name": "PoznaÅ„ Debate Night",
     "shortened_name": "PDN",
     "speech_time": 300,
     "end_protected_time": 30,

@@ -1,4 +1,4 @@
-use super::{crypto::hash_token, error::AuthError, AUTH_SESSION_LENGTH};
+﻿use super::{crypto::hash_token, error::AuthError, AUTH_SESSION_LENGTH};
 use crate::{omni_error::OmniError, users::auth::crypto::generate_token};
 use serde::Serialize;
 use sqlx::{

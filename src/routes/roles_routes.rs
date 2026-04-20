@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -261,7 +261,7 @@ mod tests {
     #[test]
     fn string_to_roles() {
         let valid_roles = Role::VARIANTS.to_vec();
-        let fake_role = "\"Gżdacz\"";
+        let fake_role = "\"GÅ¼dacz\"";
 
         for role in valid_roles {
             let serialized_role = serde_json::to_string(&role).unwrap();

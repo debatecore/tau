@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+﻿use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
 use serde_json::Value;

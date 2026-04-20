@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -102,7 +102,7 @@ async fn create_attendee(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendee", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendee",
     responses(
         (
             status=200,
@@ -149,7 +149,7 @@ async fn get_attendees(
 }
 
 /// Get details of an existing attendee
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendees/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendees/{id}",
     responses(
         (
             status=200, description = "Ok", body=Attendee,
@@ -194,7 +194,7 @@ async fn get_attendee_by_id(
 }
 
 /// Patch an existing attendee
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/attendees/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/attendees/{id}",
     request_body=AttendeePatch,
     responses(
         (
@@ -252,7 +252,7 @@ async fn patch_attendee_by_id(
 }
 
 /// Delete an existing attendee
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/attendees/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/attendees/{id}",
     responses
     (
         (status=204, description = "Attendee deleted successfully"),

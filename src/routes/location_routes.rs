@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -90,7 +90,7 @@ async fn create_location(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations",
     responses
     (
         (
@@ -147,7 +147,7 @@ async fn get_locations(
 /// Get details of an existing location
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}",
     responses(
         (
             status=200, description = "Ok", body=Location,
@@ -191,7 +191,7 @@ async fn get_location_by_id(
 /// Patch an existing location
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}",
     request_body=Location,
     responses(
         (
@@ -255,7 +255,7 @@ async fn patch_location_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this location. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}",
     responses
     (
         (status=204, description = "Location deleted successfully"),
@@ -298,7 +298,7 @@ async fn delete_location_by_id(
 fn get_location_example() -> String {
     r#"
     {
-        "address": "Poznań, Poland",
+        "address": "PoznaÅ„, Poland",
         "name": "ZSK",
         "remarks": "Where debatecore was born",
         "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
@@ -311,7 +311,7 @@ fn get_locations_list_example() -> String {
     r#"
     [
         {
-            "address": "Poznań, Poland",
+            "address": "PoznaÅ„, Poland",
             "name": "ZSK",
             "remarks": "Where debatecore was born",
             "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"

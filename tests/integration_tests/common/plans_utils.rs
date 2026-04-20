@@ -1,10 +1,10 @@
-use reqwest::{Client, Response, StatusCode};
-use tau::setup::get_local_socket_addr;
-use tau::tournaments::plans::TournamentPlan;
+﻿use reqwest::{Client, Response, StatusCode};
 use serde_json::json;
 use sqlx::{query_scalar, Row};
+use sqlx::{Pool, Postgres};
+use tau::setup::get_local_socket_addr;
+use tau::tournaments::plans::TournamentPlan;
 use uuid::Uuid;
-use sqlx::{Postgres, Pool};
 
 pub async fn create_plan(
     tournament_id: &str,
@@ -25,7 +25,8 @@ pub async fn create_plan(
     Client::new()
         .post(format!(
             "http://{}/tournaments/{}/plan",
-            get_local_socket_addr(), tournament_id
+            get_local_socket_addr(),
+            tournament_id
         ))
         .json(&plan_data)
         .bearer_auth(token.clone())
@@ -98,16 +99,16 @@ pub fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
     let mut final_phase_rounds = 0;
     if (teams != 0) {
         while (teams & 1) == 0 {
-            final_phase_rounds+=1;
+            final_phase_rounds += 1;
             teams >>= 1;
         }
     }
-    return final_phase_rounds
+    return final_phase_rounds;
 }
 
 pub fn calculate_final_phase_debates(advancing_teams: i32) -> i32 {
     let mut final_phase_debates = 1;
-    let mut remaining_debates   = advancing_teams/2;
+    let mut remaining_debates = advancing_teams / 2;
     while remaining_debates > 1 {
         final_phase_debates += remaining_debates;
         remaining_debates /= 2;
@@ -122,8 +123,8 @@ mod test_debates_calculation {
     fn test_finals_debates_calculation() {
         assert_eq!(calculate_final_phase_debates(32), 16 + 8 + 4 + 2 + 1);
         assert_eq!(calculate_final_phase_debates(16), 8 + 4 + 2 + 1);
-        assert_eq!(calculate_final_phase_debates(8),  4 + 2 + 1);
-        assert_eq!(calculate_final_phase_debates(4),  2 + 1);
+        assert_eq!(calculate_final_phase_debates(8), 4 + 2 + 1);
+        assert_eq!(calculate_final_phase_debates(4), 2 + 1);
     }
 }
 
@@ -134,7 +135,7 @@ mod test_rounds_calculation {
     fn test_finals_rounds_calculation() {
         assert_eq!(calculate_final_phase_rounds(32), 5);
         assert_eq!(calculate_final_phase_rounds(16), 4);
-        assert_eq!(calculate_final_phase_rounds(8),  3);
-        assert_eq!(calculate_final_phase_rounds(4),  2);
+        assert_eq!(calculate_final_phase_rounds(8), 3);
+        assert_eq!(calculate_final_phase_rounds(4), 2);
     }
 }

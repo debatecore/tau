@@ -1,4 +1,4 @@
-use reqwest::{Client, Response};
+﻿use reqwest::{Client, Response};
 use tau::setup::get_local_socket_addr;
 use tau::tournaments::roles::Role;
 

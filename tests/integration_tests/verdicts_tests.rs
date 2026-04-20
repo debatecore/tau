@@ -1,4 +1,4 @@
-use std::{future::IntoFuture, vec};
+﻿use std::{future::IntoFuture, vec};
 
 use reqwest::StatusCode;
 use serial_test::serial;
@@ -202,7 +202,7 @@ async fn anyone_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
         get_session_token_for(judge_username_alpha, judge_password_alpha).await?;
 
     let judge_username_bravo = "anna maria";
-    let judge_password_bravo = "wesołowska";
+    let judge_password_bravo = "wesoÅ‚owska";
     let judge_id_bravo =
         get_id_of_a_new_user(judge_username_bravo, judge_password_bravo).await;
     create_roles(

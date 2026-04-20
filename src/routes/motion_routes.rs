@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournaments::motions::{Motion, MotionPatch},
@@ -31,7 +31,7 @@ pub fn route() -> Router<AppState> {
         )
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/motions", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/motions",
     responses((
     status=200, description = "Ok",
     body=Vec<Motion>,
@@ -76,13 +76,13 @@ async fn get_motions(
     responses(
         (
         status=200, description = "Motion created successfully",
-        body=Motion, 
+        body=Motion,
         example=json!(get_motion_example())
         ),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found"),
@@ -115,7 +115,7 @@ async fn create_motion(
 /// Get details of an existing motion
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/motions/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/motions/{id}",
     responses((status=200, description = "Ok", body=Motion,
     example=json!(get_motion_example())
     )),
@@ -146,7 +146,7 @@ async fn get_motion_by_id(
 /// Patch an existing motion
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/motions/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/motions/{id}",
     request_body=MotionPatch,
     responses(
         (
@@ -157,7 +157,7 @@ async fn get_motion_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")
@@ -194,20 +194,20 @@ async fn patch_motion_by_id(
 /// Delete an existing motion
 /// This operation is only allowed when there are no entities (i.e. debates)
 /// referencing this tournament. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/motions/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/motions/{id}",
     responses
     (
         (status=204, description = "Motion deleted successfully"),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify motions within this tournament"
         ),
         (status=404, description = "Tournament or motion not found")
     ),
     tag="motions"
-    
+
 )]
 async fn delete_motion_by_id(
     Path(id): Path<Uuid>,

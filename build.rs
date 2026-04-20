@@ -1,4 +1,4 @@
-use std::process::Command;
+﻿use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-changed=migrations");

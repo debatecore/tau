@@ -1,10 +1,10 @@
-use std::fmt;
+﻿use std::fmt;
 
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Pool, Postgres, Transaction, Executor};
+use sqlx::{query, query_as, Executor, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -270,20 +270,14 @@ impl Round {
         Ok(())
     }
 
-    pub async fn get_debates<'e, E>(
-        &self,
-        executor: E,
-    ) -> Result<Vec<Debate>, OmniError>
+    pub async fn get_debates<'e, E>(&self, executor: E) -> Result<Vec<Debate>, OmniError>
     where
         E: Executor<'e, Database = Postgres>,
     {
-        let debates = query_as!(
-            Debate,
-            "SELECT * FROM debates WHERE round_id = $1",
-            self.id
-        )
-        .fetch_all(executor)
-        .await?;
+        let debates =
+            query_as!(Debate, "SELECT * FROM debates WHERE round_id = $1", self.id)
+                .fetch_all(executor)
+                .await?;
 
         Ok(debates)
     }
