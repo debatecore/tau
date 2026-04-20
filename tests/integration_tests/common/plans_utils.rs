@@ -1,5 +1,5 @@
 use reqwest::{Client, Response, StatusCode};
-use tau::setup::get_socket_addr;
+use tau::setup::get_local_socket_addr;
 use tau::tournaments::plans::TournamentPlan;
 use serde_json::json;
 use sqlx::{query_scalar, Row};
@@ -25,7 +25,11 @@ pub async fn create_plan(
     Client::new()
         .post(format!(
             "http://{}/tournaments/{}/plan",
+<<<<<<< HEAD
             get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1"), tournament_id
+=======
+            get_local_socket_addr(), tournament_id
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
         ))
         .json(&plan_data)
         .bearer_auth(token.clone())

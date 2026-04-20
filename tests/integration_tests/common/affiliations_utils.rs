@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
-use tau::{omni_error::OmniError, setup::get_socket_addr};
+use tau::{omni_error::OmniError, setup::get_local_socket_addr};
 
 use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
 
@@ -26,7 +26,11 @@ pub async fn get_id_of_a_new_affiliation(
 }
 
 pub async fn create_affiliation(judge_id: &str, team_id: &str, token: &str) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -48,7 +52,11 @@ pub async fn create_affiliation(judge_id: &str, team_id: &str, token: &str) -> R
 }
 
 pub async fn get_affiliation(id: &str, judge_id: &str, token: &str) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     client
@@ -68,7 +76,11 @@ pub async fn get_all_affiliations(
     tournament_id: &str,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     client
@@ -89,7 +101,11 @@ pub async fn patch_affiliation(
     team_id: &str,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     let mut request_body = HashMap::new();
@@ -111,7 +127,11 @@ pub async fn patch_affiliation(
 }
 
 pub async fn delete_affiliation(id: &str, judge_id: &str, token: &str) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     client

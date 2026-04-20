@@ -3,7 +3,7 @@ use std::future::IntoFuture;
 use serial_test::serial;
 use tau::{
     omni_error::OmniError,
-    setup::{self, get_socket_addr},
+    setup::{self, get_client_socket_addr},
 };
 use test_env_helpers::skip;
 

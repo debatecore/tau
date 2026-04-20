@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Client, Response};
-use tau::setup::get_socket_addr;
+use tau::setup::get_local_socket_addr;
 
 use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
 
@@ -23,7 +23,11 @@ pub async fn create_team(
     shortened_name: &str,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -46,7 +50,11 @@ pub async fn create_team(
 }
 
 pub async fn get_team(id: &str, tournament_id: &str, token: &str) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     client
@@ -69,7 +77,11 @@ pub async fn patch_team(
     shortened_name: &str,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -92,7 +104,11 @@ pub async fn patch_team(
 }
 
 pub async fn delete_team(id: &str, tournament_id: &str, token: &str) -> Response {
+<<<<<<< HEAD
     let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
+    let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     client
