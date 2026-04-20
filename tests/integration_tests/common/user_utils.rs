@@ -10,7 +10,9 @@ use crate::common::{
 };
 
 pub async fn create_user(handle: &str, password: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let mut request_body = HashMap::new();
     let client = Client::new();
 
@@ -85,7 +87,9 @@ pub async fn check_permission(
     permission_name: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     client

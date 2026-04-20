@@ -68,7 +68,7 @@ pub fn route() -> Router<AppState> {
 ///
 /// This request only returns the users the user is permitted to see.
 /// The user must be given any role within a user to see it.
-#[utoipa::path(get, path = "/users", 
+#[utoipa::path(get, path = "/users",
     responses(
         (
             status=200, description = "Ok",
@@ -77,7 +77,7 @@ pub fn route() -> Router<AppState> {
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "Authentication error"
         ),
         (status=500, description = "Internal server error")
@@ -111,14 +111,14 @@ async fn get_users(
     responses
     (
         (
-            status=200, 
+            status=200,
             description = "User created successfully",
             body=User,
             example=json!(get_user_example_with_id())
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "The user is not permitted to create users"
         ),
         (status=404, description = "User not found"),
@@ -155,7 +155,7 @@ async fn create_user(
 /// Get details of an existing user
 ///
 /// Every user is permitted to use this endpoint.
-#[utoipa::path(get, path = "/users/{id}", 
+#[utoipa::path(get, path = "/users/{id}",
     responses
     (
         (
@@ -165,7 +165,7 @@ async fn create_user(
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "Authentication error"
         ),
         (status=404, description = "User not found"),
@@ -196,7 +196,7 @@ async fn get_user_by_id(
 /// Allows to modify user data not related to security.
 /// Available to the infrastructure admin and the user modifying their own account.
 /// In order to change user password, use the /user/{id}/password endpoint.
-#[utoipa::path(patch, path = "/users/{id}", 
+#[utoipa::path(patch, path = "/users/{id}",
     request_body=UserPatch,
     responses(
         (
@@ -206,7 +206,7 @@ async fn get_user_by_id(
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "The user is not permitted to modify this user"
         ),
         (status=404, description = "User not found"),
@@ -247,7 +247,7 @@ async fn patch_user_by_id(
 /// Change user password
 ///
 /// Available to the infrastructure admin and the user modifying their own account.
-#[utoipa::path(patch, path = "/users/{id}/password", 
+#[utoipa::path(patch, path = "/users/{id}/password",
     request_body=UserPasswordPatch,
     responses(
         (
@@ -255,7 +255,7 @@ async fn patch_user_by_id(
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "The user is not permitted to modify this user"
         ),
         (status=404, description = "User not found"),
@@ -301,7 +301,7 @@ async fn change_user_password(
 /// Deleted user is automatically logged out of all sessions.
 /// This operation is only allowed when there are no resources
 /// referencing this user.
-#[utoipa::path(delete, path = "/users/{id}", 
+#[utoipa::path(delete, path = "/users/{id}",
     responses(
         (status=204, description = "User deleted successfully"),
         (status=400, description = "Bad request"),
@@ -349,7 +349,7 @@ async fn delete_user_by_id(
 /// Generate a single-use login token.
 ///
 /// Available only to the infrastructure admin.
-#[utoipa::path(delete, path = "/users/{id}/login_link", 
+#[utoipa::path(delete, path = "/users/{id}/login_link",
     responses(
         (status=200, description = "A single-use login link"),
         (status=400, description = "Bad request"),

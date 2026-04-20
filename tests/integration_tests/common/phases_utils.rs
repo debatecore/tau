@@ -29,7 +29,9 @@ pub async fn create_phase(
     is_finals: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let mut request_body = HashMap::new();
     let client = Client::new();
 

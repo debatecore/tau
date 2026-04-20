@@ -10,7 +10,9 @@ pub async fn create_tournament(
     shortened_name: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let mut request_body = HashMap::new();
     request_body.insert("full_name", full_name);
     request_body.insert("shortened_name", shortened_name);

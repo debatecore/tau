@@ -8,7 +8,9 @@ pub async fn create_roles(
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
     let roles_string: String = serde_json::to_string(&roles).unwrap();
 
@@ -27,7 +29,9 @@ pub async fn create_roles(
 }
 
 pub async fn get_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     client
@@ -49,7 +53,9 @@ pub async fn patch_roles(
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
     let roles_string: String = serde_json::to_string(&roles).unwrap();
 

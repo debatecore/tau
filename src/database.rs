@@ -38,8 +38,8 @@ pub async fn perform_migrations(pool: &Pool<Postgres>) {
 
 pub async fn clear_database(pool: &Pool<Postgres>) {
     let result = query!(
-        "SELECT table_name 
-FROM information_schema.tables 
+        "SELECT table_name
+FROM information_schema.tables
 WHERE table_schema = 'public';
 "
     )

@@ -65,7 +65,8 @@ impl Phase {
         pool: &Pool<Postgres>,
     ) -> Result<Phase, OmniError> {
         let mut transaction = pool.begin().await?;
-        let phase = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        let phase =
+            Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
         transaction.commit().await?;
         Ok(phase)
     }

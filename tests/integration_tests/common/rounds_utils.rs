@@ -26,7 +26,9 @@ pub async fn get_id_of_a_new_round(
 }
 
 pub async fn create_round(tournament_id: &str, phase_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let mut request_body = HashMap::new();
     let client = Client::new();
     let phase_name = format!("phase_{}", Uuid::now_v7().to_string());
