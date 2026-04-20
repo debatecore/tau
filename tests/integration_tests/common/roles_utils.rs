@@ -74,7 +74,9 @@ pub async fn patch_roles(
 }
 
 pub async fn delete_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
+    let socket_address = get_socket_addr()
+        .to_string()
+        .replace("0.0.0.0", "127.0.0.1");
     let client = Client::new();
 
     client

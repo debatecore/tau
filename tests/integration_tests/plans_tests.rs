@@ -158,7 +158,7 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
     let response = Client::new()
         .get(format!(
             "http://{}/tournaments/{}/plan/{}",
-            get_socket_addr(),
+            get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1"),
             tournament_id,
             plan_id
         ))
@@ -215,7 +215,7 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     let response = Client::new()
         .patch(format!(
             "http://{}/tournaments/{}/plan/{}",
-            get_socket_addr(),
+            get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1"),
             tournament_id,
             plan_id
         ))
@@ -288,7 +288,7 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
     let response = Client::new()
         .delete(format!(
             "http://{}/tournaments/{}/plan/{}",
-            get_socket_addr(),
+            get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1"),
             tournament_id,
             plan_id
         ))
