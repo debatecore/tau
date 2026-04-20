@@ -43,9 +43,9 @@ impl Debate {
         json: Debate,
         pool: &Pool<Postgres>,
     ) -> Result<Debate, OmniError> {
+
         let mut transaction = pool.begin().await?;
-        let debate =
-            Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        let debate = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
         transaction.commit().await?;
         Ok(debate)
     }
@@ -55,6 +55,7 @@ impl Debate {
         tournament_id: Uuid,
         json: Debate,
     ) -> Result<Debate, OmniError> {
+
         let debate = query_as!(
             Debate,
             r#"INSERT INTO debates(id, motion_id, marshal_user_id, tournament_id, round_id)
@@ -89,6 +90,7 @@ impl Debate {
         patch: DebatePatch,
         pool: &Pool<Postgres>,
     ) -> Result<Debate, OmniError> {
+
         let mut transaction = pool.begin().await?;
         let debate = self.patch_with_transaction(&mut transaction, patch).await?;
         transaction.commit().await?;
@@ -100,6 +102,7 @@ impl Debate {
         transaction: &mut Transaction<'_, Postgres>,
         patch: DebatePatch,
     ) -> Result<Debate, OmniError> {
+
         let updated = query_as!(
             Debate,
             r#"UPDATE debates SET motion_id = $1, marshal_user_id = $2, round_id = $3 WHERE id = $4
@@ -126,9 +129,12 @@ impl Debate {
         self,
         transaction: &mut Transaction<'_, Postgres>,
     ) -> Result<(), OmniError> {
-        query!(r#"DELETE FROM debates WHERE id = $1"#, self.id)
-            .execute(&mut **transaction)
-            .await?;
+        query!(
+            r#"DELETE FROM debates WHERE id = $1"#,
+            self.id
+        )
+        .execute(&mut **transaction)
+        .await?;
 
         Ok(())
     }

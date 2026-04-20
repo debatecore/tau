@@ -32,7 +32,7 @@ pub fn route() -> Router<AppState> {
 /// The endpoint accepts a single `permission_name` query parameter containing
 /// one of the valid Permission enum variants.
 #[utoipa::path(
-    get,
+    get, 
     path = "/users/{id}/tournaments/{tournament_id}/permissions",
     params(
         ("id" = Uuid, Path, description = "User ID"),

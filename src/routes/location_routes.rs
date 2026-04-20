@@ -90,7 +90,7 @@ async fn create_location(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations",
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations", 
     responses
     (
         (
@@ -147,7 +147,7 @@ async fn get_locations(
 /// Get details of an existing location
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}",
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}", 
     responses(
         (
             status=200, description = "Ok", body=Location,
@@ -191,7 +191,7 @@ async fn get_location_by_id(
 /// Patch an existing location
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}",
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}", 
     request_body=Location,
     responses(
         (
@@ -255,7 +255,7 @@ async fn patch_location_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this location. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}",
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}", 
     responses
     (
         (status=204, description = "Location deleted successfully"),

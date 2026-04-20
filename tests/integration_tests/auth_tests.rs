@@ -20,7 +20,6 @@ async fn login_as_infraadmin_should_work_out_of_the_box() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     // WHEN
     let res = login_with_credentials("admin", "admin").await;

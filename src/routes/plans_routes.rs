@@ -10,22 +10,11 @@ use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
 
-use crate::{
-    omni_error::OmniError,
-    setup::AppState,
-    tournaments::{
-        plans::{TournamentPlan, TournamentPlanPatch},
-        Tournament,
-    },
-    users::{permissions::Permission, TournamentUser},
-};
+use crate::{omni_error::OmniError, setup::AppState, tournaments::{plans::{TournamentPlan, TournamentPlanPatch}, Tournament}, users::{permissions::Permission, TournamentUser}};
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route(
-            "/tournaments/:tournament_id/plan",
-            get(get_plan).post(create_plan),
-        )
+        .route("/tournaments/:tournament_id/plan", get(get_plan).post(create_plan))
         .route(
             "/tournaments/:tournament_id/plan/:id",
             get(get_plan_by_id)
@@ -35,7 +24,7 @@ pub fn route() -> Router<AppState> {
 }
 
 /// Create a new tournament plan
-///
+/// 
 /// Available only to the tournament Organizers.
 #[utoipa::path(post, request_body=Plan, path = "/tournaments/{tournament_id}/plan",
     responses
@@ -48,7 +37,7 @@ pub fn route() -> Router<AppState> {
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403,
+            status=403, 
             description = "The user is not permitted to modify plan within this tournament"
         ),
         (status=404, description = "Tournament or plan not found"),
@@ -79,11 +68,11 @@ async fn create_plan(
         Err(e) => {
             error!("Error creating a new plan: {e}");
             Err(e)
-        }
+        },
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/plan",
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/plan", 
     responses
     (
         (
@@ -94,7 +83,7 @@ async fn create_plan(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403,
+            status=403, 
             description = "The user is not permitted to read plan within this tournament"
         ),
         (status=404, description = "Tournament or plan not found"),
@@ -103,7 +92,7 @@ async fn create_plan(
     tag="plan"
 )]
 /// Get a plan
-///
+/// 
 /// The user must be given a role within this tournament to use this endpoint.
 async fn get_plan(
     State(state): State<AppState>,
@@ -121,7 +110,8 @@ async fn get_plan(
     }
 
     let tournament = Tournament::get_by_id(tournament_id, pool).await?;
-    match tournament.get_plan(pool).await {
+    match tournament.get_plan(pool).await
+    {
         Ok(plan) => Ok(Json(plan).into_response()),
         Err(e) => {
             error!("Error getting a tournament plan: {e}");
@@ -131,9 +121,9 @@ async fn get_plan(
 }
 
 /// Get details of an existing plan
-///
+/// 
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/plan/{id}",
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/plan/{id}", 
     responses(
         (
             status=200, description = "Ok", body=TournamentPlan,
@@ -142,7 +132,7 @@ async fn get_plan(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403,
+            status=403, 
             description = "The user is not permitted to read plan within this tournament"
         ),
         (status=404, description = "Tournament or plan not found"),
@@ -175,9 +165,9 @@ async fn get_plan_by_id(
 }
 
 /// Patch an existing plan
-///
+/// 
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/plan/{id}",
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/plan/{id}", 
     request_body=TournamentPlan,
     responses(
         (
@@ -188,7 +178,7 @@ async fn get_plan_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403,
+            status=403, 
             description = "The user is not permitted to modify plan within this tournament"
         ),
         (status=404, description = "Tournament or plan not found"),
@@ -225,14 +215,14 @@ async fn patch_plan_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this team. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/plan/{id}",
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/plan/{id}", 
     responses
     (
         (status=204, description = "Plan deleted successfully"),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403,
+            status=403, 
             description = "The user is not permitted to modify plan within this tournament"
         ),
         (status=404, description = "Tournament or plan not found"),
