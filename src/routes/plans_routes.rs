@@ -270,7 +270,7 @@ fn get_plan_example() -> String {
         "groups_count": 6,
         "group_phase_rounds": 3,
         "advancing_teams": 16,
-        "total_teams": 32
+        "total_teams": 32,
         "tournament_id": "01941267-0109-7405-b30e-7883d309c603"
     }"#
     .to_owned()
