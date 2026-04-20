@@ -1,22 +1,22 @@
-use reqwest::{Client, Response};
-use tau::setup::get_socket_addr;
+use reqwest::Response;
 use tau::tournaments::roles::Role;
 
+use crate::common::test_app::TestApp;
+
 pub async fn create_roles(
+    app: &TestApp,
     user_id: &str,
     tournament_id: &str,
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-    let roles_string: String = serde_json::to_string(&roles).unwrap();
+    let roles_string = serde_json::to_string(&roles).unwrap();
 
-    client
-        .post(format!(
-            "http://{}/users/{}/tournaments/{}/roles",
-            socket_address, user_id, tournament_id
-        ))
+    app.client
+        .post(app.url(&format!(
+            "/users/{}/tournaments/{}/roles",
+            user_id, tournament_id
+        )))
         .body(roles_string)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
@@ -26,15 +26,17 @@ pub async fn create_roles(
         .unwrap()
 }
 
-pub async fn get_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-
-    client
-        .get(format!(
-            "http://{}/users/{}/tournaments/{}/roles",
-            socket_address, user_id, tournament_id
-        ))
+pub async fn get_roles(
+    app: &TestApp,
+    user_id: &str,
+    tournament_id: &str,
+    token: &str,
+) -> Response {
+    app.client
+        .get(app.url(&format!(
+            "/users/{}/tournaments/{}/roles",
+            user_id, tournament_id
+        )))
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
         .bearer_auth(token)
@@ -44,20 +46,19 @@ pub async fn get_roles(user_id: &str, tournament_id: &str, token: &str) -> Respo
 }
 
 pub async fn patch_roles(
+    app: &TestApp,
     user_id: &str,
     tournament_id: &str,
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-    let roles_string: String = serde_json::to_string(&roles).unwrap();
+    let roles_string = serde_json::to_string(&roles).unwrap();
 
-    client
-        .patch(format!(
-            "http://{}/users/{}/tournaments/{}/roles",
-            socket_address, user_id, tournament_id
-        ))
+    app.client
+        .patch(app.url(&format!(
+            "/users/{}/tournaments/{}/roles",
+            user_id, tournament_id
+        )))
         .body(roles_string)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
@@ -67,15 +68,17 @@ pub async fn patch_roles(
         .unwrap()
 }
 
-pub async fn delete_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
-    let socket_address = get_socket_addr();
-    let client = Client::new();
-
-    client
-        .delete(format!(
-            "http://{}/users/{}/tournaments/{}/roles",
-            socket_address, user_id, tournament_id
-        ))
+pub async fn delete_roles(
+    app: &TestApp,
+    user_id: &str,
+    tournament_id: &str,
+    token: &str,
+) -> Response {
+    app.client
+        .delete(app.url(&format!(
+            "/users/{}/tournaments/{}/roles",
+            user_id, tournament_id
+        )))
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
         .bearer_auth(token)

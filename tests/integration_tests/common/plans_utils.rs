@@ -6,7 +6,10 @@ use sqlx::{query_scalar, Row};
 use uuid::Uuid;
 use sqlx::{Postgres, Pool};
 
+use crate::common::test_app::TestApp;
+
 pub async fn create_plan(
+    app: &TestApp,
     tournament_id: &str,
     advancing_teams: i32,
     group_phase_rounds: i32,
@@ -22,13 +25,10 @@ pub async fn create_plan(
         "total_teams": total_teams,
     });
 
-    Client::new()
-        .post(format!(
-            "http://{}/tournaments/{}/plan",
-            get_socket_addr(), tournament_id
-        ))
+    app.client
+        .post(app.url(&format!("/tournaments/{}/plan", tournament_id)))
         .json(&plan_data)
-        .bearer_auth(token.clone())
+        .bearer_auth(token)
         .send()
         .await
         .unwrap()

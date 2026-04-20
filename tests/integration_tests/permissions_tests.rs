@@ -6,6 +6,7 @@ use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
+    test_app::TestApp,
     auth_utils::get_session_token_for_infrastructure_admin,
     create_app, create_listener, prepare_empty_database,
     roles_utils::create_roles,
@@ -21,21 +22,15 @@ use crate::common::{
 async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(), OmniError>
 {
     // GIVEN
-    setup::read_environmental_variables();
-    setup::check_secret_env_var();
-    let state = setup::create_app_state().await;
-    prepare_empty_database(&state.connection_pool).await;
-    let app = create_app(state).await;
-    let listener = create_listener().await;
-    let server = axum::serve(listener, app).into_future();
-    tokio::spawn(server);
+    let app = TestApp::spawn().await;
 
-    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
-    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
-    let admin_token = get_session_token_for_infrastructure_admin().await;
+    let tournament_id = get_id_of_a_new_tournament(&app, "test tournament").await?;
+    let user_id = get_id_of_a_new_user(&app, &Uuid::now_v7().to_string(), "password").await;
+    let admin_token = get_session_token_for_infrastructure_admin(&app).await;
 
     // Assign organizer role to user
     let role_response = create_roles(
+        &app,
         &user_id,
         &tournament_id,
         vec![Role::Organizer],
@@ -44,10 +39,11 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
     .await;
     assert_eq!(role_response.status(), StatusCode::OK);
 
-    let organizer_token = get_organizer_token(&tournament_id).await;
+    let organizer_token = get_organizer_token(&app, &tournament_id).await;
 
     // WHEN
     let response = check_permission(
+        &app,
         &user_id,
         &tournament_id,
         "WriteTournament",
@@ -67,22 +63,15 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
 #[serial]
 async fn user_can_verify_lack_of_permission() -> Result<(), OmniError> {
     // GIVEN
-    setup::read_environmental_variables();
-    setup::check_secret_env_var();
-    let state = setup::create_app_state().await;
-    prepare_empty_database(&state.connection_pool).await;
-    let app = create_app(state).await;
-    let listener = create_listener().await;
-    let server = axum::serve(listener, app).into_future();
-    tokio::spawn(server);
+    let app = TestApp::spawn().await;
 
-    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
-    let judge_id = get_id_of_a_new_judge(&tournament_id).await?;
-    let judge_token = get_judge_token(&tournament_id).await;
+    let tournament_id = get_id_of_a_new_tournament(&app, "test tournament").await?;
+    let judge_id = get_id_of_a_new_judge(&app, &tournament_id).await?;
+    let judge_token = get_judge_token(&app, &tournament_id).await;
 
     // WHEN
     let response =
-        check_permission(&judge_id, &tournament_id, "WriteTournament", &judge_token)
+        check_permission(&app, &judge_id, &tournament_id, "WriteTournament", &judge_token)
             .await;
 
     // THEN
@@ -97,27 +86,20 @@ async fn user_can_verify_lack_of_permission() -> Result<(), OmniError> {
 #[serial]
 async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
     // GIVEN
-    setup::read_environmental_variables();
-    setup::check_secret_env_var();
-    let state = setup::create_app_state().await;
-    prepare_empty_database(&state.connection_pool).await;
-    let app = create_app(state).await;
-    let listener = create_listener().await;
-    let server = axum::serve(listener, app).into_future();
-    tokio::spawn(server);
+    let app = TestApp::spawn().await;
 
-    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
-    let admin_token = get_session_token_for_infrastructure_admin().await;
+    let tournament_id = get_id_of_a_new_tournament(&app, "test tournament").await?;
+    let admin_token = get_session_token_for_infrastructure_admin(&app).await;
 
     let admin_id = Uuid::max().to_string();
 
     // WHEN - Try various permissions
     let response1 =
-        check_permission(&admin_id, &tournament_id, "WriteTournament", &admin_token)
+        check_permission(&app, &admin_id, &tournament_id, "WriteTournament", &admin_token)
             .await;
 
     let response2 =
-        check_permission(&admin_id, &tournament_id, "WriteTeams", &admin_token).await;
+        check_permission(&app, &admin_id, &tournament_id, "WriteTeams", &admin_token).await;
 
     // THEN
     assert_eq!(response1.status(), StatusCode::OK);
@@ -133,22 +115,16 @@ async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
 #[serial]
 async fn invalid_permission_name_returns_404() -> Result<(), OmniError> {
     // GIVEN
-    setup::read_environmental_variables();
-    setup::check_secret_env_var();
-    let state = setup::create_app_state().await;
-    prepare_empty_database(&state.connection_pool).await;
-    let app = create_app(state).await;
-    let listener = create_listener().await;
-    let server = axum::serve(listener, app).into_future();
-    tokio::spawn(server);
+    let app = TestApp::spawn().await;
 
-    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
-    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
-    let _admin_token = get_session_token_for_infrastructure_admin().await;
-    let organizer_token = get_organizer_token(&tournament_id).await;
+    let tournament_id = get_id_of_a_new_tournament(&app, "test tournament").await?;
+    let user_id = get_id_of_a_new_user(&app, &Uuid::now_v7().to_string(), "password").await;
+    let _admin_token = get_session_token_for_infrastructure_admin(&app).await;
+    let organizer_token = get_organizer_token(&app, &tournament_id).await;
 
     // WHEN
     let response = check_permission(
+        &app,
         &user_id,
         &tournament_id,
         "InvalidPermission",
@@ -166,26 +142,17 @@ async fn invalid_permission_name_returns_404() -> Result<(), OmniError> {
 #[serial]
 async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
     // GIVEN
-    setup::read_environmental_variables();
-    setup::check_secret_env_var();
-    let state = setup::create_app_state().await;
-    prepare_empty_database(&state.connection_pool).await;
-    let app = create_app(state).await;
-    let listener = create_listener().await;
-    let server = axum::serve(listener, app).into_future();
-    tokio::spawn(server);
+    let app = TestApp::spawn().await;
 
-    let tournament_id = get_id_of_a_new_tournament("test tournament").await?;
-    let user_id = get_id_of_a_new_user(&Uuid::now_v7().to_string(), "password").await;
-    let organizer_token = get_organizer_token(&tournament_id).await;
+    let tournament_id = get_id_of_a_new_tournament(&app, "test tournament").await?;
+    let user_id = get_id_of_a_new_user(&app, &Uuid::now_v7().to_string(), "password").await;
+    let organizer_token = get_organizer_token(&app, &tournament_id).await;
 
     // WHEN
-    let socket_address = tau::setup::get_socket_addr();
-    let client = reqwest::Client::new();
-    let response = client
+    let response = app.client
         .get(format!(
-            "http://{}/users/{}/tournaments/{}/permissions?permission_name=WriteTeams&permission_name=ReadTeams",
-            socket_address, user_id, tournament_id
+            "/users/{}/tournaments/{}/permissions?permission_name=WriteTeams&permission_name=ReadTeams",
+            user_id, tournament_id
         ))
         .bearer_auth(&organizer_token)
         .send()
@@ -202,24 +169,17 @@ async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
 #[serial]
 async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> {
     // GIVEN
-    setup::read_environmental_variables();
-    setup::check_secret_env_var();
-    let state = setup::create_app_state().await;
-    prepare_empty_database(&state.connection_pool).await;
-    let app = create_app(state).await;
-    let listener = create_listener().await;
-    let server = axum::serve(listener, app).into_future();
-    tokio::spawn(server);
+    let app = TestApp::spawn().await;
 
-    let tournament_alpha_id = get_id_of_a_new_tournament("tournament alpha").await?;
-    let tournament_beta_id = get_id_of_a_new_tournament("tournament beta").await?;
+    let tournament_alpha_id = get_id_of_a_new_tournament(&app, "tournament alpha").await?;
+    let tournament_beta_id = get_id_of_a_new_tournament(&app, "tournament beta").await?;
     let user_name = Uuid::now_v7().to_string();
-
-    let user_id = get_id_of_a_new_user(&user_name, "password").await;
+    let user_id = get_id_of_a_new_user(&app, &user_name, "password").await;
 
     // Assign user to tournament alpha only
-    let admin_token = get_session_token_for_infrastructure_admin().await;
+    let admin_token = get_session_token_for_infrastructure_admin(&app).await;
     create_roles(
+        &app,
         &user_id,
         &tournament_alpha_id,
         vec![Role::Organizer],
@@ -228,12 +188,13 @@ async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> 
     .await;
 
     let user_token =
-        crate::common::auth_utils::get_session_token_for(&user_name, "password")
+        crate::common::auth_utils::get_session_token_for(&app, &user_name, "password")
             .await
             .unwrap();
 
     // WHEN - Try to check permission in tournament they're not assigned to
     let response = check_permission(
+        &app,
         &user_id,
         &tournament_beta_id,
         "WriteTournament",

@@ -66,6 +66,12 @@ pub async fn create_app_state() -> AppState {
     }
 }
 
+pub fn create_app_state_with_pool(pool: Pool<Postgres>) -> AppState {
+    AppState {
+        connection_pool: pool,
+    }
+}
+
 pub fn read_environmental_variables() {
     match dotenvy::dotenv() {
         Ok(_) => info!("Loaded .env"),
