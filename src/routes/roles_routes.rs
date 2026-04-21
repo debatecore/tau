@@ -18,7 +18,7 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new().route(
-        "/users/:user_id/tournaments/:tournament_id/roles",
+        "/users/{user_id}/tournaments/{tournament_id}/roles",
         post(create_user_roles)
             .get(get_user_roles)
             .patch(patch_user_roles)

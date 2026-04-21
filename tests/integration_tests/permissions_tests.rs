@@ -150,10 +150,10 @@ async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
 
     // WHEN
     let response = app.client
-        .get(format!(
+        .get(app.url(&format!(
             "/users/{}/tournaments/{}/permissions?permission_name=WriteTeams&permission_name=ReadTeams",
             user_id, tournament_id
-        ))
+        )))
         .bearer_auth(&organizer_token)
         .send()
         .await

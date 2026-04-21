@@ -14,9 +14,9 @@ use crate::{omni_error::OmniError, setup::AppState, tournaments::{plans::{Tourna
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/:tournament_id/plan", get(get_plan).post(create_plan))
+        .route("/tournaments/{tournament_id}/plan", get(get_plan).post(create_plan))
         .route(
-            "/tournaments/:tournament_id/plan/:id",
+            "/tournaments/{tournament_id}/plan/{id}",
             get(get_plan_by_id)
                 .patch(patch_plan_by_id)
                 .delete(delete_plan_by_id),

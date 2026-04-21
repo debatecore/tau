@@ -87,10 +87,10 @@ pub async fn get_all_verdicts(
     token: &str,
 ) -> Response {
     app.client
-        .get(format!(
+        .get(app.url(&format!(
             "/tournaments/{}/debates/{}/verdicts",
             judge_id, tournament_id
-        ))
+        )))
         .header("accept", "application/json")
         .bearer_auth(token)
         .send()

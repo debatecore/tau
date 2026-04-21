@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use axum::Router;
-use reqwest::Client;
+use reqwest::{Client, RequestBuilder};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use testcontainers_modules::{
     postgres::Postgres,

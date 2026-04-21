@@ -27,11 +27,11 @@ const DUPLICATE_NAME_ERROR: &str = r#"
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/teams",
+            "/tournaments/{tournament_id}/teams",
             get(get_teams).post(create_team),
         )
         .route(
-            "/tournaments/:tournament_id/teams/:id",
+            "/tournaments/{tournament_id}/teams/{id}",
             get(get_team_by_id)
                 .patch(patch_team_by_id)
                 .delete(delete_team_by_id),

@@ -22,11 +22,11 @@ const POSITION_OUT_OF_RANGE_MESSAGE: &str = "Attendee position must be in range 
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/attendee",
+            "/tournaments/{tournament_id}/attendee",
             post(create_attendee).get(get_attendees),
         )
         .route(
-            "/:tournament_id/attendees/:id",
+            "/{tournament_id}/attendees/{id}",
             get(get_attendee_by_id)
                 .patch(patch_attendee_by_id)
                 .delete(delete_attendee_by_id),

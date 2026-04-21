@@ -25,11 +25,11 @@ const DUPLICATE_NAME_ERROR: &str = "Room with this name already exists within th
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/locations/:location_id/rooms",
+            "/tournaments/{tournament_id}/locations/{location_id}/rooms",
             get(get_rooms).post(create_room),
         )
         .route(
-            "/tournaments/:tournament_id/locations/:location_id/rooms/:id",
+            "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}",
             get(get_room_by_id)
                 .patch(patch_room_by_id)
                 .delete(delete_room_by_id),

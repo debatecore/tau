@@ -20,11 +20,11 @@ const DUPLICATE_MOTION_ERROR: &str = "Motion with such content already exists";
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournaments/motions",
+            "/tournaments/{tournaments}/motions",
             get(get_motions).post(create_motion),
         )
         .route(
-            "/tournaments/:tournament_id/motions/:id",
+            "/tournaments/{tournament_id}/motions/{id}",
             get(get_motion_by_id)
                 .delete(delete_motion_by_id)
                 .patch(patch_motion_by_id),
