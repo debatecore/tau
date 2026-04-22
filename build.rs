@@ -1,4 +1,4 @@
-﻿use std::process::Command;
+use std::process::Command;
 
 fn main() {
     println!("cargo:rerun-if-changed=migrations");
@@ -16,10 +16,7 @@ fn main() {
     }
 
     println!("cargo::rustc-env=GIT_STATUS_PORCELAIN=UNKNOWN!");
-    if let Ok(output) = Command::new("git")
-        .args(["status", "--porcelain"])
-        .output()
-    {
+    if let Ok(output) = Command::new("git").args(["status", "--porcelain"]).output() {
         if let Ok(status) = String::from_utf8(output.stdout) {
             if status.is_empty() {
                 println!("cargo::rustc-env=GIT_STATUS_PORCELAIN=clean");
