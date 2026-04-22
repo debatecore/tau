@@ -15,7 +15,7 @@ pub struct LoginToken {
 
 impl LoginToken {
     pub fn expired(&self) -> bool {
-        return &Utc::now() > &self.expiry;
+        Utc::now() > self.expiry
     }
 }
 

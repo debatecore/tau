@@ -29,7 +29,7 @@ pub async fn guarantee_infrastructure_admin_exists(pool: &Pool<Postgres>) {
             match User::create(admin, "admin".to_string(), pool).await {
                 Ok(_) => info!("Infrastructure admin created."),
                 Err(e) => {
-                    let err = OmniError::from(e);
+                    let err = e;
                     error!("Could not create infrastructure admin.");
                     error!("{err}");
                     panic!();

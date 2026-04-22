@@ -272,7 +272,7 @@ impl TournamentPlan {
                             planned_start_time: None,
                             planned_end_time: None,
                             motion_id: None,
-                            previous_round_id: previous_round_id,
+                            previous_round_id,
                             status: RoundStatus::Planned,
                         },
                     )
@@ -311,7 +311,7 @@ impl TournamentPlan {
                             planned_start_time: None,
                             planned_end_time: None,
                             motion_id: None,
-                            previous_round_id: previous_round_id,
+                            previous_round_id,
                             status: RoundStatus::Planned,
                         },
                     )
@@ -471,7 +471,7 @@ fn validate(
 }
 
 fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
-    let mut teams = advancing_teams.clone();
+    let mut teams = advancing_teams;
     let mut final_phase_rounds = 0;
     if teams != 0 {
         while (teams & 1) == 0 {

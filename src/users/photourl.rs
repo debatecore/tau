@@ -54,9 +54,9 @@ impl TryFrom<String> for PhotoUrl {
     }
 }
 
-impl Into<String> for PhotoUrl {
-    fn into(self) -> String {
-        self.as_str().to_owned()
+impl From<PhotoUrl> for String {
+    fn from(val: PhotoUrl) -> Self {
+        val.as_str().to_owned()
     }
 }
 

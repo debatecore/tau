@@ -134,7 +134,7 @@ async fn create_user(
     Json(json): Json<UserWithPassword>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let user = User::authenticate(&headers, cookies, &pool).await?;
+    let user = User::authenticate(&headers, cookies, pool).await?;
     match user.is_infrastructure_admin()
         || user.is_organizer_of_any_tournament(pool).await?
     {
@@ -224,7 +224,7 @@ async fn patch_user_by_id(
     Json(new_user): Json<UserPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user = User::authenticate(&headers, cookies, &pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, pool).await?;
 
     let user_to_be_patched = User::get_by_id(id, pool).await?;
 
@@ -271,7 +271,7 @@ async fn change_user_password(
     Json(password_patch): Json<UserPasswordPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user = User::authenticate(&headers, cookies, &pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, pool).await?;
 
     let user_to_be_patched = User::get_by_id(id, pool).await?;
 
@@ -327,20 +327,17 @@ async fn delete_user_by_id(
 
     let user_to_be_deleted = User::get_by_id(id, pool).await?;
 
-    match user_to_be_deleted.is_infrastructure_admin() {
-        true => return Err(OmniError::InsufficientPermissionsError),
-        false => (),
-    }
+    if user_to_be_deleted.is_infrastructure_admin() { return Err(OmniError::InsufficientPermissionsError) }
 
     user_to_be_deleted.invalidate_all_sessions(pool).await?;
     match user_to_be_deleted.delete(pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError);
+                Err(OmniError::DependentResourcesError)
             } else {
                 error!("Error deleting a user with id {id}: {e}");
-                return Err(e)?;
+                Err(e)?
             }
         }
     }

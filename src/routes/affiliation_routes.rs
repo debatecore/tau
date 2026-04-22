@@ -65,7 +65,7 @@ async fn create_affiliation(
     let team = Team::get_by_id(affiliation.team_id, pool).await?;
     let tournament_id = team.tournament_id;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAffiliations) {
         true => (),
@@ -86,10 +86,10 @@ fn params_and_affiliation_fields_match(
     affiliation: &Affiliation,
     user_id: &Uuid,
 ) -> bool {
-    if !(&affiliation.judge_user_id == user_id) {
+    if &affiliation.judge_user_id != user_id  {
         return false;
     }
-    return true;
+    true
 }
 
 #[utoipa::path(get, path = "/users/{user_id}/affiliations/tournament/{tournament_id}",
@@ -114,7 +114,7 @@ async fn get_affiliations(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadAffiliations) {
         true => (),
@@ -165,7 +165,7 @@ async fn get_affiliation_by_id(
     let affiliation = Affiliation::get_by_id(id, pool).await?;
     let tournament_id = affiliation.infer_tournament_id(pool).await?;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadAffiliations) {
         true => (),
@@ -203,7 +203,7 @@ async fn patch_affiliation_by_id(
     let team = Team::get_by_id(affiliation.team_id, pool).await?;
     let tournament_id = Tournament::get_by_id(team.tournament_id, pool).await?.id;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAffiliations) {
         true => (),
@@ -251,7 +251,7 @@ async fn delete_affiliation_by_id(
     let affiliation = Affiliation::get_by_id(id, pool).await?;
     let tournament_id = affiliation.infer_tournament_id(pool).await?;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAffiliations) {
         true => (),

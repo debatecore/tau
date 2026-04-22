@@ -81,7 +81,7 @@ impl Role {
                     .into_iter()
                     .map(|role| Role::from_str(&role).unwrap())
                     .collect();
-                return Ok(created_roles);
+                Ok(created_roles)
             }
             Err(e) => Err(e)?,
         }
@@ -111,7 +111,7 @@ impl Role {
                     .into_iter()
                     .map(|string| string.parse().unwrap())
                     .collect();
-                return Ok(created_roles);
+                Ok(created_roles)
             }
             Err(e) => Err(e)?,
         }

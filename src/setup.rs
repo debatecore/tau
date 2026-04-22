@@ -42,13 +42,13 @@ fn get_env_port() -> u16 {
         Err(_) => return 2023,
     };
 
-    return match portstr.parse() {
+    match portstr.parse() {
         Ok(num) => num,
         Err(e) => {
             error!("Error parsing PORT environment variable: {e}");
             panic!();
         }
-    };
+    }
 }
 
 pub fn get_socket_addr() -> SocketAddrV4 {
@@ -117,7 +117,9 @@ pub fn configure_cors() -> CorsLayer {
         "FRONTEND_ORIGIN set to {}. Requests made from any other origins will be disallowed at browser level",
         &frontend_origin
     );
-    let layer = CorsLayer::new()
+    
+
+    CorsLayer::new()
         .allow_origin(frontend_origin.parse::<HeaderValue>().unwrap())
         .allow_methods([
             Method::GET,
@@ -127,7 +129,5 @@ pub fn configure_cors() -> CorsLayer {
             Method::PUT,
         ])
         .allow_headers([CONTENT_TYPE])
-        .allow_credentials(true);
-
-    return layer;
+        .allow_credentials(true)
 }

@@ -67,7 +67,7 @@ async fn create_location(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),
@@ -120,7 +120,7 @@ async fn get_locations(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadLocations) {
         true => (),
@@ -172,7 +172,7 @@ async fn get_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadLocations) {
         true => (),
@@ -223,7 +223,7 @@ async fn patch_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),
@@ -233,8 +233,8 @@ async fn patch_location_by_id(
     let location = Location::get_by_id(id, pool).await?;
 
     let name = new_location.name.clone();
-    if name.is_some() {
-        if Location::location_with_name_exists_in_tournament(
+    if name.is_some()
+        && Location::location_with_name_exists_in_tournament(
             &name.unwrap(),
             &location.tournament_id,
             pool,
@@ -243,7 +243,6 @@ async fn patch_location_by_id(
         {
             return Err(OmniError::ResourceAlreadyExistsError);
         }
-    }
 
     match location.patch(new_location, pool).await {
         Ok(location) => Ok(Json(location).into_response()),
@@ -278,7 +277,7 @@ async fn delete_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),

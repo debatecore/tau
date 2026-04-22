@@ -5,7 +5,6 @@
     routing::get,
     Json, Router,
 };
-use sqlx::{query, Error, Pool, Postgres};
 use tower_cookies::Cookies;
 use tracing::error;
 use uuid::Uuid;
@@ -65,7 +64,7 @@ async fn create_plan(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WritePlan) {
         true => (),
@@ -113,7 +112,7 @@ async fn get_plan(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadPlan) {
         true => (),
@@ -158,7 +157,7 @@ async fn get_plan_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadPlan) {
         true => (),
@@ -205,7 +204,7 @@ async fn patch_plan_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WritePlan) {
         true => (),
@@ -247,7 +246,7 @@ async fn delete_plan_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WritePlan) {
         true => (),

@@ -60,7 +60,7 @@ async fn get_debates(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadDebates) {
         true => (),
@@ -110,7 +110,7 @@ async fn create_debate(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
@@ -155,7 +155,7 @@ async fn get_debate_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadDebates) {
         true => (),
@@ -204,7 +204,7 @@ async fn patch_debate_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),
@@ -250,7 +250,7 @@ async fn delete_debate_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteDebates) {
         true => (),

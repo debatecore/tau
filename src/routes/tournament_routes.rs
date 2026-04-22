@@ -101,13 +101,13 @@ async fn create_tournament(
     Json(json): Json<Tournament>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let user = User::authenticate(&headers, cookies, &pool).await?;
+    let user = User::authenticate(&headers, cookies, pool).await?;
     if !user.is_infrastructure_admin() {
         return Err(OmniError::InsufficientPermissionsError);
     }
 
     let tournament = Tournament::post(json, pool).await?;
-    return Ok(Json(tournament).into_response());
+    Ok(Json(tournament).into_response())
 }
 
 /// Get details of an existing tournament
@@ -186,7 +186,7 @@ async fn patch_tournament_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteTournament) {
         true => (),
@@ -240,10 +240,10 @@ async fn delete_tournament_by_id(
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError);
+                Err(OmniError::DependentResourcesError)
             } else {
                 error!("Error deleting a tournament with id {id}: {e}");
-                return Err(e)?;
+                Err(e)?
             }
         }
     }

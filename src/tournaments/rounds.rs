@@ -303,11 +303,11 @@ impl Round {
         .await
         .ok();
         if next_phase_record.is_none() {
-            return Err(OmniError::ResourceNotFoundError);
+            Err(OmniError::ResourceNotFoundError)
         } else {
             let next_round =
                 Round::get_by_id(next_phase_record.unwrap().id, pool).await?;
-            return Ok(next_round);
+            Ok(next_round)
         }
     }
 
@@ -318,7 +318,7 @@ impl Round {
         if self.previous_round_id.is_none() {
             return Err(OmniError::ResourceNotFoundError);
         }
-        return Ok(Round::get_by_id(self.previous_round_id.unwrap(), pool).await?);
+        return Round::get_by_id(self.previous_round_id.unwrap(), pool).await;
     }
 
     pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
@@ -393,9 +393,9 @@ impl Round {
             return Ok(false);
         }
         if parent_phase.previous_phase_id.unwrap() != previous_round.phase_id {
-            return Ok(true);
+            Ok(true)
         } else {
-            return Ok(false);
+            Ok(false)
         }
     }
 
@@ -468,7 +468,7 @@ impl Round {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         if self.previous_round_id.is_some() {
-            return Ok(false);
+            Ok(false)
         } else {
             let tournament = self.get_parent_tournament(parent_phase, pool).await?;
             for round in tournament.get_rounds(pool).await? {
@@ -476,14 +476,14 @@ impl Round {
                     return Ok(true);
                 }
             }
-            return Ok(false);
+            Ok(false)
         }
     }
 }
 
 impl RoundPatch {
     pub fn create_round_with(self, round: Round) -> Round {
-        return Round {
+        Round {
             id: round.id,
             name: self.name.unwrap_or(round.name),
             phase_id: self.phase_id.unwrap_or(round.phase_id),
@@ -492,7 +492,7 @@ impl RoundPatch {
             motion_id: self.motion_id.or(self.motion_id),
             previous_round_id: self.previous_round_id.or(round.previous_round_id),
             status: self.status.unwrap_or(round.status),
-        };
+        }
     }
 }
 

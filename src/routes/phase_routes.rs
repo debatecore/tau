@@ -69,7 +69,7 @@ async fn create_phase(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WritePhases) {
         true => (),
@@ -118,7 +118,7 @@ async fn get_phases(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadPhases) {
         true => (),
@@ -160,7 +160,7 @@ async fn get_phase_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadPhases) {
         true => (),
@@ -214,7 +214,7 @@ async fn patch_phase_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WritePhases) {
         true => (),
@@ -260,7 +260,7 @@ async fn delete_phase_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WritePhases) {
         true => (),
@@ -272,7 +272,7 @@ async fn delete_phase_by_id(
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError);
+                Err(OmniError::DependentResourcesError)
             } else {
                 error!("Error deleting a phase with id {id}: {e}");
                 Err(e)?

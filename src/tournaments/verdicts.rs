@@ -165,9 +165,9 @@ impl Verdict {
         {
             Ok(result) => {
                 if result.is_none() {
-                    return Ok(false);
+                    Ok(false)
                 } else {
-                    return Ok(true);
+                    Ok(true)
                 }
             }
             Err(e) => Err(e)?,

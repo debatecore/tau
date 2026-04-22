@@ -106,7 +106,7 @@ async fn get_user_roles(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     if tournament_user.roles.is_empty() {
         return Err(OmniError::UnauthorizedError);

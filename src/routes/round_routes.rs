@@ -70,7 +70,7 @@ async fn create_round(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteRounds) {
         true => (),
@@ -119,7 +119,7 @@ async fn get_rounds(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadRounds) {
         true => (),
@@ -161,7 +161,7 @@ async fn get_round_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadRounds) {
         true => (),
@@ -214,7 +214,7 @@ async fn patch_round_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteRounds) {
         true => (),
@@ -267,7 +267,7 @@ async fn delete_round_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteRounds) {
         true => (),
@@ -282,7 +282,7 @@ async fn delete_round_by_id(
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError);
+                Err(OmniError::DependentResourcesError)
             } else {
                 error!("Error deleting a round with id {id}: {e}");
                 Err(e)
