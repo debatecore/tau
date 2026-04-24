@@ -19,7 +19,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_create_affiliations() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -42,7 +41,6 @@ async fn organizers_should_be_able_to_create_affiliations() -> Result<(), OmniEr
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_get_affiliations() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -64,7 +62,6 @@ async fn organizers_should_be_able_to_get_affiliations() -> Result<(), OmniError
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_list_affiliations() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -90,7 +87,6 @@ async fn organizers_should_be_able_to_list_affiliations() -> Result<(), OmniErro
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_patch_affiliations() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -115,7 +111,6 @@ async fn organizers_should_be_able_to_patch_affiliations() -> Result<(), OmniErr
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_delete_affiliations() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -136,7 +131,6 @@ async fn organizers_should_be_able_to_delete_affiliations() -> Result<(), OmniEr
 }
 
 #[tokio::test]
-#[serial]
 async fn affiliations_should_not_be_visible_to_judges_and_marshals(
 ) -> Result<(), OmniError> {
     // GIVEN

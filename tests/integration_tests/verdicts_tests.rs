@@ -24,7 +24,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn judges_should_be_able_to_make_verdicts_on_debates_within_their_tournaments(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -57,7 +56,6 @@ async fn judges_should_be_able_to_make_verdicts_on_debates_within_their_tourname
 }
 
 #[tokio::test]
-#[serial]
 async fn making_verdicts_should_be_only_allowed_on_existing_debates(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -87,7 +85,6 @@ async fn making_verdicts_should_be_only_allowed_on_existing_debates(
 }
 
 #[tokio::test]
-#[serial]
 async fn judges_from_other_tournaments_should_not_be_able_to_submit_verdicts(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -117,7 +114,6 @@ async fn judges_from_other_tournaments_should_not_be_able_to_submit_verdicts(
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_get_verdicts() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -147,7 +143,6 @@ async fn organizers_should_be_able_to_get_verdicts() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn anyone_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -227,7 +222,6 @@ async fn anyone_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn judges_should_be_able_to_patch_verdicts() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -275,7 +269,6 @@ async fn judges_should_be_able_to_patch_verdicts() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn judges_should_be_able_to_delete_verdicts() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;

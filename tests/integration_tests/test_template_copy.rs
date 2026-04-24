@@ -17,7 +17,6 @@ use crate::common::{
 mod common;
 
 #[tokio::test]
-#[serial]
 #[skip]
 async fn description_of_what_should_happen() -> Result<(), OmniError> {
     // GIVEN

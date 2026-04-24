@@ -18,7 +18,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(), OmniError>
 {
     // GIVEN
@@ -60,7 +59,6 @@ async fn user_with_organizer_role_can_check_permission_they_have() -> Result<(),
 }
 
 #[tokio::test]
-#[serial]
 async fn user_can_verify_lack_of_permission() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -83,7 +81,6 @@ async fn user_can_verify_lack_of_permission() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -112,7 +109,6 @@ async fn infrastructure_admin_has_all_permissions() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn invalid_permission_name_returns_404() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -139,7 +135,6 @@ async fn invalid_permission_name_returns_404() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -166,7 +161,6 @@ async fn multiple_permission_names_returns_400() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn user_not_assigned_to_tournament_returns_401() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;

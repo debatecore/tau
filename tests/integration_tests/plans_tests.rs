@@ -43,7 +43,6 @@ fn expected_counts(group_phase_rounds: i32, groups_count: i32, advancing_teams: 
 }
 
 #[tokio::test]
-#[serial]
 async fn tournament_plan_creation_should_impossible_for_other_users() -> Result<(), OmniError>  {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -71,7 +70,6 @@ async fn tournament_plan_creation_should_impossible_for_other_users() -> Result<
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), OmniError> {
     let app = TestApp::spawn().await;
 
@@ -103,7 +101,6 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -143,7 +140,6 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -200,7 +196,6 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -246,7 +241,6 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
 }
 
 #[tokio::test]
-#[serial]
 async fn create_plan_should_rollback_everything_if_underlying_creation_fails() -> Result<(), OmniError> {
     let app = TestApp::spawn().await;
 

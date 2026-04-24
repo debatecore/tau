@@ -12,7 +12,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn tournament_creation_should_require_login() {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -36,7 +35,6 @@ async fn tournament_creation_should_require_login() {
 }
 
 #[tokio::test]
-#[serial]
 async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -50,7 +48,6 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
 }
 
 #[tokio::test]
-#[serial]
 async fn tournament_creation_should_impossible_for_other_users() {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -65,7 +62,6 @@ async fn tournament_creation_should_impossible_for_other_users() {
 }
 
 #[tokio::test]
-#[serial]
 async fn tournament_names_should_not_allow_duplicates() {
     // GIVEN
     let app = TestApp::spawn().await;

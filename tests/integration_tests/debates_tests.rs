@@ -14,7 +14,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn everyone_can_get_debate_details() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;

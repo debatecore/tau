@@ -7,7 +7,6 @@ use tau::setup;
 use crate::common::{create_app, create_listener, prepare_empty_database, test_app::TestApp};
 
 #[tokio::test]
-#[serial]
 async fn test_teapot() {
     // GIVEN
     let app = TestApp::spawn().await;

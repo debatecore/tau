@@ -10,7 +10,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn login_as_infraadmin_should_work_out_of_the_box() {
     // GIVEN
     let app = TestApp::spawn().await;

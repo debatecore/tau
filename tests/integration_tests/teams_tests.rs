@@ -16,7 +16,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn admin_should_be_able_to_create_teams() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -40,7 +39,6 @@ async fn admin_should_be_able_to_create_teams() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_create_teams() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -64,7 +62,6 @@ async fn organizers_should_be_able_to_create_teams() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn teams_should_be_patchable() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -98,7 +95,6 @@ async fn teams_should_be_patchable() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn team_names_should_be_enforced_as_unique_within_a_tournament(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -121,7 +117,6 @@ async fn team_names_should_be_enforced_as_unique_within_a_tournament(
 }
 
 #[tokio::test]
-#[serial]
 async fn duplicate_team_names_should_be_allowed_in_different_tournaments(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -144,7 +139,6 @@ async fn duplicate_team_names_should_be_allowed_in_different_tournaments(
 }
 
 #[tokio::test]
-#[serial]
 async fn teams_should_be_visible_for_users_within_tournament() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -167,7 +161,6 @@ async fn teams_should_be_visible_for_users_within_tournament() -> Result<(), Omn
 }
 
 #[tokio::test]
-#[serial]
 async fn teams_should_not_be_visible_for_users_outside_of_tournament(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -188,7 +181,6 @@ async fn teams_should_not_be_visible_for_users_outside_of_tournament(
 }
 
 #[tokio::test]
-#[serial]
 async fn teams_should_be_deletable() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;

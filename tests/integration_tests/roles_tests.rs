@@ -18,7 +18,6 @@ use crate::common::{
 };
 
 #[tokio::test]
-#[serial]
 async fn admin_should_be_able_to_assign_roles() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -61,7 +60,6 @@ async fn admin_should_be_able_to_assign_roles() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_should_be_able_to_assign_roles() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -91,7 +89,6 @@ async fn organizers_should_be_able_to_assign_roles() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn organizers_from_other_tournaments_should_not_be_able_to_assign_roles(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -120,7 +117,6 @@ async fn organizers_from_other_tournaments_should_not_be_able_to_assign_roles(
 }
 
 #[tokio::test]
-#[serial]
 async fn granting_duplicate_roles_should_cause_conflicts() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -156,7 +152,6 @@ async fn granting_duplicate_roles_should_cause_conflicts() -> Result<(), OmniErr
 }
 
 #[tokio::test]
-#[serial]
 async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -209,7 +204,6 @@ async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniE
 }
 
 #[tokio::test]
-#[serial]
 async fn roles_should_not_be_visible_to_other_users_from_outside_tournament(
 ) -> Result<(), OmniError> {
     // GIVEN
@@ -251,7 +245,6 @@ async fn roles_should_not_be_visible_to_other_users_from_outside_tournament(
 }
 
 #[tokio::test]
-#[serial]
 async fn roles_should_be_modifiable() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
@@ -297,7 +290,6 @@ async fn roles_should_be_modifiable() -> Result<(), OmniError> {
 }
 
 #[tokio::test]
-#[serial]
 async fn roles_should_be_deletable() -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
