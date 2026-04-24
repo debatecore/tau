@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -50,7 +50,7 @@ pub fn route() -> Router<AppState> {
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify rooms within this tournament"
         ),
         (status=404, description = "Tournament or room not found"),
@@ -67,7 +67,7 @@ async fn create_room(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteRooms) {
         true => (),
@@ -88,7 +88,7 @@ async fn create_room(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms",
     responses
     (
         (
@@ -99,7 +99,7 @@ async fn create_room(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read rooms within this tournament"
         ),
         (status=404, description = "Tournament or room not found"),
@@ -118,7 +118,7 @@ async fn get_rooms(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadRooms) {
         true => (),
@@ -138,7 +138,7 @@ async fn get_rooms(
 /// Get details of an existing room
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}",
     responses(
         (
             status=200, description = "Ok", body=Room,
@@ -147,7 +147,7 @@ async fn get_rooms(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read rooms within this tournament"
         ),
         (status=404, description = "Tournament or room not found"),
@@ -163,7 +163,7 @@ async fn get_room_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadRooms) {
         true => (),
@@ -182,7 +182,7 @@ async fn get_room_by_id(
 /// Patch an existing room
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}",
     request_body=Room,
     responses(
         (
@@ -193,7 +193,7 @@ async fn get_room_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify rooms within this tournament"
         ),
         (status=404, description = "Tournament or room not found"),
@@ -214,7 +214,7 @@ async fn patch_room_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteRooms) {
         true => (),
@@ -223,8 +223,8 @@ async fn patch_room_by_id(
 
     let room = Room::get_by_id(id, pool).await?;
     let new_name = new_room.name.clone();
-    if new_name.is_some() {
-        if Room::room_with_name_exists_in_location(
+    if new_name.is_some()
+        && Room::room_with_name_exists_in_location(
             &new_name.unwrap(),
             &room.location_id,
             pool,
@@ -233,7 +233,6 @@ async fn patch_room_by_id(
         {
             return Err(OmniError::ResourceAlreadyExistsError);
         }
-    }
 
     match room.patch(new_room, pool).await {
         Ok(room) => Ok(Json(room).into_response()),
@@ -245,14 +244,14 @@ async fn patch_room_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this room. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{location_id}/rooms/{id}",
     responses
     (
         (status=204, description = "Room deleted successfully"),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify rooms within this tournament"
         ),
         (status=404, description = "Tournament or room not found"),
@@ -268,7 +267,7 @@ async fn delete_room_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteRooms) {
         true => (),

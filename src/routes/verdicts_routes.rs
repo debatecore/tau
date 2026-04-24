@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::HeaderMap,
     response::{IntoResponse, Response},
@@ -55,7 +55,7 @@ async fn create_verdict(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::SubmitOwnVerdictVote) {
         true => (),
@@ -93,7 +93,7 @@ async fn get_verdicts(
     Path((tournament_id, debate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+    TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match query_as!(
         Verdict,
@@ -133,7 +133,7 @@ async fn get_verdict_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let verdict = Verdict::get_by_id(id, pool).await?;
-    TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+    TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     Ok(Json(verdict).into_response())
 }
@@ -164,7 +164,7 @@ async fn patch_verdict_by_id(
     let pool = &state.connection_pool;
 
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::SubmitOwnVerdictVote) {
         true => (),
@@ -214,7 +214,7 @@ async fn delete_verdict_by_id(
 
     let verdict = Verdict::get_by_id(id, pool).await?;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::SubmitOwnVerdictVote) {
         true => (),

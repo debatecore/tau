@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -72,14 +72,14 @@ async fn create_attendee(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    if !attendee.position.is_none() {
+    if attendee.position.is_some() {
         if !attendee_position_is_valid(attendee.position.unwrap()) {
             return Err(OmniError::ExplicitError {
                 status: StatusCode::UNPROCESSABLE_ENTITY,
@@ -102,7 +102,7 @@ async fn create_attendee(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendee", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendee",
     responses(
         (
             status=200,
@@ -132,7 +132,7 @@ async fn get_attendees(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
@@ -149,7 +149,7 @@ async fn get_attendees(
 }
 
 /// Get details of an existing attendee
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendees/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/attendees/{id}",
     responses(
         (
             status=200, description = "Ok", body=Attendee,
@@ -177,7 +177,7 @@ async fn get_attendee_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadAttendees) {
         true => (),
@@ -194,7 +194,7 @@ async fn get_attendee_by_id(
 }
 
 /// Patch an existing attendee
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/attendees/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/attendees/{id}",
     request_body=AttendeePatch,
     responses(
         (
@@ -224,21 +224,20 @@ async fn patch_attendee_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    if !new_attendee.position.is_none() {
-        if !attendee_position_is_valid(new_attendee.position.unwrap()) {
+    if new_attendee.position.is_some()
+        && !attendee_position_is_valid(new_attendee.position.unwrap()) {
             return Err(OmniError::ExplicitError {
                 status: StatusCode::UNPROCESSABLE_ENTITY,
                 message: POSITION_OUT_OF_RANGE_MESSAGE.to_owned(),
             });
         }
-    }
     let attendee = Attendee::get_by_id(id, pool).await?;
     let position_is_unique = attendee_position_is_duplicated(&attendee, pool).await?;
     if !position_is_unique {
@@ -252,7 +251,7 @@ async fn patch_attendee_by_id(
 }
 
 /// Delete an existing attendee
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/attendees/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/attendees/{id}",
     responses
     (
         (status=204, description = "Attendee deleted successfully"),
@@ -278,7 +277,7 @@ async fn delete_attendee_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteAttendees) {
         true => (),
@@ -293,7 +292,7 @@ async fn delete_attendee_by_id(
 }
 
 fn attendee_position_is_valid(position: i32) -> bool {
-    return position >= 1 && position <= 4;
+    (1..=4).contains(&position)
 }
 
 async fn attendee_position_is_duplicated(

@@ -1,4 +1,4 @@
-use axum::http::{header::CONTENT_TYPE, HeaderValue, Method};
+﻿use axum::http::{header::CONTENT_TYPE, HeaderValue, Method};
 use sqlx::{Pool, Postgres};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
@@ -11,6 +11,7 @@ use crate::database;
 const CRYPTO_SECRET_CORRECT: &str = "Cryptographic SECRET is set.";
 const CRYPTO_SECRET_NOT_SET: &str = "Cryptographic SECRET is not set. This may lead to increased predictability in token generation.";
 const CRYPTO_SECRET_ERROR: &str = "Could not read SECRET. Is it valid UTF-8?";
+#[allow(dead_code)]
 const FRONTEND_ORIGIN_NOT_SET: &str = "FRONTEND_ORIGIN is not set. Please provide a valid URL leading to an accepted origin.";
 
 pub fn initialise_logging() {
@@ -42,13 +43,13 @@ fn get_env_port() -> u16 {
         Err(_) => return 2023,
     };
 
-    return match portstr.parse() {
+    match portstr.parse() {
         Ok(num) => num,
         Err(e) => {
             error!("Error parsing PORT environment variable: {e}");
             panic!();
         }
-    };
+    }
 }
 
 pub fn get_socket_addr() -> SocketAddrV4 {
@@ -117,7 +118,9 @@ pub fn configure_cors() -> CorsLayer {
         "FRONTEND_ORIGIN set to {}. Requests made from any other origins will be disallowed at browser level",
         &frontend_origin
     );
-    let layer = CorsLayer::new()
+    
+
+    CorsLayer::new()
         .allow_origin(frontend_origin.parse::<HeaderValue>().unwrap())
         .allow_methods([
             Method::GET,
@@ -127,7 +130,5 @@ pub fn configure_cors() -> CorsLayer {
             Method::PUT,
         ])
         .allow_headers([CONTENT_TYPE])
-        .allow_credentials(true);
-
-    return layer;
+        .allow_credentials(true)
 }

@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -67,7 +67,7 @@ async fn create_location(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),
@@ -90,7 +90,7 @@ async fn create_location(
     }
 }
 
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations",
     responses
     (
         (
@@ -120,7 +120,7 @@ async fn get_locations(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadLocations) {
         true => (),
@@ -147,7 +147,7 @@ async fn get_locations(
 /// Get details of an existing location
 ///
 /// The user must be given a role within this tournament to use this endpoint.
-#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}", 
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/locations/{id}",
     responses(
         (
             status=200, description = "Ok", body=Location,
@@ -172,7 +172,7 @@ async fn get_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::ReadLocations) {
         true => (),
@@ -191,7 +191,7 @@ async fn get_location_by_id(
 /// Patch an existing location
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}", 
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/locations/{id}",
     request_body=Location,
     responses(
         (
@@ -223,7 +223,7 @@ async fn patch_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),
@@ -233,8 +233,8 @@ async fn patch_location_by_id(
     let location = Location::get_by_id(id, pool).await?;
 
     let name = new_location.name.clone();
-    if name.is_some() {
-        if Location::location_with_name_exists_in_tournament(
+    if name.is_some()
+        && Location::location_with_name_exists_in_tournament(
             &name.unwrap(),
             &location.tournament_id,
             pool,
@@ -243,7 +243,6 @@ async fn patch_location_by_id(
         {
             return Err(OmniError::ResourceAlreadyExistsError);
         }
-    }
 
     match location.patch(new_location, pool).await {
         Ok(location) => Ok(Json(location).into_response()),
@@ -255,7 +254,7 @@ async fn patch_location_by_id(
 ///
 /// This operation is only allowed when there are no entities
 /// referencing this location. Available only to the tournament Organizers.
-#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}", 
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/locations/{id}",
     responses
     (
         (status=204, description = "Location deleted successfully"),
@@ -278,7 +277,7 @@ async fn delete_location_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteLocations) {
         true => (),
@@ -298,7 +297,7 @@ async fn delete_location_by_id(
 fn get_location_example() -> String {
     r#"
     {
-        "address": "Poznań, Poland",
+        "address": "PoznaÅ„, Poland",
         "name": "ZSK",
         "remarks": "Where debatecore was born",
         "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
@@ -311,7 +310,7 @@ fn get_locations_list_example() -> String {
     r#"
     [
         {
-            "address": "Poznań, Poland",
+            "address": "PoznaÅ„, Poland",
             "name": "ZSK",
             "remarks": "Where debatecore was born",
             "tournament_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"

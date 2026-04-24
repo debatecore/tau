@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     omni_error::OmniError,
     setup::AppState,
     users::{
@@ -68,7 +68,7 @@ pub fn route() -> Router<AppState> {
 ///
 /// This request only returns the users the user is permitted to see.
 /// The user must be given any role within a user to see it.
-#[utoipa::path(get, path = "/users", 
+#[utoipa::path(get, path = "/users",
     responses(
         (
             status=200, description = "Ok",
@@ -77,7 +77,7 @@ pub fn route() -> Router<AppState> {
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "Authentication error"
         ),
         (status=500, description = "Internal server error")
@@ -111,14 +111,14 @@ async fn get_users(
     responses
     (
         (
-            status=200, 
+            status=200,
             description = "User created successfully",
             body=User,
             example=json!(get_user_example_with_id())
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "The user is not permitted to create users"
         ),
         (status=404, description = "User not found"),
@@ -134,7 +134,7 @@ async fn create_user(
     Json(json): Json<UserWithPassword>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let user = User::authenticate(&headers, cookies, &pool).await?;
+    let user = User::authenticate(&headers, cookies, pool).await?;
     match user.is_infrastructure_admin()
         || user.is_organizer_of_any_tournament(pool).await?
     {
@@ -155,7 +155,7 @@ async fn create_user(
 /// Get details of an existing user
 ///
 /// Every user is permitted to use this endpoint.
-#[utoipa::path(get, path = "/users/{id}", 
+#[utoipa::path(get, path = "/users/{id}",
     responses
     (
         (
@@ -165,7 +165,7 @@ async fn create_user(
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "Authentication error"
         ),
         (status=404, description = "User not found"),
@@ -196,7 +196,7 @@ async fn get_user_by_id(
 /// Allows to modify user data not related to security.
 /// Available to the infrastructure admin and the user modifying their own account.
 /// In order to change user password, use the /user/{id}/password endpoint.
-#[utoipa::path(patch, path = "/users/{id}", 
+#[utoipa::path(patch, path = "/users/{id}",
     request_body=UserPatch,
     responses(
         (
@@ -206,7 +206,7 @@ async fn get_user_by_id(
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "The user is not permitted to modify this user"
         ),
         (status=404, description = "User not found"),
@@ -224,7 +224,7 @@ async fn patch_user_by_id(
     Json(new_user): Json<UserPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user = User::authenticate(&headers, cookies, &pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, pool).await?;
 
     let user_to_be_patched = User::get_by_id(id, pool).await?;
 
@@ -247,7 +247,7 @@ async fn patch_user_by_id(
 /// Change user password
 ///
 /// Available to the infrastructure admin and the user modifying their own account.
-#[utoipa::path(patch, path = "/users/{id}/password", 
+#[utoipa::path(patch, path = "/users/{id}/password",
     request_body=UserPasswordPatch,
     responses(
         (
@@ -255,7 +255,7 @@ async fn patch_user_by_id(
         ),
         (status=400, description = "Bad request"),
         (
-            status=401, 
+            status=401,
             description = "The user is not permitted to modify this user"
         ),
         (status=404, description = "User not found"),
@@ -271,7 +271,7 @@ async fn change_user_password(
     Json(password_patch): Json<UserPasswordPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let requesting_user = User::authenticate(&headers, cookies, &pool).await?;
+    let requesting_user = User::authenticate(&headers, cookies, pool).await?;
 
     let user_to_be_patched = User::get_by_id(id, pool).await?;
 
@@ -301,7 +301,7 @@ async fn change_user_password(
 /// Deleted user is automatically logged out of all sessions.
 /// This operation is only allowed when there are no resources
 /// referencing this user.
-#[utoipa::path(delete, path = "/users/{id}", 
+#[utoipa::path(delete, path = "/users/{id}",
     responses(
         (status=204, description = "User deleted successfully"),
         (status=400, description = "Bad request"),
@@ -327,20 +327,17 @@ async fn delete_user_by_id(
 
     let user_to_be_deleted = User::get_by_id(id, pool).await?;
 
-    match user_to_be_deleted.is_infrastructure_admin() {
-        true => return Err(OmniError::InsufficientPermissionsError),
-        false => (),
-    }
+    if user_to_be_deleted.is_infrastructure_admin() { return Err(OmniError::InsufficientPermissionsError) }
 
     user_to_be_deleted.invalidate_all_sessions(pool).await?;
     match user_to_be_deleted.delete(pool).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError);
+                Err(OmniError::DependentResourcesError)
             } else {
                 error!("Error deleting a user with id {id}: {e}");
-                return Err(e)?;
+                Err(e)?
             }
         }
     }
@@ -349,7 +346,7 @@ async fn delete_user_by_id(
 /// Generate a single-use login token.
 ///
 /// Available only to the infrastructure admin.
-#[utoipa::path(delete, path = "/users/{id}/login_link", 
+#[utoipa::path(delete, path = "/users/{id}/login_link",
     responses(
         (status=200, description = "A single-use login link"),
         (status=400, description = "Bad request"),

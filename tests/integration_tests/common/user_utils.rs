@@ -1,7 +1,9 @@
-use std::collections::HashMap;
+﻿use std::collections::HashMap;
 
 use reqwest::{Client, Response};
-use tau::{omni_error::OmniError, setup::get_local_socket_addr, tournaments::roles::Role};
+use tau::{
+    omni_error::OmniError, setup::get_local_socket_addr, tournaments::roles::Role,
+};
 use uuid::Uuid;
 
 use crate::common::{

@@ -15,11 +15,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Build
       run: cargo build --lib --verbose
-    - name: Run tests
+    - name : Run tests
       run: cargo test --lib --verbose
+    - name : Check formatting
+      run: cargo fmt --check
+    - name : Run clippy
+      run: cargo clippy -- -D warnings
     - name: Build Docker image
       run: docker build -t tau:test .
     - name: Build Docker Compose

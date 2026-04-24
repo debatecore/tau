@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+﻿use chrono::{DateTime, Utc};
 use sqlx::{query, Pool, Postgres};
 use tracing::error;
 use uuid::Uuid;
@@ -8,6 +8,7 @@ use crate::omni_error::OmniError;
 pub struct LoginToken {
     pub id: Uuid,
     pub user_id: Uuid,
+    #[allow(dead_code)]
     pub token_hash: String,
     pub expiry: DateTime<Utc>,
     pub used: bool,
@@ -15,7 +16,7 @@ pub struct LoginToken {
 
 impl LoginToken {
     pub fn expired(&self) -> bool {
-        return &Utc::now() > &self.expiry;
+        Utc::now() > self.expiry
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournaments::{Tournament, TournamentPatch},
@@ -101,13 +101,13 @@ async fn create_tournament(
     Json(json): Json<Tournament>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
-    let user = User::authenticate(&headers, cookies, &pool).await?;
+    let user = User::authenticate(&headers, cookies, pool).await?;
     if !user.is_infrastructure_admin() {
         return Err(OmniError::InsufficientPermissionsError);
     }
 
     let tournament = Tournament::post(json, pool).await?;
-    return Ok(Json(tournament).into_response());
+    Ok(Json(tournament).into_response())
 }
 
 /// Get details of an existing tournament
@@ -186,7 +186,7 @@ async fn patch_tournament_by_id(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
 
     match tournament_user.has_permission(Permission::WriteTournament) {
         true => (),
@@ -240,10 +240,10 @@ async fn delete_tournament_by_id(
         Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
         Err(e) => {
             if e.is_sqlx_foreign_key_violation() {
-                return Err(OmniError::DependentResourcesError);
+                Err(OmniError::DependentResourcesError)
             } else {
                 error!("Error deleting a tournament with id {id}: {e}");
-                return Err(e)?;
+                Err(e)?
             }
         }
     }
@@ -253,7 +253,7 @@ fn get_tournament_example_with_id() -> String {
     r#"
     {
     "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
-    "full_name": "Poznań Debate Night",
+    "full_name": "PoznaÅ„ Debate Night",
     "shortened_name": "PDN",
     "speech_time": 300,
     "end_protected_time": 30,
@@ -274,7 +274,7 @@ fn get_tournaments_list_example() -> String {
         [
     {
     "id": "019cdda8-35ed-79e1-8d19-6fa83934210d",
-    "full_name": "Poznań Debate Night",
+    "full_name": "PoznaÅ„ Debate Night",
     "shortened_name": "PDN",
     "speech_time": 300,
     "end_protected_time": 30,

@@ -1,4 +1,4 @@
-use std::future::IntoFuture;
+﻿use std::future::IntoFuture;
 
 use reqwest::StatusCode;
 use serial_test::serial;

@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     omni_error::OmniError,
     setup::AppState,
     users::{
@@ -199,7 +199,7 @@ async fn auth_clear(
             };
             match scheme {
                 "Bearer" => {
-                    auth_clear_to_response(&data, cookies, &state.connection_pool).await
+                    auth_clear_to_response(data, cookies, &state.connection_pool).await
                 }
                 _ => OmniError::from(ClearSessionBearerOnly).respond(),
             }

@@ -1,4 +1,4 @@
-use axum::{
+﻿use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode, Uri},
     response::{IntoResponse, Response},
@@ -32,7 +32,7 @@ pub fn route() -> Router<AppState> {
 /// The endpoint accepts a single `permission_name` query parameter containing
 /// one of the valid Permission enum variants.
 #[utoipa::path(
-    get, 
+    get,
     path = "/users/{id}/tournaments/{tournament_id}/permissions",
     params(
         ("id" = Uuid, Path, description = "User ID"),
@@ -57,7 +57,7 @@ async fn has_permission(
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
-        TournamentUser::authenticate(tournament_id, &headers, cookies, &pool).await?;
+        TournamentUser::authenticate(tournament_id, &headers, cookies, pool).await?;
     if tournament_user.roles.is_empty() && !tournament_user.user.is_infrastructure_admin()
     {
         return Err(OmniError::UnauthorizedError);
