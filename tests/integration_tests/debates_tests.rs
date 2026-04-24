@@ -5,6 +5,7 @@ use serial_test::serial;
 use tau::{omni_error::OmniError, setup};
 
 use crate::common::{
+    test_app::TestApp,
     create_app, create_listener,
     debates_utils::{get_debate, get_id_of_a_new_debate},
     get_response_json, prepare_empty_database,
