@@ -8,10 +8,9 @@
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
         get_organizer_token, get_token_for_user_with_no_roles,
-        get_token_for_user_with_roles,
     },
 };
-use reqwest::{Client, Response, StatusCode};
+use reqwest::{Client, StatusCode};
 use serde_json::json;
 use serial_test::serial;
 use std::future::IntoFuture;
@@ -105,7 +104,7 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
     .await;
 
     let status = response.status();
-    let body = response.text().await.unwrap();
+    let _body = response.text().await.unwrap();
 
     assert_eq!(status, StatusCode::OK);
 

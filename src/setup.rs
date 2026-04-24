@@ -11,6 +11,7 @@ use crate::database;
 const CRYPTO_SECRET_CORRECT: &str = "Cryptographic SECRET is set.";
 const CRYPTO_SECRET_NOT_SET: &str = "Cryptographic SECRET is not set. This may lead to increased predictability in token generation.";
 const CRYPTO_SECRET_ERROR: &str = "Could not read SECRET. Is it valid UTF-8?";
+#[allow(dead_code)]
 const FRONTEND_ORIGIN_NOT_SET: &str = "FRONTEND_ORIGIN is not set. Please provide a valid URL leading to an accepted origin.";
 
 pub fn initialise_logging() {

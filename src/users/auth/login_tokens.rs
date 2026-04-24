@@ -8,6 +8,7 @@ use crate::omni_error::OmniError;
 pub struct LoginToken {
     pub id: Uuid,
     pub user_id: Uuid,
+    #[allow(dead_code)]
     pub token_hash: String,
     pub expiry: DateTime<Utc>,
     pub used: bool,

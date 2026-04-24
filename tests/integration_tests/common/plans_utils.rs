@@ -1,9 +1,8 @@
-﻿use reqwest::{Client, Response, StatusCode};
+﻿use reqwest::{Client, Response};
 use serde_json::json;
-use sqlx::{query_scalar, Row};
+use sqlx::{query_scalar};
 use sqlx::{Pool, Postgres};
 use tau::setup::get_local_socket_addr;
-use tau::tournaments::plans::TournamentPlan;
 use uuid::Uuid;
 
 pub async fn create_plan(
@@ -29,7 +28,7 @@ pub async fn create_plan(
             tournament_id
         ))
         .json(&plan_data)
-        .bearer_auth(token.clone())
+        .bearer_auth(token)
         .send()
         .await
         .unwrap()
@@ -97,7 +96,7 @@ pub async fn count_debates(pool: &Pool<Postgres>, tournament_id: &str) -> i64 {
 pub fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
     let mut teams = advancing_teams.clone();
     let mut final_phase_rounds = 0;
-    if (teams != 0) {
+    if teams != 0 {
         while (teams & 1) == 0 {
             final_phase_rounds += 1;
             teams >>= 1;

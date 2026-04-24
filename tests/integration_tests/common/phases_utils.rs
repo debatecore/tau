@@ -1,7 +1,7 @@
 ﻿use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
-use serde_json::{json, Value};
+use serde_json::Value;
 use tau::{omni_error::OmniError, setup::get_local_socket_addr};
 use uuid::Uuid;
 
