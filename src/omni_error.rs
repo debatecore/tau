@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -71,28 +71,28 @@ impl IntoResponse for OmniError {
 
 impl OmniError {
     pub fn is_sqlx_unique_violation(&self) -> bool {
-        if let OmniError::SqlxError(e) = self { if let sqlx::Error::Database(e) = e {
-            if e.is_unique_violation() {
-                return true;
+        if let OmniError::SqlxError(sqlx::Error::Database(e)) = self {
+                if e.is_unique_violation() {
+                    return true;
+                }
             }
-        } };
+        
         false
     }
 
     pub fn is_sqlx_foreign_key_violation(&self) -> bool {
-        if let OmniError::SqlxError(e) = self { if let sqlx::Error::Database(e) = e {
-            if e.is_foreign_key_violation() {
-                return true;
+        if let OmniError::SqlxError(e) = self {
+            if let sqlx::Error::Database(e) = e {
+                if e.is_foreign_key_violation() {
+                    return true;
+                }
             }
-        } };
+        };
         false
     }
 
     pub fn is_not_found_error(&self) -> bool {
-        match self {
-            OmniError::ResourceNotFoundError => true,
-            _ => false,
-        }
+        matches!(self, OmniError::ResourceNotFoundError)
     }
 
     pub fn respond(self) -> Response {
@@ -106,16 +106,14 @@ impl OmniError {
             E::AuthError(e) => (e.status_code(), e.to_string()).into_response(),
             E::SqlxError(e) => match e {
                 sqlx::Error::RowNotFound => {
-                    (StatusCode::NOT_FOUND, RESOURCE_NOT_FOUND_MESSAGE)
-                        .into_response()
+                    (StatusCode::NOT_FOUND, RESOURCE_NOT_FOUND_MESSAGE).into_response()
                 }
                 sqlx::Error::Database(e) => {
                     if e.is_unique_violation() {
                         (StatusCode::CONFLICT, RESOURCE_ALREADY_EXISTS_MESSAGE)
                             .into_response()
                     } else if e.is_foreign_key_violation() {
-                        OmniError::ReferringToNonexistentResourceError
-                            .into_response()
+                        OmniError::ReferringToNonexistentResourceError.into_response()
                     } else {
                         (ISE, "SQLx Error").into_response()
                     }

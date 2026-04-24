@@ -1,4 +1,4 @@
-﻿use crate::{
+use crate::{
     omni_error::OmniError,
     setup::AppState,
     users::{
@@ -327,7 +327,9 @@ async fn delete_user_by_id(
 
     let user_to_be_deleted = User::get_by_id(id, pool).await?;
 
-    if user_to_be_deleted.is_infrastructure_admin() { return Err(OmniError::InsufficientPermissionsError) }
+    if user_to_be_deleted.is_infrastructure_admin() {
+        return Err(OmniError::InsufficientPermissionsError);
+    }
 
     user_to_be_deleted.invalidate_all_sessions(pool).await?;
     match user_to_be_deleted.delete(pool).await {

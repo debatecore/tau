@@ -1,4 +1,4 @@
-﻿use crate::common::{
+use crate::common::{
     create_app, create_listener,
     plans_utils::{
         calculate_final_phase_debates, calculate_final_phase_rounds, count_debates,
@@ -6,9 +6,7 @@
     },
     prepare_empty_database,
     tournament_utils::get_id_of_a_new_tournament,
-    user_utils::{
-        get_organizer_token, get_token_for_user_with_no_roles,
-    },
+    user_utils::{get_organizer_token, get_token_for_user_with_no_roles},
 };
 use reqwest::{Client, StatusCode};
 use serde_json::json;

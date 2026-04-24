@@ -1,4 +1,4 @@
-﻿use axum::http::{header::CONTENT_TYPE, HeaderValue, Method};
+use axum::http::{header::CONTENT_TYPE, HeaderValue, Method};
 use sqlx::{Pool, Postgres};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tokio::net::TcpListener;
@@ -118,7 +118,6 @@ pub fn configure_cors() -> CorsLayer {
         "FRONTEND_ORIGIN set to {}. Requests made from any other origins will be disallowed at browser level",
         &frontend_origin
     );
-    
 
     CorsLayer::new()
         .allow_origin(frontend_origin.parse::<HeaderValue>().unwrap())

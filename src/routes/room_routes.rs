@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -230,9 +230,9 @@ async fn patch_room_by_id(
             pool,
         )
         .await?
-        {
-            return Err(OmniError::ResourceAlreadyExistsError);
-        }
+    {
+        return Err(OmniError::ResourceAlreadyExistsError);
+    }
 
     match room.patch(new_room, pool).await {
         Ok(room) => Ok(Json(room).into_response()),

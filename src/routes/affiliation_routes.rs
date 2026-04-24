@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -86,7 +86,7 @@ fn params_and_affiliation_fields_match(
     affiliation: &Affiliation,
     user_id: &Uuid,
 ) -> bool {
-    if &affiliation.judge_user_id != user_id  {
+    if &affiliation.judge_user_id != user_id {
         return false;
     }
     true

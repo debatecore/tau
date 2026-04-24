@@ -1,6 +1,6 @@
-﻿use reqwest::{Client, Response};
+use reqwest::{Client, Response};
 use serde_json::json;
-use sqlx::{query_scalar};
+use sqlx::query_scalar;
 use sqlx::{Pool, Postgres};
 use tau::setup::get_local_socket_addr;
 use uuid::Uuid;

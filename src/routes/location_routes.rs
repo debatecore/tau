@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -240,9 +240,9 @@ async fn patch_location_by_id(
             pool,
         )
         .await?
-        {
-            return Err(OmniError::ResourceAlreadyExistsError);
-        }
+    {
+        return Err(OmniError::ResourceAlreadyExistsError);
+    }
 
     match location.patch(new_location, pool).await {
         Ok(location) => Ok(Json(location).into_response()),

@@ -318,12 +318,10 @@ impl Phase {
         .fetch_one(pool)
         .await
         .ok();
-        if next_phase_record.is_none() {
-            Err(OmniError::ResourceNotFoundError)
+        if let Some(record) = next_phase_record {
+            Phase::get_by_id(record.id, pool).await
         } else {
-            let next_phase =
-                Phase::get_by_id(next_phase_record.unwrap().id, pool).await?;
-            Ok(next_phase)
+          Err(OmniError::ResourceNotFoundError)
         }
     }
 

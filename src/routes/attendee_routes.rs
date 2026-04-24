@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -79,8 +79,8 @@ async fn create_attendee(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    if attendee.position.is_some() {
-        if !attendee_position_is_valid(attendee.position.unwrap()) {
+    if let Some(position) = attendee.position {
+        if !attendee_position_is_valid(position) {
             return Err(OmniError::ExplicitError {
                 status: StatusCode::UNPROCESSABLE_ENTITY,
                 message: POSITION_OUT_OF_RANGE_MESSAGE.to_owned(),
@@ -232,12 +232,13 @@ async fn patch_attendee_by_id(
     }
 
     if new_attendee.position.is_some()
-        && !attendee_position_is_valid(new_attendee.position.unwrap()) {
-            return Err(OmniError::ExplicitError {
-                status: StatusCode::UNPROCESSABLE_ENTITY,
-                message: POSITION_OUT_OF_RANGE_MESSAGE.to_owned(),
-            });
-        }
+        && !attendee_position_is_valid(new_attendee.position.unwrap())
+    {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::UNPROCESSABLE_ENTITY,
+            message: POSITION_OUT_OF_RANGE_MESSAGE.to_owned(),
+        });
+    }
     let attendee = Attendee::get_by_id(id, pool).await?;
     let position_is_unique = attendee_position_is_duplicated(&attendee, pool).await?;
     if !position_is_unique {
