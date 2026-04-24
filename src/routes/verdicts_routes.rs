@@ -21,11 +21,11 @@ use crate::{
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/debates/:debate_id/verdicts",
+            "/tournaments/{tournament_id}/debates/{debate_id}/verdicts",
             post(create_verdict).get(get_verdicts),
         )
         .route(
-            "/tournaments/:tournament_id/debates/:debate_id/verdicts/:verdict_id",
+            "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
             get(get_verdict_by_id)
                 .patch(patch_verdict_by_id)
                 .delete(delete_verdict_by_id),

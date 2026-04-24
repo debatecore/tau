@@ -21,11 +21,11 @@ use uuid::Uuid;
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/debates",
+            "/tournaments/{tournament_id}/debates",
             get(get_debates).post(create_debate),
         )
         .route(
-            "/tournaments/:tournament_id/debates/:id",
+            "/tournaments/{tournament_id}/debates/{id}",
             get(get_debate_by_id)
                 .delete(delete_debate_by_id)
                 .patch(patch_debate_by_id),

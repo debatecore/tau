@@ -24,13 +24,13 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/users/:user_id/affiliations", post(create_affiliation))
+        .route("/users/{user_id}/affiliations", post(create_affiliation))
         .route(
-            "/users/:user_id/affiliations/tournament/:tournament_id",
+            "/users/{user_id}/affiliations/tournament/{tournament_id}",
             get(get_affiliations),
         )
         .route(
-            "/users/:user_id/affiliations/:id",
+            "/users/{user_id}/affiliations/{id}",
             get(get_affiliation_by_id)
                 .patch(patch_affiliation_by_id)
                 .delete(delete_affiliation_by_id),
