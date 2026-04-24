@@ -10,7 +10,7 @@ use crate::common::{
         create_affiliation, delete_affiliation, get_affiliation, get_all_affiliations,
         get_id_of_a_new_affiliation, patch_affiliation,
     },
-    create_app, create_listener, prepare_empty_database,
+    create_app, create_listener, get_response_json, prepare_empty_database,
     teams_utils::get_id_of_a_new_team,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
@@ -35,15 +35,9 @@ async fn organizers_should_be_able_to_create_affiliations() -> Result<(), OmniEr
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
 
-    let response_body = response.json::<serde_json::Value>().await.unwrap();
-    assert_eq!(
-        response_body["judge_user_id"].as_str().unwrap().to_owned(),
-        judge_id.to_owned()
-    );
-    assert_eq!(
-        response_body["team_id"].as_str().unwrap().to_owned(),
-        team_id
-    );
+    let response_body = get_response_json(response).await?;
+    assert_eq!(response_body["judge_user_id"], judge_id.to_owned());
+    assert_eq!(response_body["team_id"], team_id);
     Ok(())
 }
 

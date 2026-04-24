@@ -1,6 +1,6 @@
 use reqwest::{Client, Response, StatusCode};
 use std::future::IntoFuture;
-use tau::setup::get_socket_addr;
+use tau::setup::get_local_socket_addr;
 use serial_test::serial;
 use serde_json::json;
 use tau::{omni_error::OmniError, setup};

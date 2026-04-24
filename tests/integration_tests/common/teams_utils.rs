@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::common::test_app::TestApp;
 
 use reqwest::{Client, Response};
-use tau::setup::get_socket_addr;
+use tau::setup::get_local_socket_addr;
 
 use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
 

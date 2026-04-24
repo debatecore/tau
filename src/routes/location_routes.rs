@@ -50,7 +50,7 @@ pub fn route() -> Router<AppState> {
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify locations within this tournament"
         ),
         (status=404, description = "Tournament or location not found"),
@@ -101,7 +101,7 @@ async fn create_location(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read locations within this tournament"
         ),
         (status=404, description = "Tournament or location not found"),
@@ -156,7 +156,7 @@ async fn get_locations(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to read locations within this tournament"
         ),
         (status=404, description = "Tournament or location not found"),
@@ -202,7 +202,7 @@ async fn get_location_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify locations within this tournament"
         ),
         (status=404, description = "Tournament or location not found"),
@@ -262,7 +262,7 @@ async fn patch_location_by_id(
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (
-            status=403, 
+            status=403,
             description = "The user is not permitted to modify locations within this tournament"
         ),
         (status=404, description = "Tournament or location not found"),

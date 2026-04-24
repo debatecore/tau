@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG RUST_VERSION=1.83.0
+ARG RUST_VERSION=1.93.0
 ARG APP_NAME=tau
 
 FROM rust:${RUST_VERSION}-alpine AS build

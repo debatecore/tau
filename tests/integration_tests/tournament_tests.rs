@@ -2,7 +2,7 @@ use std::{collections::HashMap, future::IntoFuture};
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
-use tau::setup::{self, get_socket_addr};
+use tau::setup::{self, get_local_socket_addr};
 
 use crate::common::{
     test_app::TestApp,

@@ -151,8 +151,7 @@ async fn get_debate_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
-    Path(id): Path<Uuid>,
+    Path((tournament_id, debate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -163,13 +162,13 @@ async fn get_debate_by_id(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Debate::get_by_id(id, &state.connection_pool).await {
+    match Debate::get_by_id(debate_id, &state.connection_pool).await {
         Ok(debate) => Ok(Json(debate).into_response()),
         Err(e) => match e {
             OmniError::ResourceNotFoundError => Err(e),
             _ => {
-                error!("Error getting a debate with id {id}: {e}");
-                Err(e)?
+                error!("Error getting a debate with id {debate_id}: {e}");
+                Err(OmniError::InternalServerError)
             }
         },
     }
@@ -247,8 +246,7 @@ async fn delete_debate_by_id(
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
-    Path(id): Path<Uuid>,
+    Path((tournament_id, debate_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -259,7 +257,7 @@ async fn delete_debate_by_id(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    match Debate::get_by_id(id, &state.connection_pool).await {
+    match Debate::get_by_id(debate_id, &state.connection_pool).await {
         Ok(debate) => match debate.delete(&state.connection_pool).await {
             Ok(_) => Ok(StatusCode::NO_CONTENT.into_response()),
             Err(e) => match e {

@@ -38,3 +38,4 @@ sha2 = "0.10.8"
 testcontainers-modules = { version = "0.15", features = ["postgres"] }
 serial_test = "3.3.1"
 test-env-helpers = "0.2.2"
+aws-lc-rs = "1.16"

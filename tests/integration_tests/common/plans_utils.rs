@@ -1,5 +1,5 @@
 use reqwest::{Client, Response, StatusCode};
-use tau::setup::get_socket_addr;
+use tau::setup::get_local_socket_addr;
 use tau::tournaments::plans::TournamentPlan;
 use serde_json::json;
 use sqlx::{query_scalar, Row, Pool, Postgres};

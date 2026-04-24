@@ -10,7 +10,7 @@ use crate::common::{
     auth_utils::get_session_token_for,
     create_app, create_listener,
     debates_utils::get_id_of_a_new_debate,
-    prepare_empty_database,
+    get_response_json, prepare_empty_database,
     roles_utils::create_roles,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
@@ -50,18 +50,9 @@ async fn judges_should_be_able_to_make_verdicts_on_debates_within_their_tourname
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
 
-    let response_body = response.json::<serde_json::Value>().await.unwrap();
-    assert_eq!(
-        response_body["judge_user_id"].as_str().unwrap().to_owned(),
-        judge_id.to_owned()
-    );
-    assert_eq!(
-        response_body["proposition_won"]
-            .as_bool()
-            .unwrap()
-            .to_owned(),
-        true
-    );
+    let response_body = get_response_json(response).await?;
+    assert_eq!(response_body["judge_user_id"], judge_id.to_owned());
+    assert_eq!(response_body["proposition_won"], true);
     Ok(())
 }
 
@@ -278,14 +269,8 @@ async fn judges_should_be_able_to_patch_verdicts() -> Result<(), OmniError> {
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
 
-    let response_body = response.json::<serde_json::Value>().await.unwrap();
-    assert_eq!(
-        response_body["proposition_won"]
-            .as_bool()
-            .unwrap()
-            .to_owned(),
-        !initial_verdict
-    );
+    let response_body = get_response_json(response).await?;
+    assert_eq!(response_body["proposition_won"], !initial_verdict);
     Ok(())
 }
 
