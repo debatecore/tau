@@ -24,11 +24,11 @@ const CONFLICT_MESSAGE: &str = "Conflict";
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/phases",
+            "/tournaments/{tournament_id}/phases",
             get(get_phases).post(create_phase),
         )
         .route(
-            "/tournaments/:tournament_id/phases/:id",
+            "/tournaments/{tournament_id}/phases/{id}",
             get(get_phase_by_id)
                 .patch(patch_phase_by_id)
                 .delete(delete_phase_by_id),

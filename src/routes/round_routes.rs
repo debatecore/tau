@@ -25,11 +25,11 @@ const DUPLICATE_NAME_ERROR: &str = "Round with this name already exists within t
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/phases/:phase_id/rounds",
+            "/tournaments/{tournament_id}/phases/{phase_id}/rounds",
             get(get_rounds).post(create_round),
         )
         .route(
-            "/tournaments/:tournament_id/phases/:phase_id/rounds/:id",
+            "/tournaments/{tournament_id}/phases/{phase_id}/rounds/{id}",
             get(get_round_by_id)
                 .patch(patch_round_by_id)
                 .delete(delete_round_by_id),

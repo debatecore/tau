@@ -18,7 +18,7 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new().route(
-        "/users/:id/tournaments/:tournament_id/permissions",
+        "/users/{id}/tournaments/{tournament_id}/permissions",
         get(has_permission),
     )
 }

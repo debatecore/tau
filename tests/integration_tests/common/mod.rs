@@ -14,6 +14,7 @@ pub mod teams_utils;
 pub mod tournament_utils;
 pub mod user_utils;
 pub mod verdicts_utils;
+pub mod test_app;
 
 use tau::{
     database,
@@ -44,6 +45,12 @@ pub async fn create_app(state: AppState) -> IntoMakeService<Router> {
 pub async fn create_listener() -> TcpListener {
     let addr = setup::get_socket_addr();
     TcpListener::bind(addr).await.unwrap()
+}
+
+pub async fn create_test_listener() -> TcpListener {
+    TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("failed to bind random test port")
 }
 
 /// TO-DO: refactor existing tests to use this function

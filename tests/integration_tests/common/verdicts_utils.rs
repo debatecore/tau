@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
-use reqwest::{Client, Response, StatusCode};
+use crate::common::test_app::TestApp;
+
+use reqwest::{Response, StatusCode};
 use serde_json::Value;
-use tau::{omni_error::OmniError, setup::get_local_socket_addr};
+use tau::{omni_error::OmniError};
 
 pub async fn get_id_of_a_new_verdict(
+    app: &TestApp,
     tournament_id: &str,
     judge_id: &str,
     debate_id: &str,
@@ -12,7 +15,7 @@ pub async fn get_id_of_a_new_verdict(
     token: &str,
 ) -> Result<String, OmniError> {
     let response =
-        create_verdict(tournament_id, judge_id, debate_id, proposition_won, &token).await;
+        create_verdict(app, tournament_id, judge_id, debate_id, proposition_won, &token).await;
     if response.status() != StatusCode::OK {
         return Err(OmniError::ExplicitError {
             status: response.status(),
@@ -32,25 +35,23 @@ pub async fn get_id_of_a_new_verdict(
 }
 
 pub async fn create_verdict(
+    app: &TestApp,
     tournament_id: &str,
     judge_id: &str,
     debate_id: &str,
     proposition_won: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_local_socket_addr();
     let mut request_body = HashMap::new();
-    let client = Client::new();
-
     request_body.insert("judge_user_id", Value::String(judge_id.to_owned()));
     request_body.insert("debate_id", Value::String(debate_id.to_owned()));
     request_body.insert("proposition_won", Value::Bool(proposition_won.to_owned()));
 
-    client
-        .post(format!(
-            "http://{}/tournaments/{}/debates/{}/verdicts",
-            socket_address, tournament_id, debate_id
-        ))
+    app.client
+        .post(app.url(&format!(
+            "/tournaments/{}/debates/{}/verdicts",
+            tournament_id, debate_id
+        )))
         .json(&request_body)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
@@ -61,19 +62,17 @@ pub async fn create_verdict(
 }
 
 pub async fn get_verdict(
+    app: &TestApp,
     id: &str,
     tournament_id: &str,
     debate_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_local_socket_addr();
-    let client = Client::new();
-
-    client
-        .get(format!(
-            "http://{}/tournaments/{}/debates/{}/verdicts/{}",
-            socket_address, tournament_id, debate_id, id
-        ))
+    app.client
+        .get(app.url(&format!(
+            "/tournaments/{}/debates/{}/verdicts/{}",
+            tournament_id, debate_id, id
+        )))
         .header("accept", "application/json")
         .bearer_auth(token)
         .send()
@@ -82,18 +81,16 @@ pub async fn get_verdict(
 }
 
 pub async fn get_all_verdicts(
+    app: &TestApp,
     judge_id: &str,
     tournament_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_local_socket_addr();
-    let client = Client::new();
-
-    client
-        .get(format!(
-            "http://{}/tournaments/{}/debates/{}/verdicts",
-            socket_address, judge_id, tournament_id
-        ))
+    app.client
+        .get(app.url(&format!(
+            "/tournaments/{}/debates/{}/verdicts",
+            judge_id, tournament_id
+        )))
         .header("accept", "application/json")
         .bearer_auth(token)
         .send()
@@ -102,6 +99,7 @@ pub async fn get_all_verdicts(
 }
 
 pub async fn patch_verdict(
+    app: &TestApp,
     verdict_id: &str,
     tournament_id: &str,
     judge_id: &str,
@@ -109,20 +107,17 @@ pub async fn patch_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Response {
-    let socket_address = get_local_socket_addr();
-    let client = Client::new();
-
     let mut request_body = HashMap::new();
     request_body.insert("id", Value::String(verdict_id.to_owned()));
     request_body.insert("judge_user_id", Value::String(judge_id.to_owned()));
     request_body.insert("debate_id", Value::String(debate_id.to_owned()));
     request_body.insert("proposition_won", Value::Bool(proposition_won.to_owned()));
 
-    client
-        .patch(format!(
-            "http://{}/tournaments/{}/debates/{}/verdicts/{}",
-            socket_address, tournament_id, debate_id, verdict_id
-        ))
+    app.client
+        .patch(app.url(&format!(
+            "/tournaments/{}/debates/{}/verdicts/{}",
+            tournament_id, debate_id, verdict_id
+        )))
         .json(&request_body)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
@@ -133,19 +128,17 @@ pub async fn patch_verdict(
 }
 
 pub async fn delete_verdict(
+    app: &TestApp,
     id: &str,
     tournament_id: &str,
     debate_id: &str,
     token: &str,
 ) -> Response {
-    let socket_address = get_local_socket_addr();
-    let client = Client::new();
-
-    client
-        .delete(format!(
-            "http://{}/tournaments/{}/debates/{}/verdicts/{}",
-            socket_address, tournament_id, debate_id, id
-        ))
+    app.client
+        .delete(app.url(&format!(
+            "/tournaments/{}/debates/{}/verdicts/{}",
+            tournament_id, debate_id, id
+        )))
         .header("accept", "text/plain")
         .bearer_auth(token)
         .send()

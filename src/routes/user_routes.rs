@@ -55,13 +55,13 @@ pub fn route() -> Router<AppState> {
     Router::new()
         .route("/users", get(get_users).post(create_user))
         .route(
-            "/users/:id",
+            "/users/{id}",
             get(get_user_by_id)
                 .delete(delete_user_by_id)
                 .patch(patch_user_by_id),
         )
-        .route("/users/:id/login_token", post(generate_login_token))
-        .route("/users/:id/password", patch(change_user_password))
+        .route("/users/{id}/login_token", post(generate_login_token))
+        .route("/users/{id}/password", patch(change_user_password))
 }
 
 /// Get a list of all users

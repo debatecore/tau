@@ -13,13 +13,14 @@ use crate::routes::location_routes;
 use crate::routes::motion_routes;
 use crate::routes::permissions_routes;
 use crate::routes::phase_routes;
+use crate::routes::plans_routes;
 use crate::routes::roles_routes;
 use crate::routes::room_routes;
 use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
-use crate::routes::plans_routes;
 use crate::routes::verdicts_routes;
+
 use crate::tournaments;
 use crate::tournaments::affiliations;
 use crate::tournaments::attendees;
@@ -27,12 +28,13 @@ use crate::tournaments::debates;
 use crate::tournaments::locations;
 use crate::tournaments::motions;
 use crate::tournaments::phases;
+use crate::tournaments::plans;
 use crate::tournaments::roles;
 use crate::tournaments::rooms;
 use crate::tournaments::rounds;
 use crate::tournaments::teams;
-use crate::tournaments::plans;
 use crate::tournaments::verdicts;
+
 use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
@@ -42,8 +44,10 @@ use super::teapot;
 use super::version;
 
 pub fn route() -> Router<AppState> {
-    Router::new()
-        .merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", ApiDoc::openapi()))
+    Router::new().merge(
+        SwaggerUi::new("/swagger-ui")
+            .url("/openapi.json", ApiDoc::openapi()),
+    )
 }
 
 #[derive(OpenApi)]
@@ -97,7 +101,6 @@ pub fn route() -> Router<AppState> {
         room_routes::get_room_by_id,
         room_routes::patch_room_by_id,
         room_routes::delete_room_by_id,
-        auth::auth_clear,
         user_routes::get_users,
         user_routes::create_user,
         user_routes::get_user_by_id,
@@ -107,11 +110,6 @@ pub fn route() -> Router<AppState> {
         roles_routes::get_user_roles,
         roles_routes::patch_user_roles,
         roles_routes::delete_user_roles,
-        user_routes::get_users,
-        user_routes::create_user,
-        user_routes::get_user_by_id,
-        user_routes::patch_user_by_id,
-        user_routes::delete_user_by_id,
         user_routes::change_user_password,
         affiliation_routes::create_affiliation,
         affiliation_routes::get_affiliations,
@@ -159,8 +157,6 @@ pub fn route() -> Router<AppState> {
         rooms::Room,
         rooms::RoomPatch,
         user_routes::UserWithPassword,
-        users::UserPatch,
-        user_routes::UserWithPassword,
         user_routes::UserPasswordPatch,
         crate::users::UserPatch,
         crate::users::User,
@@ -174,8 +170,7 @@ pub fn route() -> Router<AppState> {
         rounds::RoundPatch,
         rounds::RoundStatus,
         verdicts::Verdict,
-        verdicts::VerdictPatch,
+        verdicts::VerdictPatch
     ))
 )]
-
 pub struct ApiDoc;
