@@ -1,8 +1,6 @@
 use reqwest::StatusCode;
 
-use crate::common::{
-    test_app::TestApp,
-};
+use crate::common::test_app::TestApp;
 
 #[tokio::test]
 async fn test_teapot() {

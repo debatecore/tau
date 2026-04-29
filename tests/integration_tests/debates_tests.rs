@@ -1,5 +1,5 @@
 use reqwest::StatusCode;
-use tau::{omni_error::OmniError};
+use tau::omni_error::OmniError;
 
 use crate::common::{
     debates_utils::{get_debate, get_id_of_a_new_debate},

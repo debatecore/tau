@@ -1,11 +1,10 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use reqwest::{StatusCode};
+use reqwest::StatusCode;
 
 use crate::common::{
-    auth_utils::get_session_token_for_infrastructure_admin, 
-    test_app::TestApp, tournament_utils::create_tournament,
-    user_utils::get_token_for_user_with_no_roles,
+    auth_utils::get_session_token_for_infrastructure_admin, test_app::TestApp,
+    tournament_utils::create_tournament, user_utils::get_token_for_user_with_no_roles,
 };
 
 #[tokio::test]

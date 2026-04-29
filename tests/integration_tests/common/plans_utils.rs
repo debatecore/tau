@@ -1,4 +1,4 @@
-use reqwest::{Response};
+use reqwest::Response;
 use serde_json::json;
 use sqlx::query_scalar;
 use sqlx::{Pool, Postgres};

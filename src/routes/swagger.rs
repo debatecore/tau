@@ -34,7 +34,6 @@ use crate::tournaments::rooms;
 use crate::tournaments::rounds;
 use crate::tournaments::teams;
 use crate::tournaments::verdicts;
-
 use crate::users::permissions;
 use crate::users::photourl;
 

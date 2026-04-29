@@ -1,5 +1,5 @@
 use reqwest::StatusCode;
-use tau::{omni_error::OmniError};
+use tau::omni_error::OmniError;
 
 use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin,

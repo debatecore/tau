@@ -1,8 +1,5 @@
 use reqwest::StatusCode;
-use tau::{
-    omni_error::OmniError,
-    tournaments::roles::Role,
-};
+use tau::{omni_error::OmniError, tournaments::roles::Role};
 
 use crate::common::{
     auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},

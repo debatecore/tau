@@ -5,13 +5,11 @@ use crate::common::{
     },
     test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,
-    user_utils::{
-        get_organizer_token, get_token_for_user_with_no_roles,
-    },
+    user_utils::{get_organizer_token, get_token_for_user_with_no_roles},
 };
 use reqwest::StatusCode;
 use serde_json::json;
-use tau::{omni_error::OmniError};
+use tau::omni_error::OmniError;
 use uuid::Uuid;
 
 const TEST_GROUP_PHASE_ROUNDS: i32 = 4;

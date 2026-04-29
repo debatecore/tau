@@ -1,8 +1,6 @@
 use reqwest::StatusCode;
 
-use crate::common::{
-    auth_utils::login_with_credentials, test_app::TestApp,
-};
+use crate::common::{auth_utils::login_with_credentials, test_app::TestApp};
 
 #[tokio::test]
 async fn login_as_infraadmin_should_work_out_of_the_box() {

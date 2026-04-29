@@ -1,7 +1,7 @@
 use std::vec;
 
 use reqwest::StatusCode;
-use tau::{omni_error::OmniError,tournaments::roles::Role};
+use tau::{omni_error::OmniError, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{

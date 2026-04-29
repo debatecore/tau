@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::test_app::TestApp;
 
-use reqwest::{Response};
+use reqwest::Response;
 
 use crate::common::auth_utils::get_session_token_for_infrastructure_admin;
 
