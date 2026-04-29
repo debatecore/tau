@@ -1,4 +1,4 @@
-﻿use std::collections::HashMap;
+use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
 use tau::{omni_error::OmniError, setup::get_local_socket_addr};
@@ -25,7 +25,11 @@ pub async fn login_with_credentials(handle: &str, password: &str) -> Response {
     let mut request_body = HashMap::new();
     request_body.insert("login", handle);
     request_body.insert("password", password);
+<<<<<<< HEAD
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr().to_string();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
 
     let client = Client::new();
     client

@@ -1,4 +1,4 @@
-﻿use std::{collections::HashMap, future::IntoFuture};
+use std::{collections::HashMap, future::IntoFuture};
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
@@ -22,7 +22,12 @@ async fn tournament_creation_should_require_login() {
     let listener = create_listener().await;
     let server = axum::serve(listener, app).into_future();
     tokio::spawn(server);
+<<<<<<< HEAD
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
 
     let mut request_body = HashMap::new();
     request_body.insert("full_name", "WrocÅ‚awska Liga Debat");

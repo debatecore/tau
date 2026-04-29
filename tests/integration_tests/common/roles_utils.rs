@@ -1,4 +1,4 @@
-﻿use reqwest::{Client, Response};
+use reqwest::{Client, Response};
 use tau::setup::get_local_socket_addr;
 use tau::tournaments::roles::Role;
 
@@ -8,7 +8,11 @@ pub async fn create_roles(
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
     let roles_string: String = serde_json::to_string(&roles).unwrap();
 
@@ -27,7 +31,11 @@ pub async fn create_roles(
 }
 
 pub async fn get_roles(user_id: &str, tournament_id: &str, token: &str) -> Response {
+<<<<<<< HEAD
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
 
     client
@@ -49,7 +57,11 @@ pub async fn patch_roles(
     roles: Vec<Role>,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let client = Client::new();
     let roles_string: String = serde_json::to_string(&roles).unwrap();
 

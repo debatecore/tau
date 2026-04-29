@@ -1,4 +1,4 @@
-﻿use std::collections::HashMap;
+use std::collections::HashMap;
 
 use reqwest::{Client, Response, StatusCode};
 use serde_json::Value;
@@ -29,7 +29,11 @@ pub async fn create_phase(
     is_finals: &bool,
     token: &str,
 ) -> Response {
+<<<<<<< HEAD
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let mut request_body = HashMap::new();
     let client = Client::new();
 

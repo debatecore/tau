@@ -1,4 +1,4 @@
-﻿use std::future::IntoFuture;
+use std::future::IntoFuture;
 
 use reqwest::{Client, StatusCode};
 use serial_test::serial;
@@ -12,7 +12,11 @@ async fn test_teapot() {
     // GIVEN
     setup::read_environmental_variables();
     setup::check_secret_env_var();
+<<<<<<< HEAD
+    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
+=======
     let socket_address = get_local_socket_addr().to_string();
+>>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
     let state = setup::create_app_state().await;
     prepare_empty_database(&state.connection_pool).await;
     let app = create_app(state).await;
