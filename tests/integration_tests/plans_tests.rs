@@ -1,33 +1,17 @@
 use crate::common::{
-    create_app, create_listener,
     plans_utils::{
         calculate_final_phase_debates, calculate_final_phase_rounds, count_debates,
         count_phases, count_plans, count_rounds, create_plan,
     },
-    prepare_empty_database,
     test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
         get_organizer_token, get_token_for_user_with_no_roles,
-        get_token_for_user_with_roles,
     },
 };
-use crate::common::{
-    create_app, create_listener,
-    plans_utils::{
-        calculate_final_phase_debates, calculate_final_phase_rounds, count_debates,
-        count_phases, count_plans, count_rounds, create_plan,
-    },
-    prepare_empty_database,
-    tournament_utils::get_id_of_a_new_tournament,
-    user_utils::{get_organizer_token, get_token_for_user_with_no_roles},
-};
-use reqwest::{Client, StatusCode};
+use reqwest::StatusCode;
 use serde_json::json;
-use serial_test::serial;
-use std::future::IntoFuture;
-use tau::setup::get_local_socket_addr;
-use tau::{omni_error::OmniError, setup};
+use tau::{omni_error::OmniError};
 use uuid::Uuid;
 
 const TEST_GROUP_PHASE_ROUNDS: i32 = 4;

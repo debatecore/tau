@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use axum::Router;
-use reqwest::{Client, RequestBuilder};
+use reqwest::{Client};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tau::{
     database, routes,

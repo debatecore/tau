@@ -1,12 +1,10 @@
-use std::{collections::HashMap, future::IntoFuture};
+use std::{collections::HashMap};
 
-use reqwest::{Client, StatusCode};
-use serial_test::serial;
-use tau::setup::{self, get_local_socket_addr};
+use reqwest::{StatusCode};
 
 use crate::common::{
-    auth_utils::get_session_token_for_infrastructure_admin, create_app, create_listener,
-    prepare_empty_database, test_app::TestApp, tournament_utils::create_tournament,
+    auth_utils::get_session_token_for_infrastructure_admin, 
+    test_app::TestApp, tournament_utils::create_tournament,
     user_utils::get_token_for_user_with_no_roles,
 };
 

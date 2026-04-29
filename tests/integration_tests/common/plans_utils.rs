@@ -1,11 +1,7 @@
-use reqwest::{Client, Response};
-use serde_json::json;
+use reqwest::{Response};
 use serde_json::json;
 use sqlx::query_scalar;
-use sqlx::{query_scalar, Pool, Postgres, Row};
 use sqlx::{Pool, Postgres};
-use tau::setup::get_local_socket_addr;
-use tau::tournaments::plans::TournamentPlan;
 use uuid::Uuid;
 
 use crate::common::test_app::TestApp;

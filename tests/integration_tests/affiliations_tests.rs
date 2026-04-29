@@ -1,15 +1,14 @@
-use std::{future::IntoFuture, vec};
+use std::vec;
 
 use reqwest::StatusCode;
-use serial_test::serial;
-use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
+use tau::{omni_error::OmniError, tournaments::roles::Role};
 
 use crate::common::{
     affiliations_utils::{
         create_affiliation, delete_affiliation, get_affiliation, get_all_affiliations,
         get_id_of_a_new_affiliation, patch_affiliation,
     },
-    create_app, create_listener, get_response_json, prepare_empty_database,
+    get_response_json,
     teams_utils::get_id_of_a_new_team,
     test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,

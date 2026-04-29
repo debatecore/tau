@@ -1,15 +1,13 @@
-use std::{future::IntoFuture, vec};
+use std::vec;
 
 use reqwest::StatusCode;
-use serial_test::serial;
-use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
+use tau::{omni_error::OmniError,tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
     auth_utils::get_session_token_for,
-    create_app, create_listener,
     debates_utils::get_id_of_a_new_debate,
-    get_response_json, prepare_empty_database,
+    get_response_json,
     roles_utils::create_roles,
     test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,
