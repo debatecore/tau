@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM judge_team_assignments WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "06f16ff93f9bedfe4c4102c6af1f1fb97d9e7ebb20cd9ff5fb319a4712f4eefc"
+}

@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE phases\n            SET\n                name = $1,\n                tournament_id = $2,\n                is_finals = $3,\n                previous_phase_id = $4,\n                group_size = $5,\n                status = $6\n            WHERE id = $7\n            RETURNING\n                id,\n                name,\n                tournament_id,\n                is_finals,\n                previous_phase_id,\n                group_size,\n                status\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_finals",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "previous_phase_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "group_size",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Bool",
+        "Uuid",
+        "Int4",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "94f3b99e928ef3de5b7296aea20a459475134c257e5d5fef623de657d9e180a4"
+}

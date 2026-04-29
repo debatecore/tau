@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM rounds\n            WHERE phase_id IN (\n                SELECT id\n                FROM phases\n                WHERE tournament_id = $1\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9072632d018aa113abe0035954cd002d48a5d9597e6dd0d961b46568d4a18922"
+}

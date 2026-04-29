@@ -1,4 +1,4 @@
-﻿use std::fmt;
+use std::fmt;
 
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -321,7 +321,7 @@ impl Phase {
         if let Some(record) = next_phase_record {
             Phase::get_by_id(record.id, pool).await
         } else {
-          Err(OmniError::ResourceNotFoundError)
+            Err(OmniError::ResourceNotFoundError)
         }
     }
 

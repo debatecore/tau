@@ -1,0 +1,57 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO tournament_plans\n                (id, tournament_id, group_phase_rounds, groups_count, advancing_teams, total_teams)\n            VALUES\n                ($1, $2, $3, $4, $5, $6)\n            RETURNING\n                id, tournament_id, group_phase_rounds, groups_count, advancing_teams, total_teams\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "group_phase_rounds",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "groups_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "advancing_teams",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_teams",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "e9a75c15a70ab2f42f2683e0e9eef51f358db5da5f11c17c31a2940d4c544ddc"
+}

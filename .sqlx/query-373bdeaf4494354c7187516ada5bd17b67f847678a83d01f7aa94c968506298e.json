@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE tournaments SET\n            full_name = $1,\n            shortened_name = $2,\n            speech_time = $3,\n            end_protected_time = $4,\n            start_protected_time = $5,\n            ad_vocem_time = $6,\n            debate_time_slot = $7,\n            debate_preparation_time = $8,\n            beep_on_speech_end = $9,\n            beep_on_protected_time = $10,\n            visualize_protected_time = $11\n            WHERE id = $12",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "373bdeaf4494354c7187516ada5bd17b67f847678a83d01f7aa94c968506298e"
+}

@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE tournament_plans\n            SET\n                group_phase_rounds = $1,\n                groups_count = $2,\n                advancing_teams = $3,\n                total_teams = $4\n            WHERE id = $5\n            RETURNING\n                id, tournament_id, group_phase_rounds, groups_count, advancing_teams, total_teams\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "group_phase_rounds",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "groups_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "advancing_teams",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_teams",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "260a331842b83e9331b23b070cbcc328ca0932d5b08b5409b697109a4e05231e"
+}

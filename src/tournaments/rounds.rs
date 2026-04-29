@@ -302,13 +302,11 @@ impl Round {
         .fetch_one(pool)
         .await
         .ok();
-        if next_phase_record.is_none() {
-            Err(OmniError::ResourceNotFoundError)
-        } else {
-            let next_round =
-                Round::get_by_id(next_phase_record.unwrap().id, pool).await?;
-            Ok(next_round)
+
+        if let Some(record) = next_phase_record {
+            return Round::get_by_id(record.id, pool).await;
         }
+        Err(OmniError::ResourceNotFoundError)
     }
 
     pub async fn get_previous_round(

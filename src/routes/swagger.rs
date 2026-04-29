@@ -1,4 +1,4 @@
-﻿use axum::Router;
+use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -170,5 +170,4 @@ pub fn route() -> Router<AppState> {
         verdicts::VerdictPatch,
     ))
 )]
-
 pub struct ApiDoc;

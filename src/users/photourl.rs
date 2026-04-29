@@ -34,10 +34,7 @@ impl PhotoUrl {
         if let Some(filename) = path.split("/").last() {
             if let Some((name, ext)) = filename.rsplit_once(".") {
                 if !name.is_empty() {
-                    return match ext {
-                        "png" | "jpg" | "jpeg" | "webp" => true,
-                        _ => false,
-                    };
+                    return matches!(ext, "png" | "jpg" | "jpeg" | "webp");
                 }
             }
         }

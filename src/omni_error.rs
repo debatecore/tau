@@ -57,9 +57,9 @@ pub enum OmniError {
     ReferringToNonexistentResourceError,
     #[error("ROLES_PARSING_MESSAGE")]
     RolesParsingError,
-    #[error{"NOT_A_JUDGE_MESSAGE"}]
+    #[error("{NOT_A_JUDGE_MESSAGE}")]
     NotAJudgeAffiliationError,
-    #[error{"PHASE_STATUS_PARSING_MESSAGE"}]
+    #[error("{PHASE_STATUS_PARSING_MESSAGE}")]
     PhaseStatusParsingError,
 }
 
@@ -72,22 +72,21 @@ impl IntoResponse for OmniError {
 impl OmniError {
     pub fn is_sqlx_unique_violation(&self) -> bool {
         if let OmniError::SqlxError(sqlx::Error::Database(e)) = self {
-                if e.is_unique_violation() {
-                    return true;
-                }
+            if e.is_unique_violation() {
+                return true;
             }
-        
+        }
+
         false
     }
 
     pub fn is_sqlx_foreign_key_violation(&self) -> bool {
-        if let OmniError::SqlxError(e) = self {
-            if let sqlx::Error::Database(e) = e {
-                if e.is_foreign_key_violation() {
-                    return true;
-                }
+        if let OmniError::SqlxError(sqlx::Error::Database(e)) = self {
+            if e.is_foreign_key_violation() {
+                return true;
             }
-        };
+        }
+
         false
     }
 
