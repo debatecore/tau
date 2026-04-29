@@ -20,6 +20,7 @@ use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::routes::verdicts_routes;
+
 use crate::tournaments;
 use crate::tournaments::affiliations;
 use crate::tournaments::attendees;
@@ -33,6 +34,7 @@ use crate::tournaments::rooms;
 use crate::tournaments::rounds;
 use crate::tournaments::teams;
 use crate::tournaments::verdicts;
+
 use crate::users;
 use crate::users::permissions;
 use crate::users::photourl;
@@ -42,8 +44,10 @@ use super::teapot;
 use super::version;
 
 pub fn route() -> Router<AppState> {
-    Router::new()
-        .merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", ApiDoc::openapi()))
+    Router::new().merge(
+        SwaggerUi::new("/swagger-ui")
+            .url("/openapi.json", ApiDoc::openapi()),
+    )
 }
 
 #[derive(OpenApi)]
@@ -153,7 +157,6 @@ pub fn route() -> Router<AppState> {
         rooms::Room,
         rooms::RoomPatch,
         user_routes::UserWithPassword,
-        users::UserPatch,
         user_routes::UserPasswordPatch,
         crate::users::UserPatch,
         crate::users::User,
@@ -167,7 +170,7 @@ pub fn route() -> Router<AppState> {
         rounds::RoundPatch,
         rounds::RoundStatus,
         verdicts::Verdict,
-        verdicts::VerdictPatch,
+        verdicts::VerdictPatch
     ))
 )]
 pub struct ApiDoc;

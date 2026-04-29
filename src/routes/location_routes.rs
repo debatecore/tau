@@ -25,11 +25,11 @@ const DUPLICATE_NAME_ERROR: &str = "Location with this name already exists withi
 pub fn route() -> Router<AppState> {
     Router::new()
         .route(
-            "/tournaments/:tournament_id/locations",
+            "/tournaments/{tournament_id}/locations",
             get(get_locations).post(create_location),
         )
         .route(
-            "/tournaments/:tournament_id/locations/:id",
+            "/tournaments/{tournament_id}/locations/{id}",
             get(get_location_by_id)
                 .patch(patch_location_by_id)
                 .delete(delete_location_by_id),

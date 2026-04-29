@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
@@ -21,12 +21,9 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new()
+        .route("/tournaments/{tournament_id}/plan", get(get_plan).post(create_plan))
         .route(
-            "/tournaments/:tournament_id/plan",
-            get(get_plan).post(create_plan),
-        )
-        .route(
-            "/tournaments/:tournament_id/plan/:id",
+            "/tournaments/{tournament_id}/plan/{id}",
             get(get_plan_by_id)
                 .patch(patch_plan_by_id)
                 .delete(delete_plan_by_id),
@@ -36,12 +33,12 @@ pub fn route() -> Router<AppState> {
 /// Create a new tournament plan
 ///
 /// Available only to the tournament Organizers.
-#[utoipa::path(post, request_body=Plan, path = "/tournaments/{tournament_id}/plan",
+#[utoipa::path(post, request_body=TournamentPlan, path = "/tournaments/{tournament_id}/plan",
     responses
     (
         (
             status=200, description = "Plan created successfully",
-            body=Plan,
+            body=TournamentPlan,
             example=json!(get_plan_example())
         ),
         (status=400, description = "Bad request"),
@@ -87,7 +84,7 @@ async fn create_plan(
     (
         (
             status=200, description = "Ok",
-            body=Plan,
+            body=TournamentPlan,
             example=json!(get_plan_example())
         ),
         (status=400, description = "Bad request"),
@@ -181,7 +178,7 @@ async fn get_plan_by_id(
     responses(
         (
             status=200, description = "Plan patched successfully",
-            body=Plan,
+            body=TournamentPlan,
             example=json!(get_plan_example())
         ),
         (status=400, description = "Bad request"),

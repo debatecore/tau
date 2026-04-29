@@ -1,4 +1,4 @@
-﻿use axum::{
+use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode, Uri},
     response::{IntoResponse, Response},
@@ -18,7 +18,7 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new().route(
-        "/users/:id/tournaments/:tournament_id/permissions",
+        "/users/{id}/tournaments/{tournament_id}/permissions",
         get(has_permission),
     )
 }

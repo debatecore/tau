@@ -3,9 +3,15 @@ use serde_json::json;
 use sqlx::query_scalar;
 use sqlx::{Pool, Postgres};
 use tau::setup::get_local_socket_addr;
+use tau::tournaments::plans::TournamentPlan;
+use serde_json::json;
+use sqlx::{query_scalar, Row, Pool, Postgres};
 use uuid::Uuid;
 
+use crate::common::test_app::TestApp;
+
 pub async fn create_plan(
+    app: &TestApp,
     tournament_id: &str,
     advancing_teams: i32,
     group_phase_rounds: i32,
@@ -21,15 +27,8 @@ pub async fn create_plan(
         "total_teams": total_teams,
     });
 
-    Client::new()
-        .post(format!(
-            "http://{}/tournaments/{}/plan",
-<<<<<<< HEAD
-            get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1"), tournament_id
-=======
-            get_local_socket_addr(), tournament_id
->>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
-        ))
+    app.client
+        .post(app.url(&format!("/tournaments/{}/plan", tournament_id)))
         .json(&plan_data)
         .bearer_auth(token)
         .send()
