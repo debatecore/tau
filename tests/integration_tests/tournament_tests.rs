@@ -5,9 +5,8 @@ use serial_test::serial;
 use tau::setup::{self, get_local_socket_addr};
 
 use crate::common::{
-    test_app::TestApp,
     auth_utils::get_session_token_for_infrastructure_admin, create_app, create_listener,
-    prepare_empty_database, tournament_utils::create_tournament,
+    prepare_empty_database, test_app::TestApp, tournament_utils::create_tournament,
     user_utils::get_token_for_user_with_no_roles,
 };
 
@@ -21,7 +20,8 @@ async fn tournament_creation_should_require_login() {
     request_body.insert("shortened_name", "WrLD");
 
     // WHEN
-    let res = app.client
+    let res = app
+        .client
         .post(app.url(&format!("/tournaments")))
         .json(&request_body)
         .header("accept", "text/plain")
@@ -54,8 +54,13 @@ async fn tournament_creation_should_impossible_for_other_users() {
     let user_token = get_token_for_user_with_no_roles(&app).await;
 
     // WHEN
-    let response =
-        create_tournament(&app, "illegal tournament", "will not be created", &user_token).await;
+    let response = create_tournament(
+        &app,
+        "illegal tournament",
+        "will not be created",
+        &user_token,
+    )
+    .await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
@@ -72,7 +77,8 @@ async fn tournament_names_should_not_allow_duplicates() {
 
     // WHEN
     let first_response = create_tournament(&app, full_name, shortened_name, &token).await;
-    let second_response = create_tournament(&app, full_name, shortened_name, &token).await;
+    let second_response =
+        create_tournament(&app, full_name, shortened_name, &token).await;
 
     // THEN
     assert_eq!(first_response.status(), StatusCode::OK);

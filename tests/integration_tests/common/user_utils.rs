@@ -5,9 +5,9 @@ use tau::{omni_error::OmniError, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
-    test_app::TestApp,
     auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
     roles_utils::create_roles,
+    test_app::TestApp,
 };
 
 pub async fn create_user(
@@ -67,18 +67,11 @@ pub async fn get_token_for_user_with_roles(
     get_session_token_for(app, &handle, password).await.unwrap()
 }
 
-pub async fn get_id_of_a_new_user(
-    app: &TestApp,
-    handle: &str,
-    password: &str,
-) -> String {
+pub async fn get_id_of_a_new_user(app: &TestApp, handle: &str, password: &str) -> String {
     let token = get_session_token_for_infrastructure_admin(app).await;
     let response = create_user(app, handle, password, &token).await;
 
-    response
-        .json::<serde_json::Value>()
-        .await
-        .unwrap()["id"]
+    response.json::<serde_json::Value>().await.unwrap()["id"]
         .as_str()
         .unwrap()
         .to_owned()
@@ -89,7 +82,8 @@ pub async fn get_id_of_a_new_judge(
     tournament_id: &str,
 ) -> Result<String, OmniError> {
     let token = get_session_token_for_infrastructure_admin(app).await;
-    let judge_id = get_id_of_a_new_user(app, &Uuid::now_v7().to_string(), "some password").await;
+    let judge_id =
+        get_id_of_a_new_user(app, &Uuid::now_v7().to_string(), "some password").await;
     create_roles(app, &judge_id, tournament_id, vec![Role::Judge], &token).await;
     Ok(judge_id)
 }

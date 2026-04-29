@@ -3,17 +3,16 @@ use std::time::Duration;
 use axum::Router;
 use reqwest::{Client, RequestBuilder};
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use tau::{
+    database, routes,
+    setup::{self, AppState},
+    users::infradmin::guarantee_infrastructure_admin_exists,
+};
 use testcontainers_modules::{
     postgres::Postgres,
     testcontainers::{runners::AsyncRunner, ContainerAsync},
 };
 use tokio::net::TcpListener;
-use tau::{
-    database,
-    routes,
-    setup::{self, AppState},
-    users::infradmin::guarantee_infrastructure_admin_exists,
-};
 use tower_cookies::CookieManagerLayer;
 use uuid::Uuid;
 
@@ -50,10 +49,8 @@ impl TestApp {
             .await
             .expect("failed to get mapped postgres port");
 
-        let database_url = format!(
-            "postgres://postgres:postgres@{}:{}/{}",
-            host, port, db_name
-        );
+        let database_url =
+            format!("postgres://postgres:postgres@{}:{}/{}", host, port, db_name);
 
         let pool = PgPoolOptions::new()
             .max_connections(10)

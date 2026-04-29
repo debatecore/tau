@@ -44,10 +44,8 @@ use super::teapot;
 use super::version;
 
 pub fn route() -> Router<AppState> {
-    Router::new().merge(
-        SwaggerUi::new("/swagger-ui")
-            .url("/openapi.json", ApiDoc::openapi()),
-    )
+    Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", ApiDoc::openapi()))
 }
 
 #[derive(OpenApi)]

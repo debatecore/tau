@@ -4,9 +4,8 @@ use std::future::IntoFuture;
 use tau::setup::{self};
 
 use crate::common::{
-    test_app::TestApp,
     auth_utils::login_with_credentials, create_app, create_listener,
-    prepare_empty_database,
+    prepare_empty_database, test_app::TestApp,
 };
 
 #[tokio::test]

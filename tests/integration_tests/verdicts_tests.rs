@@ -6,12 +6,12 @@ use tau::{omni_error::OmniError, setup, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
-    test_app::TestApp,
     auth_utils::get_session_token_for,
     create_app, create_listener,
     debates_utils::get_id_of_a_new_debate,
     get_response_json, prepare_empty_database,
     roles_utils::create_roles,
+    test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
         create_user, get_id_of_a_new_judge, get_id_of_a_new_user, get_judge_token,
@@ -129,12 +129,19 @@ async fn organizers_should_be_able_to_get_verdicts() -> Result<(), OmniError> {
     create_user(&app, judge_username, judge_password, &token).await;
     let token = get_session_token_for(&app, judge_username, judge_password).await?;
 
-    let verdict_id =
-        get_id_of_a_new_verdict(&app, &tournament_id, &judge_id, &debate_id, &true, &token)
-            .await?;
+    let verdict_id = get_id_of_a_new_verdict(
+        &app,
+        &tournament_id,
+        &judge_id,
+        &debate_id,
+        &true,
+        &token,
+    )
+    .await?;
 
     // WHEN
-    let response = get_verdict(&app, &verdict_id, &tournament_id, &debate_id, &token).await;
+    let response =
+        get_verdict(&app, &verdict_id, &tournament_id, &debate_id, &token).await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
@@ -156,7 +163,7 @@ async fn anyone_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     let judge_id_alpha =
         get_id_of_a_new_user(&app, judge_username_alpha, judge_password_alpha).await;
     create_roles(
-        &app, 
+        &app,
         &judge_id_alpha,
         &tournament_id,
         vec![Role::Judge],
@@ -171,7 +178,7 @@ async fn anyone_should_be_able_to_list_verdicts() -> Result<(), OmniError> {
     let judge_id_bravo =
         get_id_of_a_new_user(&app, judge_username_bravo, judge_password_bravo).await;
     create_roles(
-        &app, 
+        &app,
         &judge_id_bravo,
         &tournament_id,
         vec![Role::Judge],
@@ -284,12 +291,19 @@ async fn judges_should_be_able_to_delete_verdicts() -> Result<(), OmniError> {
     create_user(&app, judge_username, judge_password, &token).await;
     let token = get_session_token_for(&app, judge_username, judge_password).await?;
 
-    let verdict_id =
-        get_id_of_a_new_verdict(&app, &tournament_id, &judge_id, &debate_id, &true, &token)
-            .await?;
+    let verdict_id = get_id_of_a_new_verdict(
+        &app,
+        &tournament_id,
+        &judge_id,
+        &debate_id,
+        &true,
+        &token,
+    )
+    .await?;
 
     // WHEN
-    let response = delete_verdict(&app, &verdict_id, &tournament_id, &debate_id, &token).await;
+    let response =
+        delete_verdict(&app, &verdict_id, &tournament_id, &debate_id, &token).await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::NO_CONTENT);

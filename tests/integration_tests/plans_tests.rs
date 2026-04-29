@@ -5,6 +5,20 @@ use crate::common::{
         count_phases, count_plans, count_rounds, create_plan,
     },
     prepare_empty_database,
+    test_app::TestApp,
+    tournament_utils::get_id_of_a_new_tournament,
+    user_utils::{
+        get_organizer_token, get_token_for_user_with_no_roles,
+        get_token_for_user_with_roles,
+    },
+};
+use crate::common::{
+    create_app, create_listener,
+    plans_utils::{
+        calculate_final_phase_debates, calculate_final_phase_rounds, count_debates,
+        count_phases, count_plans, count_rounds, create_plan,
+    },
+    prepare_empty_database,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{get_organizer_token, get_token_for_user_with_no_roles},
 };
@@ -14,25 +28,6 @@ use serial_test::serial;
 use std::future::IntoFuture;
 use tau::setup::get_local_socket_addr;
 use tau::{omni_error::OmniError, setup};
-use crate::common::{
-    test_app::TestApp,
-    create_app, create_listener, prepare_empty_database,
-    tournament_utils::get_id_of_a_new_tournament,
-    plans_utils::{
-        create_plan,
-        count_debates,
-        count_phases,
-        count_plans,
-        count_rounds,
-        calculate_final_phase_rounds,
-        calculate_final_phase_debates
-    },
-    user_utils::{
-        get_organizer_token, 
-        get_token_for_user_with_roles, 
-        get_token_for_user_with_no_roles
-    },
-};
 use uuid::Uuid;
 
 const TEST_GROUP_PHASE_ROUNDS: i32 = 4;
@@ -59,7 +54,8 @@ fn expected_counts(
 }
 
 #[tokio::test]
-async fn tournament_plan_creation_should_impossible_for_other_users() -> Result<(), OmniError>  {
+async fn tournament_plan_creation_should_impossible_for_other_users(
+) -> Result<(), OmniError> {
     // GIVEN
     let app = TestApp::spawn().await;
 
@@ -70,10 +66,10 @@ async fn tournament_plan_creation_should_impossible_for_other_users() -> Result<
     assert_eq!(
         create_plan(
             &app,
-            &tournament_id, 
-            TEST_GROUP_PHASE_ROUNDS, 
-            TEST_GROUPS_COUNT, 
-            TEST_ADVANCING_TEAMS, 
+            &tournament_id,
+            TEST_GROUP_PHASE_ROUNDS,
+            TEST_GROUPS_COUNT,
+            TEST_ADVANCING_TEAMS,
             TEST_TOTAL_TEAMS,
             &token
         )
@@ -111,10 +107,19 @@ async fn organizers_should_be_able_to_create_tournament_plan() -> Result<(), Omn
         TEST_ADVANCING_TEAMS,
     );
 
-    assert_eq!(count_plans(&app.pool,   &tournament_id).await, 1);
-    assert_eq!(count_phases(&app.pool,  &tournament_id).await, expected_phases);
-    assert_eq!(count_rounds(&app.pool,  &tournament_id).await, expected_rounds);
-    assert_eq!(count_debates(&app.pool, &tournament_id).await, expected_debates);
+    assert_eq!(count_plans(&app.pool, &tournament_id).await, 1);
+    assert_eq!(
+        count_phases(&app.pool, &tournament_id).await,
+        expected_phases
+    );
+    assert_eq!(
+        count_rounds(&app.pool, &tournament_id).await,
+        expected_rounds
+    );
+    assert_eq!(
+        count_debates(&app.pool, &tournament_id).await,
+        expected_debates
+    );
 
     Ok(())
 }
@@ -129,10 +134,10 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
 
     let create_response = create_plan(
         &app,
-        &tournament_id, 
-        TEST_ADVANCING_TEAMS, 
-        TEST_GROUP_PHASE_ROUNDS, 
-        TEST_GROUPS_COUNT, 
+        &tournament_id,
+        TEST_ADVANCING_TEAMS,
+        TEST_GROUP_PHASE_ROUNDS,
+        TEST_GROUPS_COUNT,
         TEST_TOTAL_TEAMS,
         &token,
     )
@@ -144,11 +149,9 @@ async fn organizers_should_be_able_to_get_tournament_plan() -> Result<(), OmniEr
     let plan_id = response_body["id"].as_str().unwrap();
 
     // WHEN
-    let response = app.client
-        .get(app.url(&format!(
-            "/tournaments/{}/plan/{}",
-            tournament_id, plan_id
-        )))
+    let response = app
+        .client
+        .get(app.url(&format!("/tournaments/{}/plan/{}", tournament_id, plan_id)))
         .bearer_auth(token.clone())
         .send()
         .await
@@ -169,10 +172,10 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
 
     let create_response = create_plan(
         &app,
-        &tournament_id, 
-        TEST_ADVANCING_TEAMS, 
-        TEST_GROUP_PHASE_ROUNDS, 
-        TEST_GROUPS_COUNT, 
+        &tournament_id,
+        TEST_ADVANCING_TEAMS,
+        TEST_GROUP_PHASE_ROUNDS,
+        TEST_GROUPS_COUNT,
         TEST_TOTAL_TEAMS,
         &token,
     )
@@ -191,11 +194,9 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
     });
 
     // WHEN
-    let response = app.client
-        .patch(app.url(&format!(
-            "/tournaments/{}/plan/{}",
-            tournament_id, plan_id
-        )))
+    let response = app
+        .client
+        .patch(app.url(&format!("/tournaments/{}/plan/{}", tournament_id, plan_id)))
         .json(&patch_data)
         .bearer_auth(token.clone())
         .send()
@@ -213,9 +214,18 @@ async fn organizers_should_be_able_to_patch_tournament_plan() -> Result<(), Omni
         );
 
     assert_eq!(count_plans(&app.pool, &tournament_id).await, 1);
-    assert_eq!(count_phases(&app.pool, &tournament_id).await, new_expected_phases);
-    assert_eq!(count_rounds(&app.pool, &tournament_id).await, new_expected_rounds);
-    assert_eq!(count_debates(&app.pool, &tournament_id).await, new_expected_debates);
+    assert_eq!(
+        count_phases(&app.pool, &tournament_id).await,
+        new_expected_phases
+    );
+    assert_eq!(
+        count_rounds(&app.pool, &tournament_id).await,
+        new_expected_rounds
+    );
+    assert_eq!(
+        count_debates(&app.pool, &tournament_id).await,
+        new_expected_debates
+    );
 
     Ok(())
 }
@@ -230,10 +240,10 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
 
     let create_response = create_plan(
         &app,
-        &tournament_id, 
-        TEST_ADVANCING_TEAMS, 
-        TEST_GROUP_PHASE_ROUNDS, 
-        TEST_GROUPS_COUNT, 
+        &tournament_id,
+        TEST_ADVANCING_TEAMS,
+        TEST_GROUP_PHASE_ROUNDS,
+        TEST_GROUPS_COUNT,
         TEST_TOTAL_TEAMS,
         &token,
     )
@@ -245,11 +255,9 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
     let plan_id = response_body["id"].as_str().unwrap();
 
     // WHEN
-    let response = app.client
-        .delete(app.url(&format!(
-            "/tournaments/{}/plan/{}",
-            tournament_id, plan_id
-        )))
+    let response = app
+        .client
+        .delete(app.url(&format!("/tournaments/{}/plan/{}", tournament_id, plan_id)))
         .bearer_auth(token.clone())
         .send()
         .await
@@ -258,16 +266,17 @@ async fn organizers_should_be_able_to_delete_tournament_plan() -> Result<(), Omn
     // THEN
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
-    assert_eq!(count_plans(&app.pool,   &tournament_id).await, 0);
-    assert_eq!(count_phases(&app.pool,  &tournament_id).await, 0);
-    assert_eq!(count_rounds(&app.pool,  &tournament_id).await, 0);
+    assert_eq!(count_plans(&app.pool, &tournament_id).await, 0);
+    assert_eq!(count_phases(&app.pool, &tournament_id).await, 0);
+    assert_eq!(count_rounds(&app.pool, &tournament_id).await, 0);
     assert_eq!(count_debates(&app.pool, &tournament_id).await, 0);
 
     Ok(())
 }
 
 #[tokio::test]
-async fn create_plan_should_rollback_everything_if_underlying_creation_fails() -> Result<(), OmniError> {
+async fn create_plan_should_rollback_everything_if_underlying_creation_fails(
+) -> Result<(), OmniError> {
     let app = TestApp::spawn().await;
 
     let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;

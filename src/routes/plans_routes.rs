@@ -21,7 +21,10 @@ use crate::{
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/tournaments/{tournament_id}/plan", get(get_plan).post(create_plan))
+        .route(
+            "/tournaments/{tournament_id}/plan",
+            get(get_plan).post(create_plan),
+        )
         .route(
             "/tournaments/{tournament_id}/plan/{id}",
             get(get_plan_by_id)

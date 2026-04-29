@@ -33,10 +33,6 @@ pub async fn login_with_credentials(
     let mut request_body = HashMap::new();
     request_body.insert("login", handle);
     request_body.insert("password", password);
-<<<<<<< HEAD
-    let socket_address = get_socket_addr().to_string().replace("0.0.0.0", "127.0.0.1");
-=======
->>>>>>> 286fe97f8a488f02b3cad69751d49b9175c0e61c
 
     app.client
         .post(app.url("/auth/login"))
