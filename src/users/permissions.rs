@@ -1,4 +1,4 @@
-use serde::Deserialize;
+﻿use serde::Deserialize;
 use strum::{EnumIter, EnumString, VariantArray}; // Added EnumString
 use utoipa::ToSchema;
 

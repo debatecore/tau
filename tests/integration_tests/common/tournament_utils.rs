@@ -4,8 +4,7 @@ use reqwest::{Response, StatusCode};
 use tau::omni_error::OmniError;
 
 use crate::common::{
-    test_app::TestApp,
-    auth_utils::get_session_token_for_infrastructure_admin,
+    auth_utils::get_session_token_for_infrastructure_admin, test_app::TestApp,
 };
 
 pub async fn create_tournament(
@@ -34,19 +33,12 @@ pub async fn get_id_of_a_new_tournament(
     full_name: &str,
 ) -> Result<String, OmniError> {
     let token = get_session_token_for_infrastructure_admin(app).await;
-    let response = create_tournament(
-        app,
-        full_name,
-        &full_name[0..full_name.len() / 5],
-        &token,
-    )
-    .await;
+    let response =
+        create_tournament(app, full_name, &full_name[0..full_name.len() / 5], &token)
+            .await;
 
     match response.status() {
-        StatusCode::OK => Ok(response
-            .json::<serde_json::Value>()
-            .await
-            .unwrap()["id"]
+        StatusCode::OK => Ok(response.json::<serde_json::Value>().await.unwrap()["id"]
             .as_str()
             .unwrap()
             .to_owned()),
