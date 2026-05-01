@@ -2,6 +2,7 @@
 mod auth_tests;
 pub mod common;
 mod debates_tests;
+mod ladder_tests;
 mod permissions_tests;
 mod plans_tests;
 mod roles_tests;

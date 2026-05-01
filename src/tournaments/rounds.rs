@@ -69,6 +69,50 @@ pub enum RoundStatus {
 }
 
 impl Round {
+    pub async fn get_all<'e, E>(
+        tournament_id: Uuid,
+        executor: E,
+    ) -> Result<Vec<Round>, OmniError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let records = query!(
+            r#"
+            SELECT
+                rounds.id,
+                rounds.name,
+                rounds.phase_id,
+                rounds.planned_start_time,
+                rounds.planned_end_time,
+                rounds.motion_id,
+                rounds.previous_round_id,
+                rounds.status
+            FROM rounds
+            JOIN phases ON phases.id = rounds.phase_id
+            WHERE phases.tournament_id = $1
+            "#,
+            tournament_id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let mut rounds = Vec::with_capacity(records.len());
+        for record in records {
+            rounds.push(Round {
+                id: record.id,
+                name: record.name,
+                phase_id: record.phase_id,
+                planned_start_time: record.planned_start_time,
+                planned_end_time: record.planned_end_time,
+                motion_id: record.motion_id,
+                previous_round_id: record.previous_round_id,
+                status: RoundStatus::try_from(record.status)?,
+            });
+        }
+
+        Ok(rounds)
+    }
+
     pub async fn post(round: Round, pool: &Pool<Postgres>) -> Result<Round, OmniError> {
         let mut transaction = pool.begin().await?;
         let round = Self::post_with_transaction(&mut transaction, round).await?;

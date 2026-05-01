@@ -1,6 +1,6 @@
 ﻿use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Pool, Postgres, Transaction};
+use sqlx::{query, query_as, Executor, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -38,6 +38,24 @@ pub struct DebatePatch {
 }
 
 impl Debate {
+    pub async fn get_all<'e, E>(
+        tournament_id: Uuid,
+        executor: E,
+    ) -> Result<Vec<Debate>, OmniError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let debates = query_as!(
+            Debate,
+            "SELECT * FROM debates WHERE tournament_id = $1",
+            tournament_id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        Ok(debates)
+    }
+
     pub async fn post(
         tournament_id: Uuid,
         json: Debate,
