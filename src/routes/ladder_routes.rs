@@ -14,12 +14,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournaments::{
-        debates::Debate,
-        phases::Phase,
-        rounds::Round,
-        Tournament,
-    },
+    tournaments::{debates::Debate, phases::Phase, rounds::Round, Tournament},
     users::{permissions::Permission, TournamentUser},
 };
 
