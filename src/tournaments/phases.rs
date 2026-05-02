@@ -3,7 +3,7 @@ use std::fmt;
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, Pool, Postgres, Transaction};
+use sqlx::{query, Executor, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -59,6 +59,40 @@ pub enum PhaseStatus {
 }
 
 impl Phase {
+    pub async fn get_all<'e, E>(
+        tournament_id: Uuid,
+        executor: E,
+    ) -> Result<Vec<Phase>, OmniError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let records = query!(
+            r#"
+            SELECT id, name, tournament_id, is_finals, previous_phase_id, group_size, status
+            FROM phases
+            WHERE tournament_id = $1
+            "#,
+            tournament_id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let mut phases = Vec::with_capacity(records.len());
+        for record in records {
+            phases.push(Phase {
+                id: record.id,
+                name: record.name,
+                tournament_id: record.tournament_id,
+                is_finals: record.is_finals,
+                previous_phase_id: record.previous_phase_id,
+                group_size: record.group_size,
+                status: PhaseStatus::try_from(record.status)?,
+            });
+        }
+
+        Ok(phases)
+    }
+
     pub async fn post(
         tournament_id: Uuid,
         json: Phase,
