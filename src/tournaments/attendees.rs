@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;

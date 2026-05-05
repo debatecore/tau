@@ -1,4 +1,4 @@
-use axum::{http::StatusCode, routing::get, Router};
+﻿use axum::{http::StatusCode, routing::get, Router};
 
 use crate::setup::AppState;
 

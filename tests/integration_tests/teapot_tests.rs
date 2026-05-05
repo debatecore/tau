@@ -1,10 +1,6 @@
-use std::future::IntoFuture;
-
 use reqwest::StatusCode;
-use serial_test::serial;
-use tau::setup;
 
-use crate::common::{create_app, create_listener, prepare_empty_database, test_app::TestApp};
+use crate::common::test_app::TestApp;
 
 #[tokio::test]
 async fn test_teapot() {
@@ -12,7 +8,8 @@ async fn test_teapot() {
     let app = TestApp::spawn().await;
 
     // WHEN
-    let res = app.client
+    let res = app
+        .client
         .get(app.url(&format!("/brew-coffee")))
         .send()
         .await

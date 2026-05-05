@@ -1,10 +1,10 @@
-use std::fmt;
+﻿use std::fmt;
 
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Pool, Postgres, Transaction, Executor};
+use sqlx::{query, query_as, Executor, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -69,6 +69,50 @@ pub enum RoundStatus {
 }
 
 impl Round {
+    pub async fn get_all<'e, E>(
+        tournament_id: Uuid,
+        executor: E,
+    ) -> Result<Vec<Round>, OmniError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let records = query!(
+            r#"
+            SELECT
+                rounds.id,
+                rounds.name,
+                rounds.phase_id,
+                rounds.planned_start_time,
+                rounds.planned_end_time,
+                rounds.motion_id,
+                rounds.previous_round_id,
+                rounds.status
+            FROM rounds
+            JOIN phases ON phases.id = rounds.phase_id
+            WHERE phases.tournament_id = $1
+            "#,
+            tournament_id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let mut rounds = Vec::with_capacity(records.len());
+        for record in records {
+            rounds.push(Round {
+                id: record.id,
+                name: record.name,
+                phase_id: record.phase_id,
+                planned_start_time: record.planned_start_time,
+                planned_end_time: record.planned_end_time,
+                motion_id: record.motion_id,
+                previous_round_id: record.previous_round_id,
+                status: RoundStatus::try_from(record.status)?,
+            });
+        }
+
+        Ok(rounds)
+    }
+
     pub async fn post(round: Round, pool: &Pool<Postgres>) -> Result<Round, OmniError> {
         let mut transaction = pool.begin().await?;
         let round = Self::post_with_transaction(&mut transaction, round).await?;
@@ -270,20 +314,14 @@ impl Round {
         Ok(())
     }
 
-    pub async fn get_debates<'e, E>(
-        &self,
-        executor: E,
-    ) -> Result<Vec<Debate>, OmniError>
+    pub async fn get_debates<'e, E>(&self, executor: E) -> Result<Vec<Debate>, OmniError>
     where
         E: Executor<'e, Database = Postgres>,
     {
-        let debates = query_as!(
-            Debate,
-            "SELECT * FROM debates WHERE round_id = $1",
-            self.id
-        )
-        .fetch_all(executor)
-        .await?;
+        let debates =
+            query_as!(Debate, "SELECT * FROM debates WHERE round_id = $1", self.id)
+                .fetch_all(executor)
+                .await?;
 
         Ok(debates)
     }
@@ -308,13 +346,11 @@ impl Round {
         .fetch_one(pool)
         .await
         .ok();
-        if next_phase_record.is_none() {
-            return Err(OmniError::ResourceNotFoundError);
-        } else {
-            let next_round =
-                Round::get_by_id(next_phase_record.unwrap().id, pool).await?;
-            return Ok(next_round);
+
+        if let Some(record) = next_phase_record {
+            return Round::get_by_id(record.id, pool).await;
         }
+        Err(OmniError::ResourceNotFoundError)
     }
 
     pub async fn get_previous_round(
@@ -324,7 +360,7 @@ impl Round {
         if self.previous_round_id.is_none() {
             return Err(OmniError::ResourceNotFoundError);
         }
-        return Ok(Round::get_by_id(self.previous_round_id.unwrap(), pool).await?);
+        return Round::get_by_id(self.previous_round_id.unwrap(), pool).await;
     }
 
     pub async fn validate(&self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
@@ -399,9 +435,9 @@ impl Round {
             return Ok(false);
         }
         if parent_phase.previous_phase_id.unwrap() != previous_round.phase_id {
-            return Ok(true);
+            Ok(true)
         } else {
-            return Ok(false);
+            Ok(false)
         }
     }
 
@@ -474,7 +510,7 @@ impl Round {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         if self.previous_round_id.is_some() {
-            return Ok(false);
+            Ok(false)
         } else {
             let tournament = self.get_parent_tournament(parent_phase, pool).await?;
             for round in tournament.get_rounds(pool).await? {
@@ -482,14 +518,14 @@ impl Round {
                     return Ok(true);
                 }
             }
-            return Ok(false);
+            Ok(false)
         }
     }
 }
 
 impl RoundPatch {
     pub fn create_round_with(self, round: Round) -> Round {
-        return Round {
+        Round {
             id: round.id,
             name: self.name.unwrap_or(round.name),
             phase_id: self.phase_id.unwrap_or(round.phase_id),
@@ -498,7 +534,7 @@ impl RoundPatch {
             motion_id: self.motion_id.or(self.motion_id),
             previous_round_id: self.previous_round_id.or(round.previous_round_id),
             status: self.status.unwrap_or(round.status),
-        };
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;

@@ -4,7 +4,7 @@ use crate::common::test_app::TestApp;
 
 use reqwest::{Response, StatusCode};
 use serde_json::Value;
-use tau::{omni_error::OmniError};
+use tau::omni_error::OmniError;
 
 pub async fn get_id_of_a_new_verdict(
     app: &TestApp,
@@ -14,8 +14,15 @@ pub async fn get_id_of_a_new_verdict(
     proposition_won: &bool,
     token: &str,
 ) -> Result<String, OmniError> {
-    let response =
-        create_verdict(app, tournament_id, judge_id, debate_id, proposition_won, &token).await;
+    let response = create_verdict(
+        app,
+        tournament_id,
+        judge_id,
+        debate_id,
+        proposition_won,
+        &token,
+    )
+    .await;
     if response.status() != StatusCode::OK {
         return Err(OmniError::ExplicitError {
             status: response.status(),

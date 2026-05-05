@@ -1,14 +1,10 @@
-use std::future::IntoFuture;
-
 use reqwest::StatusCode;
-use serial_test::serial;
-use tau::{omni_error::OmniError, setup};
+use tau::omni_error::OmniError;
 
 use crate::common::{
-    test_app::TestApp,
     auth_utils::get_session_token_for_infrastructure_admin,
-    create_app, create_listener, prepare_empty_database,
     teams_utils::{create_team, delete_team, get_id_of_a_new_team, get_team, patch_team},
+    test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,
     user_utils::{
         get_judge_token, get_organizer_token, get_token_for_user_with_no_roles,
@@ -26,7 +22,8 @@ async fn admin_should_be_able_to_create_teams() -> Result<(), OmniError> {
 
     // WHEN
     let tournament_id = get_id_of_a_new_tournament(&app, "T1").await?;
-    let response = create_team(&app, &tournament_id, full_name, shortened_name, &token).await;
+    let response =
+        create_team(&app, &tournament_id, full_name, shortened_name, &token).await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
@@ -49,7 +46,8 @@ async fn organizers_should_be_able_to_create_teams() -> Result<(), OmniError> {
     // WHEN
     let tournament_id = get_id_of_a_new_tournament(&app, "T1").await?;
     let token = get_organizer_token(&app, &tournament_id).await;
-    let response = create_team(&app, &tournament_id, full_name, shortened_name, &token).await;
+    let response =
+        create_team(&app, &tournament_id, full_name, shortened_name, &token).await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);
@@ -130,7 +128,8 @@ async fn duplicate_team_names_should_be_allowed_in_different_tournaments(
     let tournament_id1 = get_id_of_a_new_tournament(&app, "T1").await?;
     let tournament_id2 = get_id_of_a_new_tournament(&app, "T2").await?;
     create_team(&app, &tournament_id1, full_name, shortened_name, &token).await;
-    let response = create_team(&app, &tournament_id2, full_name, shortened_name, &token).await;
+    let response =
+        create_team(&app, &tournament_id2, full_name, shortened_name, &token).await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::OK);

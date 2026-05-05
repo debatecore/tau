@@ -1,4 +1,4 @@
-use axum::http::HeaderMap;
+﻿use axum::http::HeaderMap;
 use permissions::Permission;
 use photourl::PhotoUrl;
 use serde::{Deserialize, Serialize};
@@ -55,12 +55,12 @@ impl TournamentUser {
             });
         }
         let roles = user.get_roles(tournament_id, pool).await?;
-        return Ok(TournamentUser { user, roles });
+        Ok(TournamentUser { user, roles })
     }
 
     pub fn has_permission(&self, permission: Permission) -> bool {
         if self.user.is_infrastructure_admin() {
-            return true;
+            true
         } else {
             self.roles
                 .iter()

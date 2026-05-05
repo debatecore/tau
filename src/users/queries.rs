@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     tournaments::roles::Role,
     users::{permissions::Permission as P, UserPatch},
 };
@@ -75,10 +75,7 @@ impl User {
         password: String,
         pool: &Pool<Postgres>,
     ) -> Result<User, OmniError> {
-        let pic = match &user.picture_link {
-            Some(url) => Some(url.as_str()),
-            None => None,
-        };
+        let pic = user.picture_link.as_ref().map(|url| url.as_str());
         let hash = User::generate_password_hash(&password).unwrap();
         match sqlx::query!(
             "INSERT INTO users VALUES ($1, $2, $3, $4)",
@@ -213,7 +210,7 @@ impl User {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         let roles = self.get_roles(tournament_id, pool).await?;
-        return Ok(roles.contains(&role));
+        Ok(roles.contains(&role))
     }
 
     pub async fn can_create_users_within_any_tournament(
@@ -223,14 +220,14 @@ impl User {
         let tournaments = Tournament::get_all(pool).await?;
         for tournament in tournaments {
             let tournament_user =
-                TournamentUser::get_by_id(self.id, tournament.id, &pool).await?;
+                TournamentUser::get_by_id(self.id, tournament.id, pool).await?;
             if tournament_user.has_permission(P::CreateUsersManually)
                 || tournament_user.has_permission(P::CreateUsersWithLink)
             {
                 return Ok(true);
             }
         }
-        return Ok(false);
+        Ok(false)
     }
 
     /// Invalidates all sessions; implementations must promptly log the user out.
