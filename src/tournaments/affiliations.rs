@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -141,10 +141,10 @@ impl Affiliation {
         ).fetch_optional(pool).await {
             Ok(result) => {
                 if result.is_none() {
-                    return Ok(false);
+                    Ok(false)
                 }
                 else {
-                    return Ok(true);
+                    Ok(true)
                 }
             },
             Err(e) => Err(e)?,

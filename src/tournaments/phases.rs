@@ -3,7 +3,7 @@ use std::fmt;
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
-use sqlx::{query, query_as, Pool, Postgres, Transaction};
+use sqlx::{query, Executor, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -59,13 +59,48 @@ pub enum PhaseStatus {
 }
 
 impl Phase {
+    pub async fn get_all<'e, E>(
+        tournament_id: Uuid,
+        executor: E,
+    ) -> Result<Vec<Phase>, OmniError>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let records = query!(
+            r#"
+            SELECT id, name, tournament_id, is_finals, previous_phase_id, group_size, status
+            FROM phases
+            WHERE tournament_id = $1
+            "#,
+            tournament_id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let mut phases = Vec::with_capacity(records.len());
+        for record in records {
+            phases.push(Phase {
+                id: record.id,
+                name: record.name,
+                tournament_id: record.tournament_id,
+                is_finals: record.is_finals,
+                previous_phase_id: record.previous_phase_id,
+                group_size: record.group_size,
+                status: PhaseStatus::try_from(record.status)?,
+            });
+        }
+
+        Ok(phases)
+    }
+
     pub async fn post(
         tournament_id: Uuid,
         json: Phase,
         pool: &Pool<Postgres>,
     ) -> Result<Phase, OmniError> {
         let mut transaction = pool.begin().await?;
-        let phase = Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
+        let phase =
+            Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
         transaction.commit().await?;
         Ok(phase)
     }
@@ -317,12 +352,10 @@ impl Phase {
         .fetch_one(pool)
         .await
         .ok();
-        if next_phase_record.is_none() {
-            return Err(OmniError::ResourceNotFoundError);
+        if let Some(record) = next_phase_record {
+            Phase::get_by_id(record.id, pool).await
         } else {
-            let next_phase =
-                Phase::get_by_id(next_phase_record.unwrap().id, pool).await?;
-            return Ok(next_phase);
+            Err(OmniError::ResourceNotFoundError)
         }
     }
 
@@ -333,7 +366,7 @@ impl Phase {
         if self.previous_phase_id.is_none() {
             return Err(OmniError::ResourceNotFoundError);
         }
-        return Ok(Phase::get_by_id(self.previous_phase_id.unwrap(), pool).await?);
+        return Phase::get_by_id(self.previous_phase_id.unwrap(), pool).await;
     }
 
     pub async fn phase_name_exists_in_tournament(
@@ -366,7 +399,7 @@ impl Phase {
         if previous_phase.tournament_id != self.tournament_id {
             return Ok(true);
         }
-        return Ok(false);
+        Ok(false)
     }
 
     async fn previous_phase_is_already_declared_as_previous_round_elsewhere(
@@ -419,7 +452,7 @@ impl Phase {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         if self.previous_phase_id.is_some() {
-            return Ok(false);
+            Ok(false)
         } else {
             match query!("SELECT EXISTS (SELECT 1 FROM phases WHERE previous_phase_id is NULL AND tournament_id = $1)", self.tournament_id).fetch_one(pool).await {
                 Ok(result) => Ok(result.exists.unwrap()),
@@ -437,13 +470,13 @@ impl Phase {
                 return Ok(true);
             }
         }
-        return Ok(false);
+        Ok(false)
     }
 }
 
 impl PhasePatch {
     pub fn create_phase_with(self, phase: Phase) -> Phase {
-        return Phase {
+        Phase {
             id: phase.id,
             name: self.name.unwrap_or(phase.name),
             tournament_id: self.tournament_id.unwrap_or(phase.tournament_id),
@@ -451,7 +484,7 @@ impl PhasePatch {
             previous_phase_id: self.previous_phase_id.or(phase.previous_phase_id),
             group_size: self.group_size.or(phase.group_size),
             status: self.status.unwrap_or(phase.status),
-        };
+        }
     }
 }
 

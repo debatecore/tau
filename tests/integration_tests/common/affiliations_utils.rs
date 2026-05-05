@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use reqwest::{Response, StatusCode};
-use tau::{omni_error::OmniError};
+use tau::omni_error::OmniError;
 
 use crate::common::test_app::TestApp;
 
@@ -28,16 +28,18 @@ pub async fn get_id_of_a_new_affiliation(
     }
 }
 
-pub async fn create_affiliation(app: &TestApp, judge_id: &str, team_id: &str, token: &str) -> Response {
+pub async fn create_affiliation(
+    app: &TestApp,
+    judge_id: &str,
+    team_id: &str,
+    token: &str,
+) -> Response {
     let mut request_body = HashMap::new();
     request_body.insert("judge_user_id", judge_id);
     request_body.insert("team_id", team_id);
 
     app.client
-        .post(app.url(&format!(
-            "/users/{}/affiliations",
-             judge_id
-        )))
+        .post(app.url(&format!("/users/{}/affiliations", judge_id)))
         .json(&request_body)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
@@ -47,12 +49,14 @@ pub async fn create_affiliation(app: &TestApp, judge_id: &str, team_id: &str, to
         .unwrap()
 }
 
-pub async fn get_affiliation(app: &TestApp, id: &str, judge_id: &str, token: &str) -> Response {
+pub async fn get_affiliation(
+    app: &TestApp,
+    id: &str,
+    judge_id: &str,
+    token: &str,
+) -> Response {
     app.client
-        .get(app.url(&format!(
-            "/users/{}/affiliations/{}",
-            judge_id, id
-        )))
+        .get(app.url(&format!("/users/{}/affiliations/{}", judge_id, id)))
         .header("accept", "application/json")
         .bearer_auth(token)
         .send()
@@ -90,10 +94,7 @@ pub async fn patch_affiliation(
     request_body.insert("team_id", team_id);
 
     app.client
-        .patch(app.url(&format!(
-            "/users/{}/affiliations/{}",
-            judge_id, id
-        )))
+        .patch(app.url(&format!("/users/{}/affiliations/{}", judge_id, id)))
         .json(&request_body)
         .header("accept", "text/plain")
         .header("Content-Type", "application/json")
@@ -103,12 +104,14 @@ pub async fn patch_affiliation(
         .unwrap()
 }
 
-pub async fn delete_affiliation(app: &TestApp, id: &str, judge_id: &str, token: &str) -> Response {
+pub async fn delete_affiliation(
+    app: &TestApp,
+    id: &str,
+    judge_id: &str,
+    token: &str,
+) -> Response {
     app.client
-        .delete(app.url(&format!(
-            "/users/{}/affiliations/{}",
-            judge_id, id
-        )))
+        .delete(app.url(&format!("/users/{}/affiliations/{}", judge_id, id)))
         .header("accept", "text/plain")
         .bearer_auth(token)
         .send()

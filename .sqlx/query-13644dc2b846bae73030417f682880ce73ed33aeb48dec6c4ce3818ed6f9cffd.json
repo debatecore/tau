@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, name, tournament_id, is_finals, previous_phase_id, group_size, status\n            FROM phases\n            WHERE tournament_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "tournament_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_finals",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "previous_phase_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "group_size",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "13644dc2b846bae73030417f682880ce73ed33aeb48dec6c4ce3818ed6f9cffd"
+}

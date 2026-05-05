@@ -1,13 +1,6 @@
 use reqwest::StatusCode;
-use serial_test::serial;
-use std::future::IntoFuture;
-use tau::setup::{self};
 
-use crate::common::{
-    test_app::TestApp,
-    auth_utils::login_with_credentials, create_app, create_listener,
-    prepare_empty_database,
-};
+use crate::common::{auth_utils::login_with_credentials, test_app::TestApp};
 
 #[tokio::test]
 async fn login_as_infraadmin_should_work_out_of_the_box() {

@@ -1,4 +1,4 @@
-use axum::http::StatusCode;
+﻿use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_inline_default::serde_inline_default;
 use sqlx::{query, query_as, Pool, Postgres, Transaction};
@@ -272,7 +272,7 @@ impl TournamentPlan {
                             planned_start_time: None,
                             planned_end_time: None,
                             motion_id: None,
-                            previous_round_id: previous_round_id,
+                            previous_round_id,
                             status: RoundStatus::Planned,
                         },
                     )
@@ -311,7 +311,7 @@ impl TournamentPlan {
                             planned_start_time: None,
                             planned_end_time: None,
                             motion_id: None,
-                            previous_round_id: previous_round_id,
+                            previous_round_id,
                             status: RoundStatus::Planned,
                         },
                     )
@@ -471,9 +471,9 @@ fn validate(
 }
 
 fn calculate_final_phase_rounds(advancing_teams: i32) -> i32 {
-    let mut teams = advancing_teams.clone();
+    let mut teams = advancing_teams;
     let mut final_phase_rounds = 0;
-    if (teams != 0) {
+    if teams != 0 {
         while (teams & 1) == 0 {
             final_phase_rounds += 1;
             teams >>= 1;

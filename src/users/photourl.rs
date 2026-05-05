@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use std::error::Error;
 use url::Url;
 use utoipa::ToSchema;
@@ -34,10 +34,7 @@ impl PhotoUrl {
         if let Some(filename) = path.split("/").last() {
             if let Some((name, ext)) = filename.rsplit_once(".") {
                 if !name.is_empty() {
-                    return match ext {
-                        "png" | "jpg" | "jpeg" | "webp" => true,
-                        _ => false,
-                    };
+                    return matches!(ext, "png" | "jpg" | "jpeg" | "webp");
                 }
             }
         }
@@ -54,9 +51,9 @@ impl TryFrom<String> for PhotoUrl {
     }
 }
 
-impl Into<String> for PhotoUrl {
-    fn into(self) -> String {
-        self.as_str().to_owned()
+impl From<PhotoUrl> for String {
+    fn from(val: PhotoUrl) -> Self {
+        val.as_str().to_owned()
     }
 }
 
