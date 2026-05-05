@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                rounds.id,\n                rounds.name,\n                rounds.phase_id,\n                rounds.planned_start_time,\n                rounds.planned_end_time,\n                rounds.motion_id,\n                rounds.previous_round_id,\n                rounds.status\n            FROM rounds\n            JOIN phases ON phases.id = rounds.phase_id\n            WHERE phases.tournament_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "phase_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "planned_start_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "planned_end_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "motion_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "previous_round_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "ea274d395c6af0bda06ecab5a89272f6df799720c46d9a04366a4d5b40838641"
+}

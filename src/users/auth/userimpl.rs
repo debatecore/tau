@@ -78,17 +78,17 @@ impl User {
             Err(e) => match e {
                 // Hashes must always be compared to even out response times
                 sqlx::Error::RowNotFound => MOCK_HASH.to_owned(),
-                _ => return Err(OmniError::SqlxError(e))?,
+                _ => return Err(OmniError::SqlxError(e)),
             },
         };
         let argon = Argon2::default();
         let hash = match PasswordHash::new(&saved_hash) {
             Ok(hash) => hash,
-            Err(e) => return Err(e)?,
+            Err(e) => return Err(OmniError::PassHashError(e.to_string())),
         };
 
         match argon.verify_password(password.as_bytes(), &hash).is_ok() {
-            true => User::get_by_handle(login, pool).await,
+            true => Ok(User::get_by_handle(login, pool).await?),
             false => Err(AuthError::InvalidCredentials)?,
         }
     }

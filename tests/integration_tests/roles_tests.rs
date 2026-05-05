@@ -1,18 +1,10 @@
-use std::future::IntoFuture;
-
 use reqwest::StatusCode;
-use serial_test::serial;
-use tau::{
-    omni_error::OmniError,
-    setup::{self},
-    tournaments::roles::Role,
-};
+use tau::{omni_error::OmniError, tournaments::roles::Role};
 
 use crate::common::{
-    test_app::TestApp,
     auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
-    create_app, create_listener, prepare_empty_database,
     roles_utils::{create_roles, delete_roles, get_roles, patch_roles},
+    test_app::TestApp,
     tournament_utils::{create_tournament, get_id_of_a_new_tournament},
     user_utils::{create_user, get_id_of_a_new_user, get_organizer_token},
 };
@@ -139,8 +131,14 @@ async fn granting_duplicate_roles_should_cause_conflicts() -> Result<(), OmniErr
         .as_str()
         .unwrap()
         .to_owned();
-    let first_response =
-        create_roles(&app, &user_id, &tournament_id, vec![Role::Organizer], &token).await;
+    let first_response = create_roles(
+        &app,
+        &user_id,
+        &tournament_id,
+        vec![Role::Organizer],
+        &token,
+    )
+    .await;
     let second_response =
         create_roles(&app, &user_id, &tournament_id, vec![Role::Marshal], &token).await;
 
@@ -186,7 +184,14 @@ async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniE
         .unwrap()
         .to_owned();
 
-    create_roles(&app, &alice_id, &tournament_id, vec![Role::Organizer], &token).await;
+    create_roles(
+        &app,
+        &alice_id,
+        &tournament_id,
+        vec![Role::Organizer],
+        &token,
+    )
+    .await;
     create_roles(&app, &bob_id, &tournament_id, vec![Role::Marshal], &token).await;
     let alice_token = get_session_token_for(&app, alice_handle, alice_password)
         .await
@@ -232,7 +237,14 @@ async fn roles_should_not_be_visible_to_other_users_from_outside_tournament(
         .unwrap()
         .to_owned();
 
-    create_roles(&app, &alice_id, &tournament_id, vec![Role::Organizer], &token).await;
+    create_roles(
+        &app,
+        &alice_id,
+        &tournament_id,
+        vec![Role::Organizer],
+        &token,
+    )
+    .await;
     let mallory_token = get_session_token_for(&app, mallory_handle, mallory_password)
         .await
         .unwrap();
@@ -268,7 +280,7 @@ async fn roles_should_be_modifiable() -> Result<(), OmniError> {
         .unwrap()
         .to_owned();
     create_roles(
-        &app, 
+        &app,
         &user_id,
         &tournament_id,
         vec![Role::Judge, Role::Organizer],

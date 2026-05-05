@@ -11,10 +11,10 @@ pub mod plans_utils;
 pub mod roles_utils;
 pub mod rounds_utils;
 pub mod teams_utils;
+pub mod test_app;
 pub mod tournament_utils;
 pub mod user_utils;
 pub mod verdicts_utils;
-pub mod test_app;
 
 use tau::{
     database,

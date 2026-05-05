@@ -1,4 +1,4 @@
-use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
+﻿use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
 use chrono::Utc;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use sha2::{Digest, Sha512};
@@ -9,10 +9,7 @@ pub fn hash_token(token: &str) -> String {
 }
 
 pub fn generate_token() -> String {
-    let secret = match std::env::var("SECRET") {
-        Ok(s) => Some(s),
-        Err(_) => None,
-    };
+    let secret = std::env::var("SECRET").ok();
     let seed = {
         let mut seed = [0u8; 32];
 
