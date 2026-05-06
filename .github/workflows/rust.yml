@@ -28,3 +28,21 @@ jobs:
       run: docker build -t tau:test .
     - name: Build Docker Compose
       run: docker compose build server-prod
+
+  version-check:
+    name: Check package version
+    runs-on: ubuntu-latest
+
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin "${{ github.base_ref }}" --depth=1
+
+      - name: Check Cargo.toml and pyproject.toml versions
+        run: python scripts/check_version.py "origin/${{ github.base_ref }}"
