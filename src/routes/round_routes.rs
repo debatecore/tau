@@ -232,7 +232,11 @@ async fn patch_round_by_id(
     match round.patch(new_round, pool).await {
         Ok(patched_round) => {
             patched_round.patch_children_debates(pool).await?;
-            Ok(Json(patched_round).into_response())
+            return Ok(Json(patched_round).into_response());
+        }
+        Err(e) => {
+            error!("{}", e);
+            return Err(OmniError::InternalServerError);
         }
         Err(e) => Err(e)?,
     }

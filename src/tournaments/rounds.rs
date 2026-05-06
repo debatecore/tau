@@ -1,4 +1,4 @@
-﻿use std::fmt;
+use std::fmt;
 
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
@@ -446,8 +446,8 @@ impl Round {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         match query!(
-            "SELECT EXISTS (SELECT 1 FROM rounds WHERE previous_round_id = $1)",
-            self.previous_round_id
+            "SELECT EXISTS (SELECT 1 FROM rounds WHERE previous_round_id = $1 AND id != $2)",
+            self.previous_round_id, self.id
         )
         .fetch_one(pool)
         .await
