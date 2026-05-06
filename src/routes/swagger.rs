@@ -9,6 +9,7 @@ use crate::setup::AppState;
 use crate::routes::affiliation_routes;
 use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
+use crate::routes::ladder_routes;
 use crate::routes::location_routes;
 use crate::routes::motion_routes;
 use crate::routes::permissions_routes;
@@ -20,7 +21,6 @@ use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::routes::verdicts_routes;
-use crate::routes::ladder_routes;
 
 use crate::tournaments;
 use crate::tournaments::affiliations;
