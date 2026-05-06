@@ -20,6 +20,7 @@ use crate::routes::round_routes;
 use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::routes::verdicts_routes;
+use crate::routes::ladder_routes;
 
 use crate::tournaments;
 use crate::tournaments::affiliations;
@@ -69,6 +70,7 @@ pub fn route() -> Router<AppState> {
         motion_routes::get_motion_by_id,
         motion_routes::patch_motion_by_id,
         motion_routes::delete_motion_by_id,
+        ladder_routes::get_ladder,
         team_routes::get_teams,
         team_routes::create_team,
         team_routes::get_team_by_id,
