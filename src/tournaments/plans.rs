@@ -236,10 +236,11 @@ impl TournamentPlan {
 
         // Phase
         let mut previous_phase_id: Option<Uuid> = None;
+        let mut previous_round_id: Option<Uuid> = None;
 
         for phase_index in 1..=2 {
             let curr_phase_id = Uuid::now_v7();
-            let is_finals = phase_index == 2; // is phase count constant (group phase / final phase)?
+            let is_finals = phase_index == 2;
 
             Phase::post_with_transaction(
                 transaction,
@@ -255,8 +256,6 @@ impl TournamentPlan {
                 },
             )
             .await?;
-
-            let mut previous_round_id: Option<Uuid> = None;
 
             // Group phase
             if !is_finals {
