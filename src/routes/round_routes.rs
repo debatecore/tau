@@ -237,7 +237,6 @@ async fn patch_round_by_id(
             error!("{}", e);
             return Err(OmniError::InternalServerError);
         }
-        Err(e) => Err(e)?,
     }
 }
 
