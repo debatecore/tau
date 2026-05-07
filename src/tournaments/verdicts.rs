@@ -13,6 +13,8 @@ use super::{roles::Role, Tournament};
 /// Every Judge can make a verdict on a debate
 /// within a tournament they're assigned to.
 /// A debate can have multiple verdicts.
+/// It is advised to assign an odd number of Judges
+/// to a debate to avoid ties.
 pub struct Verdict {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
