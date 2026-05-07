@@ -9,6 +9,7 @@ use crate::setup::AppState;
 use crate::routes::affiliation_routes;
 use crate::routes::attendee_routes;
 use crate::routes::debate_routes;
+use crate::routes::ladder_routes;
 use crate::routes::location_routes;
 use crate::routes::motion_routes;
 use crate::routes::permissions_routes;
@@ -69,6 +70,7 @@ pub fn route() -> Router<AppState> {
         motion_routes::get_motion_by_id,
         motion_routes::patch_motion_by_id,
         motion_routes::delete_motion_by_id,
+        ladder_routes::get_ladder,
         team_routes::get_teams,
         team_routes::create_team,
         team_routes::get_team_by_id,
