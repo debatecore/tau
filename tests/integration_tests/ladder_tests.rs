@@ -111,7 +111,8 @@ async fn ladder_should_return_consistent_phases_rounds_and_debates(
 }
 
 #[tokio::test]
-async fn ladder_rounds_should_form_single_previous_round_chain() -> Result<(), OmniError> {
+async fn ladder_rounds_should_form_single_previous_round_chain() -> Result<(), OmniError>
+{
     let app = TestApp::spawn().await;
     let tournament_id = get_id_of_a_new_tournament(&app, "ladder").await?;
     let token = get_organizer_token(&app, &tournament_id).await;
@@ -166,9 +167,7 @@ async fn ladder_rounds_should_form_single_previous_round_chain() -> Result<(), O
     used_round_ids.insert(first_round_id);
 
     while sorted_rounds.len() < rounds.len() {
-        let previous_round_id = sorted_rounds
-            .last()
-            .unwrap()["id"]
+        let previous_round_id = sorted_rounds.last().unwrap()["id"]
             .as_str()
             .expect("every sorted round should have string id");
 
