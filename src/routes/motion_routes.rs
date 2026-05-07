@@ -12,7 +12,7 @@ use axum::{
     Json, Router,
 };
 use tower_cookies::Cookies;
-use tracing::{error};
+use tracing::error;
 use uuid::Uuid;
 
 const DUPLICATE_MOTION_ERROR: &str = "Motion with such content already exists";
