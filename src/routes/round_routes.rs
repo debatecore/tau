@@ -227,7 +227,6 @@ async fn patch_round_by_id(
     }
 
     let new_round = patch.create_round_with(round.clone());
-    new_round.validate(pool).await?;
 
     match round.patch(new_round, pool).await {
         Ok(patched_round) => {

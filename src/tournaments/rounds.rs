@@ -1,4 +1,4 @@
-use std::fmt;
+﻿use std::fmt;
 
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
@@ -259,7 +259,6 @@ impl Round {
         Ok(round)
     }
 
-    // TO-DO: perform as an atomic database transaction
     pub async fn patch_children_debates(
         &self,
         pool: &Pool<Postgres>,
