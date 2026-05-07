@@ -38,7 +38,7 @@ async fn ladder_should_return_consistent_phases_rounds_and_debates(
 
     let ladder_response = app
         .client
-        .get(app.url(&format!("/tournament/{}/ladder", tournament_id)))
+        .get(app.url(&format!("/tournaments/{}/ladder", tournament_id)))
         .bearer_auth(token)
         .send()
         .await

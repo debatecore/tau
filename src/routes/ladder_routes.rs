@@ -26,12 +26,13 @@ struct TournamentLadderResponse {
 }
 
 pub fn route() -> Router<AppState> {
-    Router::new().route("/tournament/{tournament_id}/ladder", get(get_ladder))
+    Router::new().route("/tournaments/{tournament_id}/ladder", get(get_ladder))
 }
 
-#[utoipa::path(get, path = "/tournament/{tournament_id}/ladder",
+#[utoipa::path(get, path = "/tournaments/{tournament_id}/ladder",
+    description = "Returns the tournament ladder including all phases, rounds, and debates for the specified tournament. Requires authentication and tournament permissions ReadPhases, ReadRounds, and ReadDebates.",
     responses(
-        (status=200, description = "Ok", body=TournamentLadderResponse),
+        (status=200, description = "Tournament ladder returned successfully", body=TournamentLadderResponse),
         (status=400, description = "Bad request"),
         (status=401, description = "Authentication error"),
         (status=403, description = "The user is not permitted to read this tournament ladder"),
