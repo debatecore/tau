@@ -56,11 +56,11 @@ pub async fn create_debate(
 pub async fn get_debate(
     app: &TestApp,
     id: &str,
-    judge_id: &str,
+    tournament_id: &str,
     token: &str,
 ) -> Response {
     app.client
-        .get(app.url(&format!("/tournaments/{}/debates/{}", judge_id, id)))
+        .get(app.url(&format!("/tournaments/{}/debates/{}", tournament_id, id)))
         .header("accept", "application/json")
         .bearer_auth(token)
         .send()
