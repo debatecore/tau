@@ -132,7 +132,7 @@ async fn ladder_rounds_should_form_single_previous_round_chain() -> Result<(), O
 
     let ladder_response = app
         .client
-        .get(app.url(&format!("/tournament/{}/ladder", tournament_id)))
+        .get(app.url(&format!("/tournaments/{}/ladder", tournament_id)))
         .bearer_auth(token)
         .send()
         .await

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS (SELECT 1 FROM rounds WHERE previous_round_id = $1)",
+  "query": "SELECT EXISTS (SELECT 1 FROM rounds WHERE previous_round_id = $1 AND id != $2)",
   "describe": {
     "columns": [
       {
@@ -11,6 +11,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -18,5 +19,5 @@
       null
     ]
   },
-  "hash": "d48304ec81b88e093ee5c52b23c988cf314d5a34f4bcf94b2215cb12f89f788d"
+  "hash": "2aff79b1fca37509da4a47556ac54aab7e5eaa068b657553ed806a84c630cd73"
 }

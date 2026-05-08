@@ -227,14 +227,16 @@ async fn patch_round_by_id(
     }
 
     let new_round = patch.create_round_with(round.clone());
-    new_round.validate(pool).await?;
 
     match round.patch(new_round, pool).await {
         Ok(patched_round) => {
             patched_round.patch_children_debates(pool).await?;
             Ok(Json(patched_round).into_response())
         }
-        Err(e) => Err(e)?,
+        Err(e) => {
+            error!("{}", e);
+            Err(OmniError::InternalServerError)
+        }
     }
 }
 
