@@ -122,11 +122,10 @@ async fn create_motion(
     tag="motions"
 )]
 async fn get_motion_by_id(
-    Path(id): Path<Uuid>,
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =
@@ -165,11 +164,10 @@ async fn get_motion_by_id(
     tag="motions"
 )]
 async fn patch_motion_by_id(
-    Path(id): Path<Uuid>,
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
     Json(new_motion): Json<MotionPatch>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
@@ -187,7 +185,10 @@ async fn patch_motion_by_id(
         .await
     {
         Ok(patched_motion) => Ok(Json(patched_motion).into_response()),
-        Err(e) => Err(e),
+        Err(e) => {
+            error!("Failed to patch motion {}: {}", id, e);
+            Err(e)
+        }
     }
 }
 
@@ -210,11 +211,10 @@ async fn patch_motion_by_id(
 
 )]
 async fn delete_motion_by_id(
-    Path(id): Path<Uuid>,
+    Path((tournament_id, id)): Path<(Uuid, Uuid)>,
     State(state): State<AppState>,
     headers: HeaderMap,
     cookies: Cookies,
-    Path(tournament_id): Path<Uuid>,
 ) -> Result<Response, OmniError> {
     let pool = &state.connection_pool;
     let tournament_user =

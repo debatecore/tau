@@ -259,7 +259,6 @@ impl Round {
         Ok(round)
     }
 
-    // TO-DO: perform as an atomic database transaction
     pub async fn patch_children_debates(
         &self,
         pool: &Pool<Postgres>,
@@ -446,8 +445,8 @@ impl Round {
         pool: &Pool<Postgres>,
     ) -> Result<bool, OmniError> {
         match query!(
-            "SELECT EXISTS (SELECT 1 FROM rounds WHERE previous_round_id = $1)",
-            self.previous_round_id
+            "SELECT EXISTS (SELECT 1 FROM rounds WHERE previous_round_id = $1 AND id != $2)",
+            self.previous_round_id, self.id
         )
         .fetch_one(pool)
         .await
