@@ -141,7 +141,7 @@ async fn get_verdict_by_id(
 /// Patch an existing verdict
 ///
 /// Requires SubmitOwnVerdictVote permission. Available to Judges, Organizers and the admin.
-#[utoipa::path(patch, path = "/users/{user_id}/verdicts/{id}",
+#[utoipa::path(patch, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
     request_body=Verdict,
     responses(
         (status=200, description = "Ok", body=Verdict),
@@ -192,8 +192,9 @@ async fn patch_verdict_by_id(
 }
 
 /// Delete an existing verdict
+///
 /// Requires SubmitOwnVerdictVote permission. Available to Judges, Organizers and the admin.
-#[utoipa::path(delete, path = "/users/{user_id}/verdicts/{id}",
+#[utoipa::path(delete, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
     responses(
         (status=204, description = "No content"),
         (status=400, description = "Bad request"),
