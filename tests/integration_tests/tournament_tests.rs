@@ -51,14 +51,7 @@ async fn tournament_creation_should_impossible_for_other_users() {
     let user_token = get_token_for_user_with_no_roles(&app).await;
 
     // WHEN
-    let response = create_tournament(
-        &app,
-        "illegal tournament",
-        &user_token,
-    )
-    .await;
-
-
+    let response = create_tournament(&app, "illegal tournament", &user_token).await;
 
     // THEN
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
@@ -74,8 +67,7 @@ async fn tournament_names_should_not_allow_duplicates() {
 
     // WHEN
     let first_response = create_tournament(&app, full_name, &token).await;
-    let second_response =
-        create_tournament(&app, full_name, &token).await;
+    let second_response = create_tournament(&app, full_name, &token).await;
 
     // THEN
     assert_eq!(first_response.status(), StatusCode::OK);

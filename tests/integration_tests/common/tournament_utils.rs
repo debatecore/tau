@@ -12,11 +12,7 @@ use crate::common::{
 
 static COUNTER: AtomicU64 = AtomicU64::new(0);
 
-pub async fn create_tournament(
-    app: &TestApp,
-    full_name: &str,
-    token: &str,
-) -> Response {
+pub async fn create_tournament(app: &TestApp, full_name: &str, token: &str) -> Response {
     let mut request_body = HashMap::new();
     request_body.insert("full_name", full_name);
     let shortened = shorten(&full_name);
@@ -38,9 +34,7 @@ pub async fn get_id_of_a_new_tournament(
     full_name: &str,
 ) -> Result<String, OmniError> {
     let token = get_session_token_for_infrastructure_admin(app).await;
-    let response =
-        create_tournament(app, full_name, &token)
-            .await;
+    let response = create_tournament(app, full_name, &token).await;
 
     match response.status() {
         StatusCode::OK => Ok(response.json::<serde_json::Value>().await.unwrap()["id"]
@@ -69,13 +63,7 @@ fn shorten(word: &str) -> String {
     let first = word.chars().next().unwrap();
     let last = word.chars().last().unwrap();
 
-    capitalize(&format!(
-        "{}{}{}{}",
-        first,
-        len - 2,
-        last,
-        id
-    ))
+    capitalize(&format!("{}{}{}{}", first, len - 2, last, id))
 }
 
 fn short_id() -> String {
@@ -114,8 +102,6 @@ fn capitalize(word: &str) -> String {
 
     match chars.next() {
         None => String::new(),
-        Some(first) => {
-            first.to_uppercase().collect::<String>() + chars.as_str()
-        }
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
     }
 }

@@ -5,12 +5,12 @@ use plans::TournamentPlan;
 use rounds::Round;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use teams::Team;
 use tracing::error;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::omni_error::OmniError;
 
@@ -385,13 +385,7 @@ fn shorten(word: &str) -> String {
     let first = word.chars().next().unwrap();
     let last = word.chars().last().unwrap();
 
-    capitalize(&format!(
-        "{}{}{}{}",
-        first,
-        len - 2,
-        last,
-        id
-    ))
+    capitalize(&format!("{}{}{}{}", first, len - 2, last, id))
 }
 
 fn short_id() -> String {
@@ -430,8 +424,6 @@ fn capitalize(word: &str) -> String {
 
     match chars.next() {
         None => String::new(),
-        Some(first) => {
-            first.to_uppercase().collect::<String>() + chars.as_str()
-        }
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
     }
 }
