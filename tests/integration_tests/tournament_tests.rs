@@ -38,7 +38,7 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin(&app).await;
-    let res = create_tournament(&app, "Wrocławska Liga Debat", "WrLD", &token).await;
+    let res = create_tournament(&app, "Wrocławska Liga Debat", &token).await;
 
     // THEN
     assert_eq!(res.status(), StatusCode::OK);
@@ -54,10 +54,11 @@ async fn tournament_creation_should_impossible_for_other_users() {
     let response = create_tournament(
         &app,
         "illegal tournament",
-        "will not be created",
         &user_token,
     )
     .await;
+
+
 
     // THEN
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
@@ -69,13 +70,12 @@ async fn tournament_names_should_not_allow_duplicates() {
     let app = TestApp::spawn().await;
 
     let full_name = "WrocÅ‚awska Liga Debat";
-    let shortened_name = "WrLD";
     let token = get_session_token_for_infrastructure_admin(&app).await;
 
     // WHEN
-    let first_response = create_tournament(&app, full_name, shortened_name, &token).await;
+    let first_response = create_tournament(&app, full_name, &token).await;
     let second_response =
-        create_tournament(&app, full_name, shortened_name, &token).await;
+        create_tournament(&app, full_name, &token).await;
 
     // THEN
     assert_eq!(first_response.status(), StatusCode::OK);
