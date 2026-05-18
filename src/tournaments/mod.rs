@@ -81,7 +81,7 @@ pub struct Tournament {
 pub struct TournamentPatch {
     /// Full name of the tournament. Must be unique.
     full_name: Option<String>,
-    shortened_name: Option<String>,
+    // shortened_name: Option<String>,
     /// In seconds
     /// Speech time per speaker during a debate in seconds.
     speech_time: Option<i32>,
