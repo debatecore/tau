@@ -23,7 +23,7 @@ jobs:
     - name : Check formatting
       run: cargo fmt --check
     - name : Run clippy
-      run: cargo clippy -- -D warnings
+      run: cargo clippy -- -D warnings --no-deps
     - name: Build Docker image
       run: docker build -t tau:test .
     - name: Build Docker Compose
