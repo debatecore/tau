@@ -23,7 +23,7 @@ async fn admin_should_be_able_to_assign_roles() -> Result<(), OmniError> {
         .as_str()
         .unwrap()
         .to_owned();
-    let tournament_id = create_tournament(&app, "some tournament", &token)
+    let tournament_id = create_tournament(&app, "some tournament", None, &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -123,7 +123,7 @@ async fn granting_duplicate_roles_should_cause_conflicts() -> Result<(), OmniErr
         .as_str()
         .unwrap()
         .to_owned();
-    let tournament_id = create_tournament(&app, "some tournament", &token)
+    let tournament_id = create_tournament(&app, "some tournament", None, &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -175,7 +175,7 @@ async fn roles_should_be_visible_to_other_tournament_users() -> Result<(), OmniE
         .as_str()
         .unwrap()
         .to_owned();
-    let tournament_id = create_tournament(&app, "some tournament", &token)
+    let tournament_id = create_tournament(&app, "some tournament", None, &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -228,7 +228,7 @@ async fn roles_should_not_be_visible_to_other_users_from_outside_tournament(
         .unwrap()
         .to_owned();
     create_user(&app, mallory_handle, mallory_password, &token).await;
-    let tournament_id = create_tournament(&app, "some tournament", &token)
+    let tournament_id = create_tournament(&app, "some tournament", None, &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -271,7 +271,7 @@ async fn roles_should_be_modifiable() -> Result<(), OmniError> {
         .as_str()
         .unwrap()
         .to_owned();
-    let tournament_id = create_tournament(&app, "some tournament", &token)
+    let tournament_id = create_tournament(&app, "some tournament", None, &token)
         .await
         .json::<serde_json::Value>()
         .await
@@ -316,7 +316,7 @@ async fn roles_should_be_deletable() -> Result<(), OmniError> {
         .as_str()
         .unwrap()
         .to_owned();
-    let tournament_id = create_tournament(&app, "some tournament", &token)
+    let tournament_id = create_tournament(&app, "some tournament", None, &token)
         .await
         .json::<serde_json::Value>()
         .await

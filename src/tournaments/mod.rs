@@ -111,7 +111,7 @@ impl Tournament {
         pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
         let mut shortened_name = tournament.shortened_name.clone();
-        if tournament.shortened_name == "" {
+        if tournament.shortened_name.is_empty() {
             shortened_name = shorten(&tournament.full_name);
         }
         match query_as!(
