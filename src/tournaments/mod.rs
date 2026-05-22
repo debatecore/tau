@@ -375,7 +375,7 @@ impl Tournament {
     }
 }
 
-fn shorten(name: &str) -> String {
+pub fn shorten(name: &str) -> String {
     let words: Vec<String> = name
         .split_whitespace()
         .map(|word| {
@@ -404,14 +404,6 @@ fn shorten(name: &str) -> String {
         }
     }
 
-    capitalize(&result)
+    result.to_uppercase()
 }
 
-fn capitalize(word: &str) -> String {
-    let mut chars = word.chars();
-
-    match chars.next() {
-        None => String::new(),
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-    }
-}

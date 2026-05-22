@@ -35,6 +35,20 @@ async fn tournament_creation_should_require_login() {
 async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
     // GIVEN
     let app = TestApp::spawn().await;
+
+    // WHEN
+    let token = get_session_token_for_infrastructure_admin(&app).await;
+    let res =
+        create_tournament(&app, "Wrocławska Liga Debat", None, &token).await;
+
+    // THEN
+    assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn tournament_creation_should_be_possible_with_user_defined_shortened_name() {
+    // GIVEN
+    let app = TestApp::spawn().await;
     let short_name_str = "WrLD";
     let shortened_name: Option<String> = Some(short_name_str.to_string());
 

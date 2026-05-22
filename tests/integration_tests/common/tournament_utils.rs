@@ -7,6 +7,8 @@ use crate::common::{
     auth_utils::get_session_token_for_infrastructure_admin, test_app::TestApp,
 };
 
+use tau::tournaments::shorten;
+
 pub async fn create_tournament(
     app: &TestApp,
     full_name: &str,
@@ -91,43 +93,14 @@ pub async fn get_id_of_a_new_tournament(
     }
 }
 
-fn shorten(name: &str) -> String {
-    let words: Vec<String> = name
-        .split_whitespace()
-        .map(|word| {
-            word.chars()
-                .filter(|c| c.is_alphabetic())
-                .collect::<String>()
-        })
-        .filter(|word| !word.is_empty())
-        .collect();
-
-    let mut result = String::new();
-
-    match words.len() {
-        0 => {}
-        1 => {
-            result.extend(words[0].chars().take(3));
-        }
-        2 => {
-            result.extend(words[0].chars().take(2));
-            result.extend(words[1].chars().take(1));
-        }
-        _ => {
-            for word in words.iter().take(3) {
-                result.extend(word.chars().take(1));
-            }
-        }
-    }
-
-    capitalize(&result)
-}
-
-fn capitalize(word: &str) -> String {
-    let mut chars = word.chars();
-
-    match chars.next() {
-        None => String::new(),
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+#[cfg(test)]
+mod test_shortened_name {
+    use tau::tournaments::shorten;
+    #[test]
+    fn test_shortened_tournament_name_derivation() {
+        assert_eq!(shorten("Alpha Bravo Delta Tournament"), "ABD");
+        assert_eq!(shorten("Alpha Bravo Delta"), "ABD");
+        assert_eq!(shorten("Alpha Bravo"), "ALB");
+        assert_eq!(shorten("Alpha"), "ALP");
     }
 }
