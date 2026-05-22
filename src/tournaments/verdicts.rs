@@ -3,7 +3,10 @@ use sqlx::{query, query_as, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, users::User};
+use crate::{
+    omni_error::OmniError,
+    users::{TournamentUser, User},
+};
 
 use super::{roles::Role, Tournament};
 
@@ -132,9 +135,13 @@ impl Verdict {
         tournament_id: Uuid,
         pool: &Pool<Postgres>,
     ) -> Result<(), OmniError> {
-        let user = User::get_by_id(self.judge_user_id, pool).await?;
-        if !user.has_role(Role::Judge, tournament_id, pool).await? {
-            return Err(OmniError::ResourceNotFoundError);
+        let user =
+            TournamentUser::get_by_id(self.judge_user_id, tournament_id, pool).await?;
+
+        if !user
+            .has_permission(crate::users::permissions::Permission::SubmitOwnVerdictVote)
+        {
+            return Err(OmniError::UnauthorizedError);
         }
 
         match Tournament::get_by_id(tournament_id, pool).await {
