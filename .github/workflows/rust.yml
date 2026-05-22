@@ -50,14 +50,14 @@ jobs:
         run: sqlx migrate run
       - name: Build
         run: cargo build --lib --verbose
-      - name: Run unit tests
-        run: cargo test --lib --verbose
-      - name: Run integration tests
-        run: cargo test --test integration_tests --verbose
       - name: Check formatting
         run: cargo fmt --check
       - name: Run clippy
         run: cargo clippy -- -D warnings
+      - name: Run unit tests
+        run: cargo test --lib --verbose
+      - name: Run integration tests
+        run: cargo test --test integration_tests --verbose
       - name: Build Docker image
         run: docker build -t tau:test .
       - name: Build Docker Compose
