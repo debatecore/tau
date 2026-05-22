@@ -22,6 +22,7 @@ use crate::routes::team_routes;
 use crate::routes::tournament_routes;
 use crate::routes::verdicts_routes;
 
+use crate::routes::version;
 use crate::tournaments;
 use crate::tournaments::affiliations;
 use crate::tournaments::attendees;
@@ -40,7 +41,6 @@ use crate::users::photourl;
 
 use super::health_check;
 use super::teapot;
-use super::version;
 
 pub fn route() -> Router<AppState> {
     Router::new()
@@ -53,7 +53,7 @@ pub fn route() -> Router<AppState> {
         health_check::live,
         health_check::health,
         teapot::route,
-        version::version,
+        version::get_semver_version,
         version::version_details,
         tournament_routes::create_tournament,
         tournament_routes::get_tournament_by_id,
