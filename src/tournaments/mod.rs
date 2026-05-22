@@ -406,4 +406,3 @@ pub fn shorten(name: &str) -> String {
 
     result.to_uppercase()
 }
-

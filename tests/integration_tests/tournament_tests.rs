@@ -38,8 +38,7 @@ async fn tournament_creation_should_be_possible_for_infrastructure_admin() {
 
     // WHEN
     let token = get_session_token_for_infrastructure_admin(&app).await;
-    let res =
-        create_tournament(&app, "Wrocławska Liga Debat", None, &token).await;
+    let res = create_tournament(&app, "Wrocławska Liga Debat", None, &token).await;
 
     // THEN
     assert_eq!(res.status(), StatusCode::OK);
