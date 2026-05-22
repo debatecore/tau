@@ -12,7 +12,7 @@ pub mod tournaments;
 pub mod users;
 
 pub async fn start_server() {
-    setup::initialise_logging();
+    setup::initialise_logging().await;
     setup::read_environmental_variables();
     setup::check_secret_env_var();
 
