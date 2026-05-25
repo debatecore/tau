@@ -14,7 +14,10 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournaments::{verdicts::{Verdict, VerdictPatch}, Tournament},
+    tournaments::{
+        verdicts::{Verdict, VerdictPatch},
+        Tournament,
+    },
     users::{permissions::Permission, TournamentUser},
 };
 
@@ -195,7 +198,9 @@ async fn patch_verdict_by_id(
         if !tournament_user.has_permission(Permission::SubmitVerdict) {
             return Err(OmniError::ExplicitError {
                 status: StatusCode::UNAUTHORIZED,
-                message: "Correcting verdicts can only be conducted by judges who made them".to_string(),
+                message:
+                    "Correcting verdicts can only be conducted by judges who made them"
+                        .to_string(),
             });
         }
     }
@@ -209,7 +214,8 @@ async fn patch_verdict_by_id(
     {
         return Err(OmniError::ExplicitError {
             status: StatusCode::UNAUTHORIZED,
-            message: "The specified judge does not have permission to submit verdicts".to_string(),
+            message: "The specified judge does not have permission to submit verdicts"
+                .to_string(),
         });
     }
 

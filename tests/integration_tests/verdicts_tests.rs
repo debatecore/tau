@@ -322,15 +322,30 @@ async fn judges_should_not_be_able_to_change_verdict_judge_without_submit_verdic
 
     let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;
     let organizer_token = get_organizer_token(&app, &tournament_id).await;
-    
+
     // Create first judge and their verdict
     let judge_id = get_id_of_a_new_user(&app, judge_username, judge_password).await;
-    create_roles(&app, &judge_id, &tournament_id, vec![Role::Judge], &organizer_token).await;
+    create_roles(
+        &app,
+        &judge_id,
+        &tournament_id,
+        vec![Role::Judge],
+        &organizer_token,
+    )
+    .await;
     let judge_token = get_session_token_for(&app, judge_username, judge_password).await?;
 
     // Create second judge
-    let other_judge_id = get_id_of_a_new_user(&app, other_judge_username, other_judge_password).await;
-    create_roles(&app, &other_judge_id, &tournament_id, vec![Role::Judge], &organizer_token).await;
+    let other_judge_id =
+        get_id_of_a_new_user(&app, other_judge_username, other_judge_password).await;
+    create_roles(
+        &app,
+        &other_judge_id,
+        &tournament_id,
+        vec![Role::Judge],
+        &organizer_token,
+    )
+    .await;
 
     let debate_id = get_id_of_a_new_debate(&app, &tournament_id).await?;
 
@@ -359,7 +374,8 @@ async fn judges_should_not_be_able_to_change_verdict_judge_without_submit_verdic
     // THEN - Should get 401 Unauthorized
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     let response_body = response.text().await.unwrap_or_default();
-    assert!(response_body.contains("Correcting verdicts can only be conducted by judges who made them"));
+    assert!(response_body
+        .contains("Correcting verdicts can only be conducted by judges who made them"));
 
     Ok(())
 }
@@ -375,7 +391,14 @@ async fn admin_should_be_able_to_update_verdict() -> Result<(), OmniError> {
     let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;
     let organizer_token = get_organizer_token(&app, &tournament_id).await;
     let judge_id = get_id_of_a_new_user(&app, judge_username, judge_password).await;
-    create_roles(&app, &judge_id, &tournament_id, vec![Role::Judge], &organizer_token).await;
+    create_roles(
+        &app,
+        &judge_id,
+        &tournament_id,
+        vec![Role::Judge],
+        &organizer_token,
+    )
+    .await;
     let judge_token = get_session_token_for(&app, judge_username, judge_password).await?;
 
     let debate_id = get_id_of_a_new_debate(&app, &tournament_id).await?;
