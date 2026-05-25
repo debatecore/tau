@@ -90,7 +90,7 @@ architecture-beta
 Once you [configure your environment](#environment-setup), you can simply run:
 
 ```
-docker compose --profile prod
+docker compose --profile prod up -d 
 ```
 
 ## Documentation

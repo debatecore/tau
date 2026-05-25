@@ -23,7 +23,7 @@ mod teapot;
 mod tournament_routes;
 mod user_routes;
 mod verdicts_routes;
-mod version;
+pub mod version;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
