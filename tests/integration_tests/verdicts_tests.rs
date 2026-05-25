@@ -5,7 +5,7 @@ use tau::{omni_error::OmniError, tournaments::roles::Role};
 use uuid::Uuid;
 
 use crate::common::{
-    auth_utils::get_session_token_for,
+    auth_utils::{get_session_token_for, get_session_token_for_infrastructure_admin},
     debates_utils::get_id_of_a_new_debate,
     get_response_json,
     roles_utils::create_roles,
@@ -306,5 +306,109 @@ async fn judges_should_be_able_to_delete_verdicts() -> Result<(), OmniError> {
     // THEN
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
+    Ok(())
+}
+
+#[tokio::test]
+async fn judges_should_not_be_able_to_change_verdict_judge_without_submit_verdict_permission(
+) -> Result<(), OmniError> {
+    // GIVEN
+    let app = TestApp::spawn().await;
+
+    let judge_username = "judge";
+    let judge_password = "dredd";
+    let other_judge_username = "other_judge";
+    let other_judge_password = "anderson";
+
+    let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;
+    let organizer_token = get_organizer_token(&app, &tournament_id).await;
+    
+    // Create first judge and their verdict
+    let judge_id = get_id_of_a_new_user(&app, judge_username, judge_password).await;
+    create_roles(&app, &judge_id, &tournament_id, vec![Role::Judge], &organizer_token).await;
+    let judge_token = get_session_token_for(&app, judge_username, judge_password).await?;
+
+    // Create second judge
+    let other_judge_id = get_id_of_a_new_user(&app, other_judge_username, other_judge_password).await;
+    create_roles(&app, &other_judge_id, &tournament_id, vec![Role::Judge], &organizer_token).await;
+
+    let debate_id = get_id_of_a_new_debate(&app, &tournament_id).await?;
+
+    let verdict_id = get_id_of_a_new_verdict(
+        &app,
+        &tournament_id,
+        &judge_id,
+        &debate_id,
+        &true,
+        &judge_token,
+    )
+    .await?;
+
+    // WHEN - Try to change the verdict's judge to another user
+    let response = patch_verdict(
+        &app,
+        &verdict_id,
+        &tournament_id,
+        &other_judge_id,
+        &debate_id,
+        &true,
+        &judge_token,
+    )
+    .await;
+
+    // THEN - Should get 401 Unauthorized
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    let response_body = response.text().await.unwrap_or_default();
+    assert!(response_body.contains("Correcting verdicts can only be conducted by judges who made them"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn admin_should_be_able_to_update_verdict() -> Result<(), OmniError> {
+    // GIVEN
+    let app = TestApp::spawn().await;
+
+    let judge_username = "judge";
+    let judge_password = "dredd";
+
+    let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;
+    let organizer_token = get_organizer_token(&app, &tournament_id).await;
+    let judge_id = get_id_of_a_new_user(&app, judge_username, judge_password).await;
+    create_roles(&app, &judge_id, &tournament_id, vec![Role::Judge], &organizer_token).await;
+    let judge_token = get_session_token_for(&app, judge_username, judge_password).await?;
+
+    let debate_id = get_id_of_a_new_debate(&app, &tournament_id).await?;
+    let initial_verdict = true;
+
+    let verdict_id = get_id_of_a_new_verdict(
+        &app,
+        &tournament_id,
+        &judge_id,
+        &debate_id,
+        &initial_verdict,
+        &judge_token,
+    )
+    .await?;
+
+    let admin_token = get_session_token_for_infrastructure_admin(&app).await;
+
+    // WHEN - Admin updates the verdict
+    let response = patch_verdict(
+        &app,
+        &verdict_id,
+        &tournament_id,
+        &judge_id,
+        &debate_id,
+        &!initial_verdict,
+        &admin_token,
+    )
+    .await;
+
+    // THEN - Should be successful
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let response_body = get_response_json(response).await?;
+    assert_eq!(response_body["proposition_won"], !initial_verdict);
     Ok(())
 }
