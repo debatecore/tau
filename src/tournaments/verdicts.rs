@@ -124,4 +124,20 @@ impl Verdict {
             .await?;
         Ok(())
     }
+
+    pub async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
+        match query_as!(
+            Verdict,
+            "SELECT * FROM verdicts WHERE judge_user_id = $1 AND debate_id = $2 AND id != $3",
+            self.judge_user_id,
+            self.debate_id,
+            self.id
+        )
+        .fetch_optional(pool)
+        .await
+        {
+            Ok(result) => Ok(result.is_some()),
+            Err(e) => Err(e)?,
+        }
+    }
 }

@@ -14,10 +14,7 @@ use uuid::Uuid;
 use crate::{
     omni_error::OmniError,
     setup::AppState,
-    tournaments::{
-        verdicts::{Verdict, VerdictPatch},
-        Tournament,
-    },
+    tournaments::verdicts::{Verdict, VerdictPatch},
     users::{permissions::Permission, TournamentUser},
 };
 
@@ -142,13 +139,6 @@ async fn get_verdict_by_id(
 }
 
 /// Patch an existing verdict
-///
-/// Requires SubmitOwnVerdictVote permission to update your own verdicts.
-/// Requires SubmitVerdict permission to change the judge or correct verdicts on behalf of others.
-/// Available to Judges, Organizers and the admin.
-///
-/// The judge specified in the verdict must have either SubmitOwnVerdictVote or SubmitVerdict permission.
-/// Attempting to change the verdict's judge without SubmitVerdict permission will result in 401.
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
     request_body=Verdict,
     responses(
@@ -219,15 +209,8 @@ async fn patch_verdict_by_id(
         });
     }
 
-    // Verify tournament exists
-    match Tournament::get_by_id(tournament_id, pool).await {
-        Ok(_) => (),
-        Err(e) => match e {
-            OmniError::SqlxError(sqlx::Error::RowNotFound) => {
-                return Err(OmniError::ResourceNotFoundError)
-            }
-            _ => return Err(OmniError::InternalServerError),
-        },
+    if new_verdict.already_exists(pool).await? {
+        return Err(OmniError::ResourceAlreadyExistsError);
     }
 
     match old_verdict.patch(new_verdict, pool).await {
