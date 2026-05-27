@@ -216,7 +216,7 @@ async fn patch_verdict_by_id(
                 .to_string(),
         });
     }
-    
+
     // Check if the new verdict would be a duplicate of an existing one (except for the current one)
     if new_verdict.already_exists(pool).await? {
         return Err(OmniError::ResourceAlreadyExistsError);
