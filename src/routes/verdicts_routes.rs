@@ -137,15 +137,12 @@ async fn get_verdict_by_id(
 
     Ok(Json(verdict).into_response())
 }
-
 ///
 /// Requires SubmitOwnVerdictVote permission to update your own verdicts.
 /// Requires SubmitVerdict permission to change the judge or correct verdicts on behalf of others.
 /// Available to Judges, Organizers and the admin.
-///
 /// The judge specified in the verdict must have either SubmitOwnVerdictVote or SubmitVerdict permission.
 /// Attempting to change the verdict's judge without SubmitVerdict permission will result in 401.
-
 /// Patch an existing verdict
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
     request_body=Verdict,
