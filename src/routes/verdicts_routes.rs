@@ -1,11 +1,10 @@
 use axum::{
     extract::{Path, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
-use reqwest::StatusCode;
 use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
@@ -187,7 +186,7 @@ async fn patch_verdict_by_id(
             .unwrap_or(old_verdict.proposition_won),
     };
 
-    // Check if trying to change the judge_user_id
+    
     if old_verdict.judge_user_id != new_verdict.judge_user_id {
         // Only users with SubmitVerdict permission can change who the judge is
         if !tournament_user.has_permission(Permission::SubmitVerdict) {
@@ -200,7 +199,7 @@ async fn patch_verdict_by_id(
         }
     }
 
-    // Verify the judge user exists and has appropriate permissions
+    
     let judge_tournament_user =
         TournamentUser::get_by_id(new_verdict.judge_user_id, tournament_id, pool).await?;
 
@@ -214,9 +213,13 @@ async fn patch_verdict_by_id(
         });
     }
 
-    // Check if the new verdict would be a duplicate of an existing one (except for the current one)
+   
     if new_verdict.already_exists(pool).await? {
-        return Err(OmniError::ResourceAlreadyExistsError);
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::CONFLICT,
+            message: "there is already an identical verdict regarding this debate"
+                .to_string(),
+        });
     }
 
     match old_verdict.patch(new_verdict, pool).await {
