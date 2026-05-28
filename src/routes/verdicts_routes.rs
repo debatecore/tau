@@ -186,7 +186,6 @@ async fn patch_verdict_by_id(
             .unwrap_or(old_verdict.proposition_won),
     };
 
-    
     if old_verdict.judge_user_id != new_verdict.judge_user_id {
         // Only users with SubmitVerdict permission can change who the judge is
         if !tournament_user.has_permission(Permission::SubmitVerdict) {
@@ -199,7 +198,6 @@ async fn patch_verdict_by_id(
         }
     }
 
-    
     let judge_tournament_user =
         TournamentUser::get_by_id(new_verdict.judge_user_id, tournament_id, pool).await?;
 
@@ -213,7 +211,6 @@ async fn patch_verdict_by_id(
         });
     }
 
-   
     if new_verdict.already_exists(pool).await? {
         return Err(OmniError::ExplicitError {
             status: StatusCode::CONFLICT,
