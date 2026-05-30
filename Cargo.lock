@@ -3115,7 +3115,10 @@ dependencies = [
  "libc",
 ]
 
-[[package]]\r\nname = "tau"\r\nversion = "0.1.14"\r\ndependencies = [\r\ndependencies = [
+[[package]]
+name = "tau"
+version = "0.1.14"
+dependencies = [
  "argon2",
  "aws-lc-rs",
  "axum",
@@ -4451,4 +4454,3 @@ dependencies = [
  "log",
  "simd-adler32",
 ]
-
