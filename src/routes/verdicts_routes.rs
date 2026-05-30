@@ -1,11 +1,10 @@
 use axum::{
     extract::{Path, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
-use reqwest::StatusCode;
 use sqlx::query_as;
 use tower_cookies::Cookies;
 use tracing::error;
@@ -137,10 +136,13 @@ async fn get_verdict_by_id(
 
     Ok(Json(verdict).into_response())
 }
-
-/// Patch an existing verdict
 ///
-/// Requires SubmitOwnVerdictVote permission. Available to Judges, Organizers and the admin.
+/// Requires SubmitOwnVerdictVote permission to update your own verdicts.
+/// Requires SubmitVerdict permission to change the judge or correct verdicts on behalf of others.
+/// Available to Judges, Organizers and the admin.
+/// The judge specified in the verdict must have either SubmitOwnVerdictVote or SubmitVerdict permission.
+/// Attempting to change the verdict's judge without SubmitVerdict permission will result in 401.
+/// Patch an existing verdict
 #[utoipa::path(patch, path = "/tournaments/{tournament_id}/debates/{debate_id}/verdicts/{verdict_id}",
     request_body=Verdict,
     responses(
@@ -183,7 +185,39 @@ async fn patch_verdict_by_id(
             .proposition_won
             .unwrap_or(old_verdict.proposition_won),
     };
-    new_verdict.validate(tournament_id, pool).await?;
+
+    if old_verdict.judge_user_id != new_verdict.judge_user_id {
+        // Only users with SubmitVerdict permission can change who the judge is
+        if !tournament_user.has_permission(Permission::SubmitVerdict) {
+            return Err(OmniError::ExplicitError {
+                status: StatusCode::UNAUTHORIZED,
+                message:
+                    "Correcting verdicts can only be conducted by judges who made them"
+                        .to_string(),
+            });
+        }
+    }
+
+    let judge_tournament_user =
+        TournamentUser::get_by_id(new_verdict.judge_user_id, tournament_id, pool).await?;
+
+    if !judge_tournament_user.has_permission(Permission::SubmitOwnVerdictVote)
+        && !judge_tournament_user.has_permission(Permission::SubmitVerdict)
+    {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::UNAUTHORIZED,
+            message: "The specified judge does not have permission to submit verdicts"
+                .to_string(),
+        });
+    }
+
+    if new_verdict.already_exists(pool).await? {
+        return Err(OmniError::ExplicitError {
+            status: StatusCode::CONFLICT,
+            message: "there is already an identical verdict regarding this debate"
+                .to_string(),
+        });
+    }
 
     match old_verdict.patch(new_verdict, pool).await {
         Ok(verdict) => Ok(Json(verdict).into_response()),

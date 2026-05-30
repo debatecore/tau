@@ -1,11 +1,9 @@
-﻿use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use sqlx::{query, query_as, Pool, Postgres, Transaction};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{omni_error::OmniError, users::User};
-
-use super::{roles::Role, Tournament};
+use crate::omni_error::OmniError;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -127,51 +125,18 @@ impl Verdict {
         Ok(())
     }
 
-    pub async fn validate(
-        &self,
-        tournament_id: Uuid,
-        pool: &Pool<Postgres>,
-    ) -> Result<(), OmniError> {
-        let user = User::get_by_id(self.judge_user_id, pool).await?;
-        if !user.has_role(Role::Judge, tournament_id, pool).await? {
-            return Err(OmniError::ResourceNotFoundError);
-        }
-
-        match Tournament::get_by_id(tournament_id, pool).await {
-            Ok(_) => (),
-            Err(e) => match e {
-                OmniError::SqlxError(sqlx::Error::RowNotFound) => {
-                    return Err(OmniError::ResourceNotFoundError)
-                }
-                _ => return Err(OmniError::InternalServerError),
-            },
-        }
-
-        if self.already_exists(pool).await? {
-            return Err(OmniError::ResourceAlreadyExistsError);
-        }
-
-        Ok(())
-    }
-
-    async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
+    pub async fn already_exists(&self, pool: &Pool<Postgres>) -> Result<bool, OmniError> {
         match query_as!(
             Verdict,
-            "SELECT * FROM verdicts WHERE judge_user_id = $1 AND debate_id = $2 AND proposition_won = $3",
+            "SELECT * FROM verdicts WHERE judge_user_id = $1 AND debate_id = $2 AND id != $3",
             self.judge_user_id,
             self.debate_id,
-            self.proposition_won
+            self.id
         )
         .fetch_optional(pool)
         .await
         {
-            Ok(result) => {
-                if result.is_none() {
-                    Ok(false)
-                } else {
-                    Ok(true)
-                }
-            }
+            Ok(result) => Ok(result.is_some()),
             Err(e) => Err(e)?,
         }
     }
