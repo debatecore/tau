@@ -110,6 +110,10 @@ impl Tournament {
         tournament: Tournament,
         pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
+        let mut shortened_name = tournament.shortened_name.clone();
+        if tournament.shortened_name.is_empty() {
+            shortened_name = shorten(&tournament.full_name);
+        }
         match query_as!(
             Tournament,
             r#"INSERT INTO tournaments
@@ -142,7 +146,7 @@ impl Tournament {
                 visualize_protected_time"#,
             tournament.id,
             tournament.full_name,
-            tournament.shortened_name,
+            shortened_name,
             tournament.speech_time.unwrap_or(DEFAULT_SPEECH_TIME),
             tournament
                 .end_protected_time
@@ -206,10 +210,12 @@ impl Tournament {
         patch: TournamentPatch,
         pool: &Pool<Postgres>,
     ) -> Result<Tournament, OmniError> {
+        let name = patch.full_name.unwrap_or(self.full_name);
+        let shortened = patch.shortened_name.unwrap_or(shorten(&name));
         let tournament = Tournament {
             id: self.id,
-            full_name: patch.full_name.unwrap_or(self.full_name),
-            shortened_name: patch.shortened_name.unwrap_or(self.shortened_name),
+            full_name: name.clone(),
+            shortened_name: shortened.clone(),
             speech_time: patch.speech_time,
             end_protected_time: patch.end_protected_time,
             start_protected_time: patch.start_protected_time,
@@ -367,4 +373,36 @@ impl Tournament {
         }
         Ok(phases)
     }
+}
+
+pub fn shorten(name: &str) -> String {
+    let words: Vec<String> = name
+        .split_whitespace()
+        .map(|word| {
+            word.chars()
+                .filter(|c| c.is_alphabetic())
+                .collect::<String>()
+        })
+        .filter(|word| !word.is_empty())
+        .collect();
+
+    let mut result = String::new();
+
+    match words.len() {
+        0 => {}
+        1 => {
+            result.extend(words[0].chars().take(3));
+        }
+        2 => {
+            result.extend(words[0].chars().take(2));
+            result.extend(words[1].chars().take(1));
+        }
+        _ => {
+            for word in words.iter().take(3) {
+                result.extend(word.chars().take(1));
+            }
+        }
+    }
+
+    result.to_uppercase()
 }
