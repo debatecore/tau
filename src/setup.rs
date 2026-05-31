@@ -34,6 +34,7 @@ pub fn report_listener_socket_addr(listener: &TcpListener) {
         }
     };
     info!("Listener socket address is: {}", addr.to_string());
+    info!("API documentation can be accessed at: http://localhost:{}/swagger-ui/#/", addr.port());
 }
 
 fn get_env_port() -> u16 {
