@@ -18,7 +18,7 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Get version number
+      - name: Get crate version
         run: CRATE_VERSION=$(python get_version_number.py); echo "CRATE_VERSION=$CRATE_VERSION" >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry
