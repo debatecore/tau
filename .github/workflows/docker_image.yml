@@ -39,6 +39,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.reponame-lower.outputs.name }}:latest
-            ghcr.io/${{ steps.reponame-lower.outputs.name }}:test
+            ghcr.io/${{ steps.reponame-lower.outputs.name }}:v${{ vars.CRATE_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
