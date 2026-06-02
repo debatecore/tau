@@ -56,10 +56,15 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked || true
-      - name: run tests with coverage
-        run:
-           set -o pipefail
-           cargo llvm-cov --workspace --tests --verbose 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+      - name: Run tests with coverage
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "### Coverage report" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          # Run cargo-llvm-cov, print to logs, and also append a code-formatted copy to the job summary
+          cargo llvm-cov --workspace --tests --verbose 2>&1 | tee >(sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY")
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Build Docker image
         run: docker build -t tau:test .
       - name: Build Docker Compose
