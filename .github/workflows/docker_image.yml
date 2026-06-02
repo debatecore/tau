@@ -39,6 +39,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          enable-cache: true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -48,8 +50,8 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:v${{ vars.CRATE_VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ghcr.io/${{ github.repository }}:v${{ env.CRATE_VERSION }}
+            cache-from: type=gha
+            cache-to: type=gha,mode=max
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
