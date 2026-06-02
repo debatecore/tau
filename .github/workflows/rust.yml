@@ -54,10 +54,16 @@ jobs:
         run: cargo fmt --check
       - name: Run clippy
         run: cargo clippy -- -D warnings
-      - name: Run unit tests
-        run: cargo test --lib --verbose
-      - name: Run integration tests
-        run: cargo test --test integration_tests --verbose
+      - name: install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked || true
+      - name: Run tests with coverage
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "### Coverage report" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cargo llvm-cov --workspace --tests --verbose 2>&1 | tee >(sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY")
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Build Docker image
         run: docker build -t tau:test .
       - name: Build Docker Compose
