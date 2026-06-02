@@ -45,7 +45,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ steps.reponame-lower.outputs.name }}:latest
-            ghcr.io/${{ steps.reponame-lower.outputs.name }}:v${{ vars.CRATE_VERSION }}
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:v${{ vars.CRATE_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
