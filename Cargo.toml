@@ -1,6 +1,6 @@
 [package]
 name = "tau"
-version = "0.1.17"
+version = "0.1.16"
 edition = "2021"
 repository = "https://github.com/debatecore/tau"
 

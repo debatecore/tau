@@ -1,6 +1,6 @@
 [project]
 name = "tau"
-version = "0.1.17"
+version = "0.1.16"
 description = "A project for versioning python-based tau development utils"
 readme = "README.md"
 requires-python = ">=3.13"
