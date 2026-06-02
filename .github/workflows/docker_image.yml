@@ -3,8 +3,9 @@ name: Publish a Docker Image
 on:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master"]
+    paths:
+      - "src/**"
+      - "Cargo.lock"
 
 env:
   CARGO_TERM_COLOR: always
