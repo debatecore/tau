@@ -51,7 +51,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:v${{ env.CRATE_VERSION }}
-            cache-from: type=gha
-            cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
