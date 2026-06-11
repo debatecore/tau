@@ -1,3 +1,4 @@
+use crate::routes::version::get_semver_version;
 use axum::http::{header::CONTENT_TYPE, HeaderValue, Method};
 use sqlx::{Pool, Postgres};
 use std::net::{Ipv4Addr, SocketAddrV4};
@@ -14,13 +15,14 @@ const CRYPTO_SECRET_ERROR: &str = "Could not read SECRET. Is it valid UTF-8?";
 #[allow(dead_code)]
 const FRONTEND_ORIGIN_NOT_SET: &str = "FRONTEND_ORIGIN is not set. Please provide a valid URL leading to an accepted origin.";
 
-pub fn initialise_logging() {
+pub async fn initialise_logging() {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default tracing subscriber failed!");
     info!("Response cannon spinning up...");
+    info!("Current version: {}", get_semver_version().await);
 }
 
 pub fn report_listener_socket_addr(listener: &TcpListener) {
@@ -32,6 +34,10 @@ pub fn report_listener_socket_addr(listener: &TcpListener) {
         }
     };
     info!("Listener socket address is: {}", addr.to_string());
+    info!(
+        "API documentation can be accessed at: http://localhost:{}/swagger-ui/#/",
+        addr.port()
+    );
 }
 
 fn get_env_port() -> u16 {

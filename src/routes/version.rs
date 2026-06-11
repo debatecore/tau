@@ -7,7 +7,7 @@ use crate::setup::AppState;
 
 pub fn route() -> Router<AppState> {
     Router::new()
-        .route("/version", get(version))
+        .route("/version", get(get_semver_version))
         .route("/version-details", get(version_details))
 }
 
@@ -45,7 +45,7 @@ pub struct GitInfo {
         body = str,
     ))
 )]
-async fn version() -> &'static str {
+pub async fn get_semver_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
