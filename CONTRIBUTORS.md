@@ -13,6 +13,6 @@ This file lists the main contributors to the project.
 
 | Profile | Contributor | Role |
 | --- | --- | --- |
-| <img src="https://github.com/Mateusz-Dobrzynski.png" width="80" height="80" alt="Mateusz Dobrzyński" /> | [Mateusz-Dobrzynski](https://github.com/Mateusz-Dobrzynski) | Project mentor and reviewer |
-| <img src="https://github.com/arsansomuncu.png" width="80" height="80" alt="Arsan Somuncu" /> | [arsansomuncu](https://github.com/arsansomuncu) | Backend contributor |
-| <img src="https://github.com/coffeeaddictamoeba.png" width="80" height="80" alt="Viktoryia Pokalo" /> | [coffeeaddictamoeba](https://github.com/coffeeaddictamoeba) | Backend contributor |
+| <img src="https://github.com/Mateusz-Dobrzynski.png" width="80" height="80" alt="Mateusz Dobrzyński" /> | [Mateusz-Dobrzynski](https://github.com/Mateusz-Dobrzynski) | Back-end developer |
+| <img src="https://github.com/arsansomuncu.png" width="80" height="80" alt="Arsan Somuncu" /> | [arsansomuncu](https://github.com/arsansomuncu) | Back-end developer |
+| <img src="https://github.com/coffeeaddictamoeba.png" width="80" height="80" alt="Viktoryia Pokalo" /> | [coffeeaddictamoeba](https://github.com/coffeeaddictamoeba) | Back-end developer |
