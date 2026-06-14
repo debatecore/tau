@@ -32,6 +32,32 @@ pub async fn create_plan(
         .unwrap()
 }
 
+pub async fn patch_plan(
+    app: &TestApp,
+    tournament_id: &str,
+    advancing_teams: Option<i32>,
+    group_phase_rounds: Option<i32>,
+    groups_count: Option<i32>,
+    total_teams: Option<i32>,
+    token: &str,
+) -> Response {
+    let plan_data = json!({
+        "tournament_id": tournament_id,
+        "group_phase_rounds": group_phase_rounds,
+        "groups_count": groups_count,
+        "advancing_teams": advancing_teams,
+        "total_teams": total_teams,
+    });
+
+    app.client
+        .post(app.url(&format!("/tournaments/{}/plan", tournament_id)))
+        .json(&plan_data)
+        .bearer_auth(token)
+        .send()
+        .await
+        .unwrap()
+}
+
 pub async fn count_plans(pool: &Pool<Postgres>, tournament_id: &str) -> i64 {
     let tournament_id = Uuid::parse_str(tournament_id).unwrap();
 

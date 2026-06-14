@@ -16,28 +16,27 @@ use crate::omni_error::OmniError;
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, ToSchema, Clone, sqlx::FromRow)]
 #[serde(deny_unknown_fields)]
-/// TournamentPlans can be used to plan a tournament setting up
-/// group phase rounds, groups count and advancing teams.
+/// TournamentPlans can be used to automatically generate
+/// phases, rounds, and debates based on parameters provided.
 pub struct TournamentPlan {
     #[serde(skip_deserializing)]
     #[serde(default = "Uuid::now_v7")]
     pub id: Uuid,
-    // Tournament ID for a particular plan
+    // ID of a tournament to be planned.
     pub tournament_id: Uuid,
-    // Number of rounds for a single group for one phase
+    // Number of rounds for a single group for one phase.
     pub group_phase_rounds: Option<i32>,
-    // Number of groups of teams participating in tournament
+    // Number of groups of teams participating in tournament.
     pub groups_count: Option<i32>,
     // Number of teams that reached the final phase. Must be a power of 2
+    // and lower than advancing_teams.
     pub advancing_teams: Option<i32>,
     // Number of total teams participating in tournament.
     pub total_teams: Option<i32>,
 }
 
-#[derive(Deserialize, ToSchema, sqlx::FromRow)]
-/// TournamentPlanPatch can be used to patch a TournamentPlan without
-// changing important fields such as ID
-// CHANGED: rename occured because we don't want to enter an ID and let it be handled externally
+#[derive(Deserialize, ToSchema, sqlx::FromRow, Debug)]
+/// TournamentPlanPatch is used to alter existing TournamentPlans.
 pub struct TournamentPlanPatch {
     // Number of rounds for a single group for one phase
     pub group_phase_rounds: Option<i32>,
@@ -55,8 +54,6 @@ impl TournamentPlan {
         json: TournamentPlan,
         pool: &Pool<Postgres>,
     ) -> Result<TournamentPlan, OmniError> {
-        json.validate()?;
-
         let mut transaction = pool.begin().await?;
         let plan =
             Self::post_with_transaction(&mut transaction, tournament_id, json).await?;
@@ -70,8 +67,6 @@ impl TournamentPlan {
         tournament_id: Uuid,
         json: TournamentPlan,
     ) -> Result<TournamentPlan, OmniError> {
-        json.validate()?;
-
         let plan = query_as!(
             TournamentPlan,
             r#"
@@ -124,8 +119,6 @@ impl TournamentPlan {
         patch: TournamentPlanPatch,
         pool: &Pool<Postgres>,
     ) -> Result<TournamentPlan, OmniError> {
-        patch.validate()?;
-
         let mut transaction = pool.begin().await?;
         let plan = self.patch_with_transaction(&mut transaction, patch).await?;
         transaction.commit().await?;
@@ -138,8 +131,6 @@ impl TournamentPlan {
         transaction: &mut Transaction<'_, Postgres>,
         patch: TournamentPlanPatch,
     ) -> Result<TournamentPlan, OmniError> {
-        patch.validate()?;
-
         let updated = query_as!(
             TournamentPlan,
             r#"
@@ -172,7 +163,6 @@ impl TournamentPlan {
         Ok(updated)
     }
 
-    /// Standalone delete.
     pub async fn delete(self, pool: &Pool<Postgres>) -> Result<(), OmniError> {
         let mut transaction = pool.begin().await?;
         self.delete_with_transaction(&mut transaction).await?;
@@ -180,7 +170,6 @@ impl TournamentPlan {
         Ok(())
     }
 
-    /// Transaction-aware delete.
     pub async fn delete_with_transaction(
         self,
         transaction: &mut Transaction<'_, Postgres>,
@@ -193,15 +182,6 @@ impl TournamentPlan {
             .await?;
 
         Ok(())
-    }
-
-    pub fn validate(&self) -> Result<(), OmniError> {
-        validate(
-            self.total_teams,
-            self.group_phase_rounds,
-            self.groups_count,
-            self.advancing_teams,
-        )
     }
 
     fn validated_values(&self) -> Result<(i32, i32, i32, i32), OmniError> {
@@ -234,7 +214,6 @@ impl TournamentPlan {
         let (total_teams, group_phase_rounds, groups_count, _advancing_teams) =
             self.validated_values()?;
 
-        // Phase
         let mut previous_phase_id: Option<Uuid> = None;
         let mut previous_round_id: Option<Uuid> = None;
 
@@ -390,18 +369,7 @@ impl TournamentPlan {
     }
 }
 
-impl TournamentPlanPatch {
-    pub fn validate(&self) -> Result<(), OmniError> {
-        validate(
-            self.total_teams,
-            self.group_phase_rounds,
-            self.groups_count,
-            self.advancing_teams,
-        )
-    }
-}
-
-fn validate(
+pub fn validate_tournament_parameters(
     total_teams: Option<i32>,
     group_phase_rounds: Option<i32>,
     groups_count: Option<i32>,
@@ -431,15 +399,7 @@ fn validate(
     if total_teams <= 1 || group_phase_rounds <= 0 || groups_count <= 0 {
         return Err(OmniError::ExplicitError {
             status: StatusCode::BAD_REQUEST,
-            message: "Invalid tournament plan setup: all numbers should be positive"
-                .to_owned(),
-        });
-    }
-
-    if total_teams % group_phase_rounds != 0 {
-        return Err(OmniError::ExplicitError {
-            status: StatusCode::BAD_REQUEST,
-            message: "total_teams must be divisible by group_phase_rounds".to_owned(),
+            message: "all numbers should be positive".to_owned(),
         });
     }
 
