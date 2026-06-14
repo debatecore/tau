@@ -1,7 +1,7 @@
 use crate::common::{
     plans_utils::{
         calculate_final_phase_debates, calculate_final_phase_rounds, count_debates,
-        count_phases, count_plans, count_rounds, create_plan,
+        count_phases, count_plans, count_rounds, create_plan, patch_plan,
     },
     test_app::TestApp,
     tournament_utils::get_id_of_a_new_tournament,
@@ -9,7 +9,7 @@ use crate::common::{
 };
 use reqwest::StatusCode;
 use serde_json::json;
-use tau::omni_error::OmniError;
+use tau::{omni_error::OmniError, tournaments::plans::TournamentPlanPatch};
 use uuid::Uuid;
 
 const TEST_GROUP_PHASE_ROUNDS: i32 = 4;
@@ -300,4 +300,109 @@ async fn create_plan_should_rollback_everything_if_underlying_creation_fails(
     assert_eq!(count_debates(&app.pool, &tournament_id).await, 0);
 
     Ok(())
+}
+
+#[tokio::test]
+async fn plans_should_be_validated_before_creation() -> Result<(), OmniError> {
+    let app = TestApp::spawn().await;
+
+    let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;
+    let token = get_organizer_token(&app, &tournament_id).await;
+    let incorrect_plans = get_incorrect_tournament_plans();
+
+    for plan in incorrect_plans.iter() {
+        let response = create_plan(
+            &app,
+            &tournament_id,
+            plan.advancing_teams.unwrap(),
+            plan.group_phase_rounds.unwrap(),
+            plan.groups_count.unwrap(),
+            plan.total_teams.unwrap(),
+            &token,
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn plans_should_be_validated_before_patching() -> Result<(), OmniError> {
+    let app = TestApp::spawn().await;
+
+    let tournament_id = get_id_of_a_new_tournament(&app, "test").await?;
+    let token = get_organizer_token(&app, &tournament_id).await;
+    let incorrect_plans = get_incorrect_tournament_plans();
+
+    for plan in incorrect_plans.iter() {
+        let response = patch_plan(
+            &app,
+            &tournament_id,
+            plan.advancing_teams,
+            plan.group_phase_rounds,
+            plan.groups_count,
+            plan.total_teams,
+            &token,
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    Ok(())
+}
+
+fn get_incorrect_tournament_plans() -> Vec<TournamentPlanPatch> {
+    vec![
+        get_plan_with_negative_values(),
+        get_plan_with_more_advancing_than_total_teams(),
+        get_plan_with_advancing_teams_not_power_of_two(),
+        get_plan_with_parameter_set_to_zero(),
+        get_plan_with_more_groups_than_teams(),
+    ]
+}
+
+fn get_plan_with_negative_values() -> TournamentPlanPatch {
+    TournamentPlanPatch {
+        total_teams: Some(16),
+        advancing_teams: Some(4),
+        group_phase_rounds: Some(-1),
+        groups_count: Some(5),
+    }
+}
+
+fn get_plan_with_parameter_set_to_zero() -> TournamentPlanPatch {
+    TournamentPlanPatch {
+        total_teams: Some(16),
+        advancing_teams: Some(4),
+        group_phase_rounds: Some(0),
+        groups_count: Some(5),
+    }
+}
+
+fn get_plan_with_more_advancing_than_total_teams() -> TournamentPlanPatch {
+    TournamentPlanPatch {
+        total_teams: Some(16),
+        advancing_teams: Some(32),
+        group_phase_rounds: Some(4),
+        groups_count: Some(4),
+    }
+}
+
+fn get_plan_with_advancing_teams_not_power_of_two() -> TournamentPlanPatch {
+    TournamentPlanPatch {
+        total_teams: Some(16),
+        advancing_teams: Some(3),
+        group_phase_rounds: Some(4),
+        groups_count: Some(4),
+    }
+}
+
+fn get_plan_with_more_groups_than_teams() -> TournamentPlanPatch {
+    TournamentPlanPatch {
+        total_teams: Some(12),
+        advancing_teams: Some(4),
+        group_phase_rounds: Some(4),
+        groups_count: Some(15),
+    }
 }

@@ -13,7 +13,7 @@ use crate::{
     omni_error::OmniError,
     setup::AppState,
     tournaments::{
-        plans::{TournamentPlan, TournamentPlanPatch},
+        plans::{validate_tournament_parameters, TournamentPlan, TournamentPlanPatch},
         Tournament,
     },
     users::{permissions::Permission, TournamentUser},
@@ -71,7 +71,12 @@ async fn create_plan(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    json.validate()?;
+    validate_tournament_parameters(
+        json.total_teams,
+        json.group_phase_rounds,
+        json.groups_count,
+        json.advancing_teams,
+    )?;
 
     match TournamentPlan::post(tournament_id, json, pool).await {
         Ok(plan) => Ok(axum::Json::<TournamentPlan>(plan).into_response()),
@@ -211,7 +216,12 @@ async fn patch_plan_by_id(
         false => return Err(OmniError::InsufficientPermissionsError),
     }
 
-    new_plan.validate()?;
+    validate_tournament_parameters(
+        new_plan.total_teams,
+        new_plan.group_phase_rounds,
+        new_plan.groups_count,
+        new_plan.advancing_teams,
+    )?;
 
     let plan = TournamentPlan::get_by_id(id, pool).await?;
     match plan.patch(new_plan, pool).await {
