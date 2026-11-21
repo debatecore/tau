@@ -41,7 +41,7 @@ jobs:
       - name: Install sqlx-cli
         run: |
           cargo install sqlx-cli \
-            --version 0.7.4 \
+            --version 0.8.2 \
             --locked \
             --no-default-features \
             --features rustls,postgres
