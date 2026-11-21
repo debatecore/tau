@@ -28,7 +28,7 @@ jobs:
         with:
           context: .
           push: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-          tags: ghcr.io/TWOJ_LOGIN/tau:latest
+          tags: ghcr.io/oliviam555/tau:latest
 
   deploy:
     name: Wdrożenie Backendu na AWS
