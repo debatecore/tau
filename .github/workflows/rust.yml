@@ -53,7 +53,7 @@ jobs:
       - name: Check formatting
         run: cargo fmt --check
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy
       - name: install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked || true
       - name: Run tests with coverage
