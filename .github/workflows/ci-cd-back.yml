@@ -1,0 +1,54 @@
+name: CI/CD Backend
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+
+jobs:
+  test-and-build:
+    name: Testy i budowanie obrazu Backendu
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Logowanie do GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Budowanie (test kompilacji) i wypchnięcie obrazu
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+          tags: ghcr.io/TWOJ_LOGIN/tau:latest
+
+  deploy:
+    name: Wdrożenie Backendu na AWS
+    needs: test-and-build
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Aktualizacja kontenera backend przez SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:Name,Values=granda-app" \
+            --parameters 'commands=[
+              "sed -i \"s|image: ghcr.io/.*/tau:latest|image: ghcr.io/oliviam555/tau:latest|g\" /opt/granda/compose.yaml",
+              "cd /opt/granda && docker compose pull backend && docker compose up -d backend"
+            ]'
