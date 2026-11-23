@@ -110,7 +110,8 @@ jobs:
     name: Check package version
     runs-on: ubuntu-latest
 
-    if: github.event_name == 'pull_request'
+    # Dependabot zmienia tylko pliki lock i nie podbija wersji aplikacji – pomijamy dla niego ten check
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
 
     steps:
       - name: Check out repository
