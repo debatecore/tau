@@ -1,0 +1,19 @@
+# L6: Dependabot – cotygodniowe PR-y z aktualizacjami zależności, obrazów bazowych i akcji GitHub
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Aktualizuje też akcje przypięte do SHA (zachowuje komentarz z wersją)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

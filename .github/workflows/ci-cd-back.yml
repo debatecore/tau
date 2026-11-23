@@ -6,7 +6,19 @@ on:
   push:
     branches: [ master ]
 
+# L6: domyślnie GITHUB_TOKEN tylko do odczytu; joby dostają więcej tylko tam, gdzie muszą
+permissions:
+  contents: read
+
 jobs:
+  # L6: skan sekretów, SAST i skan zależności (plik security.yml)
+  security:
+    name: Security
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
   test-and-build:
     name: Testy i budowanie obrazu Backendu
     runs-on: ubuntu-latest
@@ -14,30 +26,62 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      # L6: lint Dockerfile (błędy blokują, ostrzeżenia tylko w logu)
+      - name: Lint Dockerfile (hadolint)
+        run: docker run --rm -i hadolint/hadolint:v2.15.1 hadolint --failure-threshold error - < Dockerfile
 
       - name: Logowanie do GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Budowanie (test kompilacji) i wypchnięcie obrazu
-        uses: docker/build-push-action@v6
+      # L6: najpierw tylko budujemy obraz lokalnie (bez push)...
+      - name: Budowanie obrazu (test kompilacji)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
-          push: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-          tags: ghcr.io/oliviam555/tau:latest
+          load: true
+          push: false
+          tags: |
+            ghcr.io/oliviam555/tau:latest
+            ghcr.io/oliviam555/tau:${{ github.sha }}
+
+      # L6: ...skanujemy DOKŁADNIE ten obraz, który zaraz trafi do rejestru...
+      - name: Skan obrazu (Trivy)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.2 \
+            image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
+            ghcr.io/oliviam555/tau:${{ github.sha }}
+
+      # L6: ...i wypychamy go dopiero, gdy skan przeszedł (tylko po merge do master).
+      # Tag z SHA commita = wiadomo, która wersja jest wdrożona, łatwy rollback.
+      - name: Wypchnięcie obrazu do GHCR
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: |
+          docker push ghcr.io/oliviam555/tau:${{ github.sha }}
+          docker push ghcr.io/oliviam555/tau:latest
 
   deploy:
     name: Wdrożenie Backendu na AWS
-    needs: test-and-build
+    needs: [security, test-and-build]
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      # id-token: write   # <- odkomentować przy przejściu na OIDC
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      # TODO (część AWS z L6): zastąpić stałe klucze rolą IAM przez OIDC:
+      #   with:
+      #     role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-granda-deploy
+      #     aws-region: ${{ secrets.AWS_REGION }}
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

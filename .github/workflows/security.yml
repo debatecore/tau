@@ -1,0 +1,56 @@
+# L6 – elementy bezpieczeństwa w CI/CD (back-end, Rust)
+# Workflow wielokrotnego użytku: wywoływany z ci-cd-back.yml (job "security"),
+# a deploy ma `needs: [security, ...]` -> wykryty problem blokuje wdrożenie.
+# Dodatkowo raz w tygodniu skanuje repo sam z siebie (nowe CVE w niezmienionych zależnościach).
+
+name: Security (back-end)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0 # cała historia – sekret usunięty w późniejszym commicie dalej jest w repo
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: false
+
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      # Reguły dla Rusta, Dockerfile, YAML i GitHub Actions; --error = job czerwony przy znalezisku
+      - run: semgrep scan --config auto --error
+
+  sca:
+    name: SCA (cargo audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      # Cargo.lock vs baza RustSec: podatność = czerwony, nieutrzymywany/yanked crate = ostrzeżenie
+      - run: cargo audit
