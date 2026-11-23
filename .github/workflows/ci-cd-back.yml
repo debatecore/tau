@@ -75,16 +75,15 @@ jobs:
     environment: production
     permissions:
       contents: read
-      # id-token: write   # <- odkomentować przy przejściu na OIDC
+      id-token: write   # L6: pozwala jobowi pobrać token OIDC od GitHuba
     steps:
-      # TODO (część AWS z L6): zastąpić stałe klucze rolą IAM przez OIDC:
-      #   with:
-      #     role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-granda-deploy
-      #     aws-region: ${{ secrets.AWS_REGION }}
+      # L6: logowanie do AWS przez OIDC – bez stałych kluczy w GitHub Secrets.
+      # GitHub wystawia token dla tego joba, AWS wymienia go na tymczasowe poświadczenia
+      # roli github-granda-deploy (zaufanie tylko dla tego repo w environmencie production).
       - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: github-${{ github.run_id }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Aktualizacja kontenera backend przez SSM
