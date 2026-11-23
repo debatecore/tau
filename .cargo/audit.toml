@@ -1,0 +1,51 @@
+# Konfiguracja cargo audit (L6 – bramka SCA w CI/CD)
+#
+# BASELINE: podatności wykryte przy pierwszym uruchomieniu skanu (2026-11-23).
+# Są to podatności w zależnościach (Cargo.lock), nie w kodzie aplikacji.
+# Zostały przeanalizowane i TYMCZASOWO zaakceptowane, żeby bramka blokowała
+# każdą NOWĄ podatność, a znany dług był usuwany w osobnym kroku.
+#
+# Plan naprawy (następny etap): `cargo update` + testy -> usuwa większość pozycji
+# (h2, quinn, rustls, rustls-webpki, url, cookie, webpki-root-certs, astral-tokio-tar).
+# Pozycje wymagające podbicia wersji głównych (zip, libsqlite3-sys, rsa) – osobna analiza.
+# Po naprawie USUŃ odpowiednie ID z listy.
+
+[advisories]
+ignore = [
+    # astral-tokio-tar 0.6.1 – PAX header desync (zależność testcontainers, używana w testach)
+    "RUSTSEC-2026-0145",
+    # cookie 0.18.1 – powtarzające się nonce po fork() (medium)
+    "RUSTSEC-2026-0594",
+    # h2 0.4.13 – DoS pustymi ramkami DATA
+    "RUSTSEC-2026-0258",
+    # libsqlite3-sys 0.30.1 – CVE w SQLite (sterownik SQLite z sqlx; aplikacja używa PostgreSQL)
+    "RUSTSEC-2026-0459",
+    # quinn-proto 0.11.14 / quinn-udp 0.5.14 – QUIC/HTTP3 w reqwest (DoS), poprawki w wersjach zgodnych
+    "RUSTSEC-2026-0185",
+    "RUSTSEC-2026-0338",
+    "RUSTSEC-2026-0339",
+    "RUSTSEC-2026-0340",
+    "RUSTSEC-2026-0342",
+    "RUSTSEC-2026-0523",
+    "RUSTSEC-2026-0524",
+    "RUSTSEC-2026-0538",
+    # rsa 0.9.10 – Marvin Attack (sterownik MySQL z sqlx; aplikacja go nie używa; brak poprawki w 0.9)
+    "RUSTSEC-2023-0071",
+    # rustls 0.23.40 / rustls-webpki 0.103.13 / webpki-root-certs 1.0.7 – TLS (low/medium)
+    "RUSTSEC-2026-0285",
+    "RUSTSEC-2026-0346",
+    "RUSTSEC-2026-0348",
+    "RUSTSEC-2026-0349",
+    "RUSTSEC-2026-0382",
+    "RUSTSEC-2026-0383",
+    # url 2.5.8 – stack overflow w Url::origin() dla zagnieżdżonych blob: URL
+    "RUSTSEC-2026-0592",
+    # zip 3.0.0 – ekstrakcja archiwów (m.in. critical 9.1); ciągnięte przez utoipa-swagger-ui
+    # (rozpakowanie Swagger UI przy budowaniu, nie przetwarza plików od użytkowników); wymaga zip >= 9.0
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+    "RUSTSEC-2026-0429",
+    "RUSTSEC-2026-0545",
+    "RUSTSEC-2026-0548",
+]

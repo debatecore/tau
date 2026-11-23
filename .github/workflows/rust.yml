@@ -9,6 +9,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# L6: domyślnie GITHUB_TOKEN tylko do odczytu
+permissions:
+  contents: read
+
 jobs:
   build:
 
@@ -36,7 +40,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install sqlx-cli
         run: |
@@ -65,7 +69,7 @@ jobs:
           cargo llvm-cov --workspace --tests --verbose --html --output-dir target/llvm-cov/html 2>&1 | tee >(sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY")
           echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage HTML artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-report
           path: target/llvm-cov/html
@@ -79,20 +83,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # L6: tylko ten job potrzebuje praw do publikacji GitHub Pages
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Download coverage report artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: coverage-report
           path: target/llvm-cov/html
 
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: target/llvm-cov/html
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
       - name: Show GitHub Pages URL
         run: |
@@ -102,16 +110,22 @@ jobs:
     name: Check package version
     runs-on: ubuntu-latest
 
-    if: github.event_name == 'pull_request'
+    # Dependabot zmienia tylko pliki lock i nie podbija wersji aplikacji – pomijamy dla niego ten check
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
 
+      # L6: wartość z kontekstu github przez env, a nie wklejana bezpośrednio do skryptu (shell injection)
       - name: Fetch base branch
-        run: git fetch origin "${{ github.base_ref }}" --depth=1
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git fetch origin "$BASE_REF" --depth=1
 
       - name: Check Cargo.toml and pyproject.toml versions
-        run: python scripts/check_version.py "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python scripts/check_version.py "origin/$BASE_REF"

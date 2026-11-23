@@ -29,7 +29,8 @@ RUN --mount=type=bind,source=src,target=src \
     cargo build --locked --release && \
     cp ./target/release/$APP_NAME /bin/server
 
-FROM alpine:3.18 AS final
+# L6: alpine 3.18 nie dostaje już poprawek bezpieczeństwa (EOL od maja 2025)
+FROM alpine:3.22 AS final
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
