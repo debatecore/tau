@@ -118,8 +118,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      # L6: wartość z kontekstu github przez env, a nie wklejana bezpośrednio do skryptu (shell injection)
       - name: Fetch base branch
-        run: git fetch origin "${{ github.base_ref }}" --depth=1
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git fetch origin "$BASE_REF" --depth=1
 
       - name: Check Cargo.toml and pyproject.toml versions
-        run: python scripts/check_version.py "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python scripts/check_version.py "origin/$BASE_REF"

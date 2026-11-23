@@ -5,15 +5,24 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Nie proponuj wersji opublikowanych < 7 dni temu (ochrona przed złośliwymi wydaniami)
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    # Nie proponuj wersji opublikowanych < 7 dni temu (ochrona przed złośliwymi wydaniami)
+    cooldown:
+      default-days: 7
 
   # Aktualizuje też akcje przypięte do SHA (zachowuje komentarz z wersją)
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    # Nie proponuj wersji opublikowanych < 7 dni temu (ochrona przed złośliwymi wydaniami)
+    cooldown:
+      default-days: 7
